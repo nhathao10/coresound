@@ -1,0 +1,398 @@
+/* === GLOBAL === */
+body {
+  background: #18181b;
+  color: #f3f3f3;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden; /* chặn cuộn ngang toàn trang */
+}
+
+/* === HEADER === */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 1.5rem 0 1rem 2.5rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: linear-gradient(to bottom, #18181b 70%, transparent);
+  z-index: 100;
+}
+
+.header-logo-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.12rem;
+  pointer-events: auto;
+}
+.logo-gradient {
+  font-size: 3rem;
+  font-weight: bold;
+  background: linear-gradient(90deg, #1db954 30%, #1ed760 70%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.subtitle {
+  display: block;
+  color: #b3b3b3;
+  font-size: 1rem;
+  margin-top: 0.2rem;
+}
+
+/* === MAIN CONTENT === */
+.main-content {
+  display: block;
+  padding: 9rem 2.5rem 0; /* Tăng padding-top lên để tạo thêm khoảng cách */
+  min-height: calc(100vh - 90px); /* Chiều cao trừ đi thanh music bar */
+}
+
+
+/* === RECOMMEND SECTION === */
+.recommend-section {
+  margin-top: 0;
+  padding: 1rem 0;
+}
+.recommend-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.recommend-horizontal-list {
+  display: grid; /* cho phép dàn đều khi thiếu phần tử */
+  grid-auto-flow: column; /* xếp theo cột (ngang) */
+  grid-auto-columns: minmax(160px, 1fr); /* mỗi thẻ tối thiểu 160px, còn lại dàn đều */
+  gap: 1.5rem;
+  overflow-x: auto; /* cuộn ngang khi vượt khung */
+  padding-bottom: 0.5rem;
+  scroll-behavior: smooth; /* cuộn mượt */
+  scroll-snap-type: x proximity; /* bám thẻ khi dừng */
+  overscroll-behavior-x: contain; /* không đẩy cuộn ra ngoài container */
+  /* Ẩn thanh cuộn nhưng vẫn cuộn được */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.recommend-horizontal-list::-webkit-scrollbar { /* Chrome/Safari/Edge */
+  display: none;
+  height: 0;
+}
+
+.recommend-horizontal-card {
+  flex: 0 0 auto;
+  width: 160px;
+  background: #1e1e24;
+  border-radius: 12px;
+  padding: 0.8rem;
+  box-shadow: 0 4px 10px #0005;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+  border: 2px solid transparent;
+  position: relative; /* để đặt badge lượt nghe góc dưới phải */
+  scroll-snap-align: start; /* điểm dừng khi snap */
+}
+
+/* Màn hình nhỏ: giữ cuộn ngang như cũ */
+@media (max-width: 768px) {
+  .recommend-horizontal-list {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 160px; /* cố định kích thước trên mobile để cuộn ổn định */
+    gap: 1.2rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+  .carousel-arrow { display: none; }
+  .recommend-horizontal-card {
+    width: 160px;
+  }
+}
+.recommend-horizontal-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px #0007;
+}
+.recommend-horizontal-card.active {
+  border: 2px solid #1db954;
+}
+
+.recommend-horizontal-art {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+/* === TITLE === */
+.recommend-horizontal-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-top: 0.3rem;
+  color: #fff;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+
+.recommend-horizontal-title:hover {
+  animation: marquee 6s linear infinite;
+  cursor: default;
+}
+
+/* === ARTIST === */
+.recommend-horizontal-artist {
+  font-size: 0.85rem;
+  color: #b3b3b3;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  position: relative;
+}
+
+.recommend-horizontal-artist:hover {
+  animation: marquee 6s linear infinite;
+  cursor: default;
+}
+
+/* Badge lượt nghe ở góc dưới phải */
+.recommend-horizontal-plays {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  background: #23232b;
+  color: #b3b3b3;
+  font-size: 0.8rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px #0007;
+}
+
+/* === MARQUEE KEYFRAME === */
+@keyframes marquee {
+  0% {
+    text-indent: 0;
+  }
+  100% {
+    text-indent: -100%;
+  }
+}
+
+
+/* Nút play ẩn mặc định */
+.recommend-horizontal-play {
+  background: #1db954;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.25s ease;
+  opacity: 0;                /* ẩn đi */
+  pointer-events: none;       /* không bấm được khi ẩn */
+  margin-top: 0.6rem;
+}
+
+/* Khi hover vào card thì hiện nút */
+.recommend-horizontal-card:hover .recommend-horizontal-play {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Hover vào nút thì đổi màu */
+.recommend-horizontal-play:hover {
+  background: #1ed760;
+}
+
+/* Style icon bên trong nút */
+.recommend-horizontal-play svg {
+  width: 20px;   /* chỉnh theo ý muốn */
+  height: 20px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+
+/* === MUSIC BAR === */
+.spotify-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  background: #18181b;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  align-items: center;
+  padding: 0 2rem;
+  height: 90px;
+  z-index: 100;
+  box-shadow: 0 -2px 16px #000a;
+  border-top: 1px solid #23232b;
+}
+
+.spotify-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.spotify-album-art {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #23232b;
+  box-shadow: 0 2px 8px #0005;
+}
+.spotify-song-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.spotify-song-title {
+  font-weight: 700;
+  color: #fff;
+  font-size: 1.08rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+.spotify-song-artist {
+  color: #b3b3b3;
+  font-size: 0.97rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+/* === CENTER CONTROLS === */
+.spotify-bar-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.spotify-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+.spotify-btn {
+  background: transparent;
+  border: none;
+  color: #b3b3b3;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border-radius: 50%;
+  padding: 0.25rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.spotify-btn:hover,
+.spotify-btn:focus {
+  background: #23232b;
+  color: #fff;
+  outline: none;
+}
+.spotify-btn.playpause {
+  font-size: 1.7rem;
+}
+.spotify-btn.active {
+  color: #1db954;
+}
+
+/* === PROGRESS BAR === */
+.spotify-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 420px;
+}
+.spotify-progress-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 6px;
+  background: #333;
+  outline: none;
+  appearance: none;
+}
+.spotify-progress-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #1db954;
+  border: none;
+  cursor: pointer;
+  margin-top: -4px;
+}
+.spotify-progress-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #1db954;
+  border: none;
+  cursor: pointer;
+}
+.spotify-time-label {
+  color: #b3b3b3;
+  font-size: 0.9rem;
+}
+
+/* === VOLUME === */
+.spotify-bar-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  padding-right: 3.5rem;
+}
+.spotify-volume-icon {
+  color: #b3b3b3;
+  font-size: 1.2rem;
+}
+.spotify-volume-slider {
+  width: 100px;
+  height: 4px;
+  border-radius: 4px;
+  background: #333;
+  outline: none;
+  appearance: none;
+}
+.spotify-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #1db954;
+  cursor: pointer;
+}
+.spotify-volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #1db954;
+  cursor: pointer;
+}
+

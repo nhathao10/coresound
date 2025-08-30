@@ -1,0 +1,12 @@
+const mongoose = require("mongoose");
+
+const SongSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  artist: { type: String, required: true },
+  cover: { type: String, required: true }, // đường dẫn ảnh bìa
+  url: { type: String, required: true },   // đường dẫn file nhạc mp3
+  plays: { type: Number, default: 0 },     // số lượt nghe
+  premium: { type: Boolean, default: false }
+}, { timestamps: true });
+
+module.exports = mongoose.model("Song", SongSchema);
