@@ -1,4 +1,4 @@
-# ChillFy - Website nghe nhạc trực tuyến (MERN)
+# Coresound - Website nghe nhạc trực tuyến (MERN)
 
 ## Cấu trúc dự án
 - `/frontend`: Frontend React (Vite)
