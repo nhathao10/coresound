@@ -8,6 +8,7 @@ import {
   FaRedo,
   FaRandom,
   FaVolumeUp,
+  FaSyncAlt,
 } from "react-icons/fa";
 
 function App() {
@@ -20,12 +21,29 @@ function App() {
   const [shuffle, setShuffle] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [displayedSongs, setDisplayedSongs] = useState([]); // 7 bài hát hiển thị
 
   useEffect(() => {
     fetch("http://localhost:5000/api/songs")
       .then((res) => res.json())
-      .then((data) => setSongs(data));
+      .then((data) => {
+        setSongs(data);
+        // Khởi tạo 7 bài hát ngẫu nhiên
+        setDisplayedSongs(getRandomSongs(data, 7));
+      });
   }, []);
+
+  // Hàm lấy 7 bài hát ngẫu nhiên
+  const getRandomSongs = (allSongs, count) => {
+    if (allSongs.length <= count) return allSongs;
+    const shuffled = [...allSongs].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  };
+
+  // Hàm làm mới danh sách gợi ý
+  const refreshRecommendations = () => {
+    setDisplayedSongs(getRandomSongs(songs, 7));
+  };
 
   useEffect(() => {
     if (audioRef.current) {
@@ -168,13 +186,22 @@ function App() {
       </header>
       <main className="main-content">
         <section className="recommend-section recommend-section-horizontal">
-          <div className="recommend-title">Gợi Ý Bài Hát</div>
+          <div className="recommend-header">
+            <div className="recommend-title">Gợi Ý Bài Hát</div>
+            <button
+              className="refresh-btn"
+              onClick={refreshRecommendations}
+              title="Làm mới gợi ý"
+            >
+              ↻
+            </button>
+          </div>
           <div className="recommend-horizontal-list">
-            {songs.map((song, idx) => (
+            {displayedSongs.map((song, idx) => (
               <div
                 key={song._id}
                 className={`recommend-horizontal-card${
-                  currentIdx === idx ? " active" : ""
+                  currentIdx !== null && songs[currentIdx]?._id === song._id ? " active" : ""
                 }`}
               >
                 <img
@@ -205,11 +232,13 @@ function App() {
                     if (currentIdx === idx) {
                       setIsPlaying((prev) => !prev); // toggle play/pause
                     } else {
-                      playSong(idx); // chọn bài mới và play
+                      // Tìm index thực trong songs array để play
+                      const realIdx = songs.findIndex(s => s._id === song._id);
+                      playSong(realIdx);
                     }
                   }}
                 >
-                  {currentIdx === idx && isPlaying ? <FaPause /> : <FaPlay />}
+                  {currentIdx !== null && songs[currentIdx]?._id === song._id && isPlaying ? <FaPause /> : <FaPlay />}
                 </button>
               </div>
             ))}

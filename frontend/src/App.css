@@ -59,17 +59,58 @@ body {
   margin-top: 0;
   padding: 1rem 0;
 }
+
+.recommend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
 .recommend-title {
   font-size: 1.5rem;
   font-weight: 700;
-  margin-bottom: 1rem;
+}
+
+.refresh-btn {
+  background: #23232b;
+  color: #fff;
+  border: 1px solid #2e2e37;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease, border-color 0.2s ease;
+}
+
+.refresh-btn:hover {
+  background: #2a2a34;
+  border-color: #3a3a46;
+}
+
+.refresh-btn:active {
+  transform: scale(0.95);
+}
+
+.refresh-btn {
+  font-size: 18px;
+  font-weight: bold;
+  color: #b3b3b3;
+  transition: color 0.2s ease;
+}
+
+.refresh-btn:hover {
+  color: #fff;
 }
 
 .recommend-horizontal-list {
   display: grid; /* cho phép dàn đều khi thiếu phần tử */
   grid-auto-flow: column; /* xếp theo cột (ngang) */
   grid-auto-columns: minmax(160px, 1fr); /* mỗi thẻ tối thiểu 160px, còn lại dàn đều */
-  gap: 1.5rem;
+  gap: 2.5rem; /* tăng khoảng cách giữa các thẻ */
   overflow-x: auto; /* cuộn ngang khi vượt khung */
   padding-bottom: 0.5rem;
   scroll-behavior: smooth; /* cuộn mượt */
@@ -103,7 +144,7 @@ body {
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: 160px; /* cố định kích thước trên mobile để cuộn ổn định */
-    gap: 1.2rem;
+    gap: 2rem; /* tăng khoảng cách trên mobile */
     overflow-x: auto;
     padding-bottom: 0.5rem;
   }
