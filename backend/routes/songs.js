@@ -32,7 +32,7 @@ router.post(
   },
   async (req, res) => {
     try {
-      const { title, artist, premium, plays } = req.body;
+      const { title, artist, premium, plays, albumId } = req.body;
 
       // Nếu có file cover và song
       const coverPath = req.files?.cover
@@ -51,6 +51,7 @@ router.post(
         cover: coverPath,
         url: songPath,
         premium: premium === "true",
+        ...(albumId ? { album: albumId } : {}),
         ...(Number.isFinite(parsedPlays) && parsedPlays >= 0
           ? { plays: Math.floor(parsedPlays) }
           : {})
@@ -64,10 +65,10 @@ router.post(
   }
 );
 
-// Lấy danh sách bài hát
+// Lấy danh sách bài hát (populate album)
 router.get("/", async (req, res) => {
   try {
-    const songs = await Song.find();
+    const songs = await Song.find().populate("album");
     res.json(songs);
   } catch (err) {
     res.status(500).json({ error: err.message });

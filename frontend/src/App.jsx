@@ -13,6 +13,8 @@ import {
 
 function App() {
   const [songs, setSongs] = useState([]);
+  const [albums, setAlbums] = useState([]);
+  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
   const [currentIdx, setCurrentIdx] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef(null);
@@ -24,13 +26,14 @@ function App() {
   const [displayedSongs, setDisplayedSongs] = useState([]); // 7 bài hát hiển thị
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/songs")
-      .then((res) => res.json())
-      .then((data) => {
-        setSongs(data);
-        // Khởi tạo 7 bài hát ngẫu nhiên
-        setDisplayedSongs(getRandomSongs(data, 7));
-      });
+    Promise.all([
+      fetch("http://localhost:5000/api/songs").then((r) => r.json()),
+      fetch("http://localhost:5000/api/albums").then((r) => r.json()),
+    ]).then(([songsData, albumsData]) => {
+      setSongs(songsData);
+      setAlbums(albumsData);
+      setDisplayedSongs(getRandomSongs(songsData, 7));
+    });
   }, []);
 
   // Hàm lấy 7 bài hát ngẫu nhiên
@@ -206,7 +209,7 @@ function App() {
               >
                 <img
                   className="recommend-horizontal-art"
-                  src={song.cover || "/default-cover.png"}
+                  src={withMediaBase(song.cover) || "/default-cover.png"}
                   alt={song.title}
                 />
                 <div className="recommend-horizontal-info">
@@ -220,6 +223,11 @@ function App() {
                     {song.artist}
                   </div>
                 </div>
+                {song.album?.name && (
+                  <span className="recommend-horizontal-album" title={song.album.name}>
+                    {song.album.name}
+                  </span>
+                )}
                 <span
                   className="recommend-horizontal-plays"
                   title={formatFullPlayCount(song.plays)}
@@ -229,17 +237,43 @@ function App() {
                 <button
                   className="recommend-horizontal-play"
                   onClick={() => {
-                    if (currentIdx === idx) {
-                      setIsPlaying((prev) => !prev); // toggle play/pause
+                    const realIdx = songs.findIndex((s) => s._id === song._id);
+                    if (realIdx === -1) return;
+                    const isCurrent = currentIdx !== null && songs[currentIdx]?._id === song._id;
+                    if (isCurrent) {
+                      setIsPlaying((prev) => !prev); // toggle play/pause khi click lại đúng bài đang phát
                     } else {
-                      // Tìm index thực trong songs array để play
-                      const realIdx = songs.findIndex(s => s._id === song._id);
-                      playSong(realIdx);
+                      playSong(realIdx); // chuyển sang bài được click và phát luôn
                     }
                   }}
                 >
                   {currentIdx !== null && songs[currentIdx]?._id === song._id && isPlaying ? <FaPause /> : <FaPlay />}
                 </button>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="recommend-section recommend-section-horizontal">
+          <div className="recommend-header">
+            <div className="recommend-title">Album Mới</div>
+          </div>
+          <div className="recommend-horizontal-list album-list">
+            {albums.map((al) => (
+              <div key={al._id} className="recommend-horizontal-card">
+                <img
+                  className="recommend-horizontal-art"
+                  src={withMediaBase(al.cover) || "/default-cover.png"}
+                  alt={al.name}
+                />
+                <div className="recommend-horizontal-info">
+                  <div className="recommend-horizontal-title">{al.name}</div>
+                  <div className="recommend-horizontal-artist">{al.artist}</div>
+                </div>
+                {typeof al.plays === "number" && (
+                  <span className="recommend-horizontal-plays" title={formatFullPlayCount(al.plays)}>
+                    {formatPlayCount(al.plays)}
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -251,7 +285,7 @@ function App() {
           <div className="spotify-bar-left">
             <img
               className="spotify-album-art"
-              src={current.cover || "/default-cover.png"}
+              src={withMediaBase(current.cover) || "/default-cover.png"}
               alt="Album Art"
             />
             <div className="spotify-song-info">
