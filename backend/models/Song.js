@@ -7,7 +7,8 @@ const SongSchema = new mongoose.Schema({
   url: { type: String, required: true },   // đường dẫn file nhạc mp3
   plays: { type: Number, default: 0 },     // số lượt nghe
   premium: { type: Boolean, default: false },
-  album: { type: mongoose.Schema.Types.ObjectId, ref: "Album" }
+  album: { type: mongoose.Schema.Types.ObjectId, ref: "Album" },
+  genre: { type: mongoose.Schema.Types.ObjectId, ref: "Genre" }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Song", SongSchema);

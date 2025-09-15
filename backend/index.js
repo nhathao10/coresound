@@ -23,6 +23,7 @@ const PORT = process.env.PORT || 5000;
 const songsRoute = require('./routes/songs');
 const uploadRoute = require('./routes/upload'); 
 const albumsRoute = require('./routes/albums');
+const genresRoute = require('./routes/genres');
 
 app.get('/', (req, res) => {
   res.send('CoreSound backend is running!');
@@ -33,6 +34,9 @@ app.use('/api/songs', songsRoute);
 
 // API albums
 app.use('/api/albums', albumsRoute);
+
+// API genres
+app.use('/api/genres', genresRoute);
 
 // API upload (cover & song)
 app.use('/api', uploadRoute);

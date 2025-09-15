@@ -19,17 +19,20 @@ body {
   text-align: left;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   background: linear-gradient(to bottom, #18181b 70%, transparent);
   z-index: 100;
 }
 
 .header-logo-block {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.12rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
   pointer-events: auto;
+}
+.search-input { /* giữ style input cơ bản; kích thước sẽ từ inline style */
+  outline: none;
 }
 .logo-gradient {
   font-size: 3rem;
