@@ -1,47 +1,47 @@
 const express = require("express");
 const multer = require("multer");
-const Song = require("../models/Song"); // ✅ sửa lại đường dẫn model
+const path = require("path");
+const Song = require("../models/Song");
 
 const router = express.Router();
 
-// Storage cho ảnh cover
-const coverStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/covers/"),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname)
+// Single multer with dynamic destination for cover/song
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    if (file.fieldname === "cover") {
+      cb(null, path.join(__dirname, "../uploads/covers"));
+    } else if (file.fieldname === "song") {
+      cb(null, path.join(__dirname, "../uploads/songs"));
+    } else {
+      cb(null, path.join(__dirname, "../uploads"));
+    }
+  },
+  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
-const uploadCover = multer({ storage: coverStorage });
-
-// Storage cho file nhạc
-const songStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/songs/"),
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname)
-});
-const uploadSong = multer({ storage: songStorage });
+const upload = multer({ storage });
 
 // Thêm bài hát mới (upload cả cover và mp3)
 router.post(
   "/add",
-  (req, res, next) => {
-    uploadCover.single("cover")(req, res, (err) => {
-      if (err) return next(err);
-      uploadSong.single("song")(req, res, (err2) => {
-        if (err2) return next(err2);
-        next();
-      });
-    });
-  },
+  upload.fields([
+    { name: "cover", maxCount: 1 },
+    { name: "song", maxCount: 1 },
+  ]),
   async (req, res) => {
     try {
-      const { title, artist, premium, plays, albumId } = req.body;
+      const { title, artist, premium, plays, albumId, genreId } = req.body;
+      if (!title || !artist) {
+        return res.status(400).json({ error: "Missing required fields: title, artist" });
+      }
 
-      // Nếu có file cover và song
-      const coverPath = req.files?.cover
-        ? `/uploads/covers/${req.files.cover[0].filename}`
-        : "";
+      const coverFile = req.files && req.files.cover && req.files.cover[0];
+      const songFile = req.files && req.files.song && req.files.song[0];
+      if (!coverFile || !songFile) {
+        return res.status(400).json({ error: "Both cover and song files are required" });
+      }
 
-      const songPath = req.files?.song
-        ? `/uploads/songs/${req.files.song[0].filename}`
-        : "";
+      const coverPath = `/uploads/covers/${coverFile.filename}`;
+      const songPath = `/uploads/songs/${songFile.filename}`;
 
       const parsedPlays = plays !== undefined ? Number(plays) : undefined;
 
@@ -50,11 +50,12 @@ router.post(
         artist,
         cover: coverPath,
         url: songPath,
-        premium: premium === "true",
+        premium: String(premium) === "true",
         ...(albumId ? { album: albumId } : {}),
+        ...(genreId ? { genre: genreId } : {}),
         ...(Number.isFinite(parsedPlays) && parsedPlays >= 0
           ? { plays: Math.floor(parsedPlays) }
-          : {})
+          : {}),
       });
 
       await newSong.save();
@@ -68,8 +69,66 @@ router.post(
 // Lấy danh sách bài hát (populate album)
 router.get("/", async (req, res) => {
   try {
-    const songs = await Song.find().populate("album");
+    const songs = await Song.find().populate("album").populate("genre");
     res.json(songs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Cập nhật file cover/song cho bài hát cụ thể
+router.patch(
+  "/:id/files",
+  upload.fields([
+    { name: "cover", maxCount: 1 },
+    { name: "song", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const update = {};
+      if (req.files && req.files.cover && req.files.cover[0]) {
+        update.cover = `/uploads/covers/${req.files.cover[0].filename}`;
+      }
+      if (req.files && req.files.song && req.files.song[0]) {
+        update.url = `/uploads/songs/${req.files.song[0].filename}`;
+      }
+      if (Object.keys(update).length === 0) {
+        return res.status(400).json({ error: "No files provided" });
+      }
+      const updated = await Song.findByIdAndUpdate(id, { $set: update }, { new: true });
+      if (!updated) return res.status(404).json({ error: "Song not found" });
+      res.json(updated);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// Cập nhật thông tin bài hát (không bao gồm upload file)
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const update = {};
+    const allowed = ["title", "artist", "plays", "premium", "album", "genre", "url", "cover"];
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
+    const updated = await Song.findByIdAndUpdate(id, { $set: update }, { new: true });
+    if (!updated) return res.status(404).json({ error: "Song not found" });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Xoá bài hát
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await Song.findByIdAndDelete(id);
+    if (!deleted) return res.status(404).json({ error: "Song not found" });
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

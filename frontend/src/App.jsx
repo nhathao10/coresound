@@ -453,7 +453,7 @@ function App() {
           </div>
           <audio
             ref={audioRef}
-            src={current.url}
+            src={withMediaBase(current.url)}
             autoPlay={isPlaying}
             onEnded={handleEnded}
           />
