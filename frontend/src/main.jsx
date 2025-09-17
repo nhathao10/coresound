@@ -3,11 +3,15 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import Upload from './Upload.jsx'
+import AlbumsAdmin from './AlbumsAdmin.jsx'
 
 function Router() {
   const hash = window.location.hash || '#/'
   if (hash.startsWith('#/upload')) {
     return <Upload />
+  }
+  if (hash.startsWith('#/albums-admin')) {
+    return <AlbumsAdmin />
   }
   return <App />
 }

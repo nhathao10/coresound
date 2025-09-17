@@ -14,13 +14,14 @@ const uploadCover = multer({ storage: coverStorage });
 // Tạo album
 router.post("/", uploadCover.single("cover"), async (req, res) => {
   try {
-    const { name, artist, releaseDate } = req.body;
+    const { name, artist, releaseDate, plays } = req.body;
     const coverPath = req.file ? `/uploads/album_covers/${req.file.filename}` : "";
     const album = new Album({
       name,
       artist,
       releaseDate: releaseDate ? new Date(releaseDate) : undefined,
       cover: coverPath,
+      ...(plays !== undefined ? { plays: Math.max(0, Math.floor(Number(plays) || 0)) } : {}),
     });
     await album.save();
     res.status(201).json(album);
@@ -53,10 +54,14 @@ router.get("/:id", async (req, res) => {
 // Cập nhật album
 router.put("/:id", uploadCover.single("cover"), async (req, res) => {
   try {
-    const { name, artist, releaseDate } = req.body;
+    const { name, artist, releaseDate, plays } = req.body;
     const update = { name, artist };
     if (releaseDate) update.releaseDate = new Date(releaseDate);
     if (req.file) update.cover = `/uploads/album_covers/${req.file.filename}`;
+    if (plays !== undefined) {
+      const parsed = Math.max(0, Math.floor(Number(plays) || 0));
+      update.plays = parsed;
+    }
     const album = await Album.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!album) return res.status(404).json({ error: "Album not found" });
     res.json(album);

@@ -1,5 +1,29 @@
 import { useEffect, useState } from "react";
 
+function Sidebar({ open, onToggle }) {
+  const hash = typeof window !== "undefined" ? window.location.hash : "#/";
+  const linkStyle = (active) => ({
+    display: "block",
+    padding: "10px 12px",
+    borderRadius: 8,
+    color: active ? "#1db954" : "#e5e5e5",
+    background: active ? "#1f2a1f" : "transparent",
+    textDecoration: "none",
+    fontWeight: active ? 700 : 500,
+  });
+  return (
+    <aside style={{ position: "fixed", left: open ? 0 : -240, top: 0, bottom: 0, width: 220, background: "#151518", borderRight: "1px solid #23232b", padding: 16, transition: "left 0.2s ease" }}>
+      <div className="logo-gradient" style={{ fontSize: 22, marginBottom: 12 }}>CoreSound Admin</div>
+      <nav style={{ display: "grid", gap: 6 }}>
+        <a href="#/" style={linkStyle(hash === "#/" || hash === "#/")}>Trang chủ</a>
+        <a href="#/upload" style={linkStyle(hash.startsWith("#/upload"))}>Quản lý Bài hát</a>
+        <a href="#/albums-admin" style={linkStyle(hash.startsWith("#/albums-admin"))}>Quản lý Album</a>
+      </nav>
+      <button onClick={onToggle} style={{ marginTop: 16, padding: "8px 10px", borderRadius: 8, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer", width: "100%" }}>{open ? "Ẩn menu" : "Hiện menu"}</button>
+    </aside>
+  );
+}
+
 function Upload() {
   const [form, setForm] = useState({
     title: "",
@@ -63,12 +87,22 @@ function Upload() {
     }
   };
 
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const contentOffset = sidebarOpen ? 220 : 0;
   return (
     <div className="music-app dark-theme" style={{ padding: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <a href="#/" style={{ textDecoration: "none", color: "#1db954", fontWeight: 700 }}>&larr; Quay về trang chính</a>
-        <div className="logo-gradient" style={{ fontSize: 24 }}>CoreSound • Upload</div>
-        <div />
+      <Sidebar open={sidebarOpen} onToggle={()=> setSidebarOpen((v)=> !v)} />
+      {!sidebarOpen && (
+        <button
+          onClick={()=> setSidebarOpen(true)}
+          style={{ position: "fixed", left: 8, top: 12, zIndex: 1000, padding: "8px 10px", borderRadius: 8, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer" }}
+          title="Hiện menu"
+        >
+          ☰ Menu
+        </button>
+      )}
+      <div style={{ marginLeft: contentOffset, marginBottom: 16, display: "flex", justifyContent: "center" }}>
+        <div className="logo-gradient" style={{ fontSize: 24, textAlign: "center" }}>Quản Lý Bài Hát</div>
       </div>
 
       <form onSubmit={handleSubmit}
@@ -82,6 +116,7 @@ function Upload() {
           borderRadius: 12,
           border: "1px solid #2e2e37",
           width: "100%",
+          marginLeft: contentOffset,
         }}
       >
         <label style={{ display: "grid", gap: 6 }}>
@@ -155,7 +190,7 @@ function Upload() {
         </div>
       </form>
 
-      <div style={{ marginTop: 24 }}>
+      <div style={{ marginTop: 24, marginLeft: contentOffset }}>
         <div className="recommend-header" style={{ marginBottom: 8 }}>
           <div className="recommend-title">Danh sách bài hát</div>
           <div style={{ opacity: 0.8, fontSize: 14 }}>
