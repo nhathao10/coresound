@@ -1,28 +1,13 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
-import {
-  FaPlay,
-  FaPause,
-  FaStepForward,
-  FaStepBackward,
-  FaRedo,
-  FaRandom,
-  FaVolumeUp,
-  FaSyncAlt,
-} from "react-icons/fa";
+import { FaPlay, FaPause } from "react-icons/fa";
+import { usePlayer } from "./PlayerContext.jsx";
 
 function App() {
   const [songs, setSongs] = useState([]);
   const [albums, setAlbums] = useState([]);
   const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
-  const [currentIdx, setCurrentIdx] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef(null);
-  const [volume, setVolume] = useState(1);
-  const [repeat, setRepeat] = useState(false);
-  const [shuffle, setShuffle] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const { setQueueAndPlay, currentIdx, isPlaying, setIsPlaying, queue, setCurrentIdx } = usePlayer();
   const [displayedSongs, setDisplayedSongs] = useState([]); // 7 bài hát hiển thị
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -50,94 +35,21 @@ function App() {
     setDisplayedSongs(getRandomSongs(songs, 7));
   };
 
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const updateProgress = () => {
-      setProgress(audio.currentTime);
-    };
-    audio.addEventListener("timeupdate", updateProgress);
-    audio.addEventListener("loadedmetadata", () =>
-      setDuration(audio.duration || 0)
-    );
-    return () => {
-      audio.removeEventListener("timeupdate", updateProgress);
-    };
-  }, [currentIdx]);
-
-  useEffect(() => {
-    if (isPlaying && audioRef.current) {
-      audioRef.current.play();
-    } else if (audioRef.current) {
-      audioRef.current.pause();
-    }
-  }, [isPlaying, currentIdx]);
-
   const playSong = (idx) => {
-    setCurrentIdx(idx);
-    setIsPlaying(true);
-  };
-
-  const handlePlayPause = () => {
-    setIsPlaying((prev) => !prev);
-  };
-
-  const handlePrev = () => {
-    if (songs.length === 0) return;
-    if (shuffle) {
-      let nextIdx = Math.floor(Math.random() * songs.length);
-      while (songs.length > 1 && nextIdx === currentIdx) {
-        nextIdx = Math.floor(Math.random() * songs.length);
-      }
-      setCurrentIdx(nextIdx);
+    // ensure the global queue contains the full songs list in the same order
+    const queueMismatch = !queue || queue.length !== songs.length || songs.some((s, i) => queue[i]?._id !== s._id);
+    if (queueMismatch) {
+      setQueueAndPlay(songs, idx);
     } else {
-      setCurrentIdx((prev) =>
-        prev === 0 || prev === null ? songs.length - 1 : prev - 1
-      );
-    }
-    setIsPlaying(true);
-  };
-
-  const handleNext = () => {
-    if (songs.length === 0) return;
-    if (shuffle) {
-      let nextIdx = Math.floor(Math.random() * songs.length);
-      while (songs.length > 1 && nextIdx === currentIdx) {
-        nextIdx = Math.floor(Math.random() * songs.length);
-      }
-      setCurrentIdx(nextIdx);
-    } else {
-      setCurrentIdx((prev) =>
-        prev === null || prev === songs.length - 1 ? 0 : prev + 1
-      );
-    }
-    setIsPlaying(true);
-  };
-
-  const handleEnded = () => {
-    if (repeat) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play();
-    } else {
-      handleNext();
+      setCurrentIdx(idx);
+      setIsPlaying(true);
     }
   };
 
   const current = currentIdx !== null ? songs[currentIdx] : null;
 
   // Định dạng thời gian mm:ss
-  const formatTime = (sec) => {
-    if (isNaN(sec)) return "0:00";
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return `${m}:${s < 10 ? "0" : ""}${s}`;
-  };
+  // local formatting helpers removed; global player renders UI
 
   // Chuẩn hóa chuỗi để tìm kiếm không phân biệt dấu, hoa/thường
   const normalize = (str) => {
@@ -354,7 +266,7 @@ function App() {
           </div>
           <div className="recommend-horizontal-list album-list">
             {albums.map((al) => (
-              <div key={al._id} className="recommend-horizontal-card">
+              <a key={al._id} href={`#/album/${encodeURIComponent(al._id)}`} className="recommend-horizontal-card" style={{ textDecoration: "none", color: "inherit" }}>
                 <img
                   className="recommend-horizontal-art"
                   src={withMediaBase(al.cover) || "/default-cover.png"}
@@ -369,96 +281,13 @@ function App() {
                     {formatPlayCount(al.plays)}
                   </span>
                 )}
-              </div>
+              </a>
             ))}
           </div>
         </section>
         {/* Các thành phần khác sẽ thêm vào đây sau này */}
       </main>
-      {current && (
-        <div className="music-bar spotify-bar">
-          <div className="spotify-bar-left">
-            <img
-              className="spotify-album-art"
-              src={withMediaBase(current.cover) || "/default-cover.png"}
-              alt="Album Art"
-            />
-            <div className="spotify-song-info">
-              <span className="spotify-song-title">{current.title}</span>
-              <span className="spotify-song-artist">{current.artist}</span>
-            </div>
-          </div>
-          <div className="spotify-bar-center">
-            <div className="spotify-controls">
-              <button
-                className={`spotify-btn shuffle${shuffle ? " active" : ""}`}
-                onClick={() => setShuffle((s) => !s)}
-                title="Shuffle"
-              >
-                <FaRandom />
-              </button>
-              <button className="spotify-btn prev" onClick={handlePrev}>
-                <FaStepBackward />
-              </button>
-              <button
-                className="spotify-btn playpause"
-                onClick={handlePlayPause}
-              >
-                {isPlaying ? <FaPause /> : <FaPlay />}
-              </button>
-              <button className="spotify-btn next" onClick={handleNext}>
-                <FaStepForward />
-              </button>
-              <button
-                className={`spotify-btn repeat${repeat ? " active" : ""}`}
-                onClick={() => setRepeat((r) => !r)}
-                title="Repeat"
-              >
-                <FaRedo />
-              </button>
-            </div>
-            <div className="spotify-progress-row">
-              <span className="spotify-time-label">{formatTime(progress)}</span>
-              <input
-                type="range"
-                min={0}
-                max={duration || 0}
-                step={0.1}
-                value={progress}
-                onChange={(e) => {
-                  setProgress(Number(e.target.value));
-                  if (audioRef.current)
-                    audioRef.current.currentTime = Number(e.target.value);
-                }}
-                className="spotify-progress-slider"
-                title="Tiến trình"
-              />
-              <span className="spotify-time-label">{formatTime(duration)}</span>
-            </div>
-          </div>
-          <div className="spotify-bar-right">
-            <span className="spotify-volume-icon">
-              <FaVolumeUp />
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={volume}
-              onChange={(e) => setVolume(Number(e.target.value))}
-              className="spotify-volume-slider"
-              title="Âm lượng"
-            />
-          </div>
-          <audio
-            ref={audioRef}
-            src={withMediaBase(current.url)}
-            autoPlay={isPlaying}
-            onEnded={handleEnded}
-          />
-        </div>
-      )}
+      {/* GlobalPlayer renders persistently in main.jsx */}
     </div>
   );
 }

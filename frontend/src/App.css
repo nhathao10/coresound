@@ -468,3 +468,13 @@ body {
   cursor: pointer;
 }
 
+/* ép music-app và main-content giãn full chiều ngang */
+#root, 
+.music-app, 
+.main-content {
+  flex: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  align-self: stretch !important;
+  box-sizing: border-box;
+}

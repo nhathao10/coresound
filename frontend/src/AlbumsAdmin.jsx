@@ -35,7 +35,7 @@ function AlbumsAdmin() {
   const selectedAlbum = useMemo(() => albums.find(a => a._id === selectedAlbumId) || null, [albums, selectedAlbumId]);
 
   useEffect(() => {
-    document.title = "CoreSound • Albums Admin";
+    document.title = "CoreSound";
     Promise.all([
       fetch("http://localhost:5000/api/albums").then(r=>r.json()),
       fetch("http://localhost:5000/api/songs").then(r=>r.json()),

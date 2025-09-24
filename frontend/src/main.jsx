@@ -4,6 +4,9 @@ import './index.css'
 import App from './App.jsx'
 import Upload from './Upload.jsx'
 import AlbumsAdmin from './AlbumsAdmin.jsx'
+import AlbumDetail from './AlbumDetail.jsx'
+import { PlayerProvider } from './PlayerContext.jsx'
+import GlobalPlayer from './GlobalPlayer.jsx'
 
 function Router() {
   const hash = window.location.hash || '#/'
@@ -12,6 +15,9 @@ function Router() {
   }
   if (hash.startsWith('#/albums-admin')) {
     return <AlbumsAdmin />
+  }
+  if (hash.startsWith('#/album/')) {
+    return <AlbumDetail />
   }
   return <App />
 }
@@ -25,7 +31,10 @@ function Root() {
   }, [])
   return (
     <StrictMode>
-      <Router />
+      <PlayerProvider>
+        <Router />
+        <GlobalPlayer />
+      </PlayerProvider>
     </StrictMode>
   )
 }
