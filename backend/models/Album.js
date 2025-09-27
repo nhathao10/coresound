@@ -7,6 +7,7 @@ const AlbumSchema = new mongoose.Schema(
     releaseDate: { type: Date },
     cover: { type: String },
     plays: { type: Number, default: 0 },
+    genres: [{ type: mongoose.Schema.Types.ObjectId, ref: "Genre" }],
   },
   { timestamps: true }
 );

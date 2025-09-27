@@ -4,6 +4,8 @@ import './index.css'
 import App from './App.jsx'
 import Upload from './Upload.jsx'
 import AlbumsAdmin from './AlbumsAdmin.jsx'
+import GenresAdmin from './GenresAdmin.jsx'
+import RegionsAdmin from './RegionsAdmin.jsx'
 import AlbumDetail from './AlbumDetail.jsx'
 import { PlayerProvider } from './PlayerContext.jsx'
 import GlobalPlayer from './GlobalPlayer.jsx'
@@ -15,6 +17,12 @@ function Router() {
   }
   if (hash.startsWith('#/albums-admin')) {
     return <AlbumsAdmin />
+  }
+  if (hash.startsWith('#/genres-admin')) {
+    return <GenresAdmin />
+  }
+  if (hash.startsWith('#/regions-admin')) {
+    return <RegionsAdmin />
   }
   if (hash.startsWith('#/album/')) {
     return <AlbumDetail />

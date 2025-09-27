@@ -14,13 +14,26 @@ const uploadCover = multer({ storage: coverStorage });
 // Tạo album
 router.post("/", uploadCover.single("cover"), async (req, res) => {
   try {
-    const { name, artist, releaseDate, plays } = req.body;
+    const { name, artist, releaseDate, plays, genres } = req.body;
     const coverPath = req.file ? `/uploads/album_covers/${req.file.filename}` : "";
+    
+    // Parse genres if provided
+    let genreIds = [];
+    if (genres) {
+      try {
+        genreIds = Array.isArray(genres) ? genres : JSON.parse(genres);
+      } catch (e) {
+        // If parsing fails, treat as single genre ID
+        genreIds = [genres];
+      }
+    }
+    
     const album = new Album({
       name,
       artist,
       releaseDate: releaseDate ? new Date(releaseDate) : undefined,
       cover: coverPath,
+      genres: genreIds,
       ...(plays !== undefined ? { plays: Math.max(0, Math.floor(Number(plays) || 0)) } : {}),
     });
     await album.save();
@@ -33,7 +46,7 @@ router.post("/", uploadCover.single("cover"), async (req, res) => {
 // Danh sách album
 router.get("/", async (req, res) => {
   try {
-    const albums = await Album.find().sort({ createdAt: -1 });
+    const albums = await Album.find().populate("genres").sort({ createdAt: -1 });
     res.json(albums);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -43,7 +56,7 @@ router.get("/", async (req, res) => {
 // Chi tiết album
 router.get("/:id", async (req, res) => {
   try {
-    const album = await Album.findById(req.params.id);
+    const album = await Album.findById(req.params.id).populate("genres");
     if (!album) return res.status(404).json({ error: "Album not found" });
     res.json(album);
   } catch (err) {
@@ -54,7 +67,10 @@ router.get("/:id", async (req, res) => {
 // Cập nhật album
 router.put("/:id", uploadCover.single("cover"), async (req, res) => {
   try {
-    const { name, artist, releaseDate, plays } = req.body;
+    if (!req.body) {
+      return res.status(400).json({ error: "Request body is required" });
+    }
+    const { name, artist, releaseDate, plays, genres } = req.body;
     const update = { name, artist };
     if (releaseDate) update.releaseDate = new Date(releaseDate);
     if (req.file) update.cover = `/uploads/album_covers/${req.file.filename}`;
@@ -62,7 +78,20 @@ router.put("/:id", uploadCover.single("cover"), async (req, res) => {
       const parsed = Math.max(0, Math.floor(Number(plays) || 0));
       update.plays = parsed;
     }
-    const album = await Album.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (genres !== undefined) {
+      // Parse genres if provided
+      let genreIds = [];
+      if (genres) {
+        try {
+          genreIds = Array.isArray(genres) ? genres : JSON.parse(genres);
+        } catch (e) {
+          // If parsing fails, treat as single genre ID
+          genreIds = [genres];
+        }
+      }
+      update.genres = genreIds;
+    }
+    const album = await Album.findByIdAndUpdate(req.params.id, update, { new: true }).populate("genres");
     if (!album) return res.status(404).json({ error: "Album not found" });
     res.json(album);
   } catch (err) {

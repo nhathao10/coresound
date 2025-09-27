@@ -1,36 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-
-function Sidebar({ open, onToggle }) {
-  const hash = typeof window !== "undefined" ? window.location.hash : "#/";
-  const linkStyle = (active) => ({
-    display: "block",
-    padding: "10px 12px",
-    borderRadius: 8,
-    color: active ? "#1db954" : "#e5e5e5",
-    background: active ? "#1f2a1f" : "transparent",
-    textDecoration: "none",
-    fontWeight: active ? 700 : 500,
-  });
-  return (
-    <aside style={{ position: "fixed", left: open ? 0 : -240, top: 0, bottom: 0, width: 220, background: "#151518", borderRight: "1px solid #23232b", padding: 16, transition: "left 0.2s ease" }}>
-      <div className="logo-gradient" style={{ fontSize: 22, marginBottom: 12 }}>CoreSound Admin</div>
-      <nav style={{ display: "grid", gap: 6 }}>
-        <a href="#/" style={linkStyle(hash === "#/" || hash === "#/")}>Trang chủ</a>
-        <a href="#/upload" style={linkStyle(hash.startsWith("#/upload"))}>Quản lý Bài hát</a>
-        <a href="#/albums-admin" style={linkStyle(hash.startsWith("#/albums-admin"))}>Quản lý Album</a>
-      </nav>
-      <button onClick={onToggle} style={{ marginTop: 16, padding: "8px 10px", borderRadius: 8, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer", width: "100%" }}>{open ? "Ẩn menu" : "Hiện menu"}</button>
-    </aside>
-  );
-}
+import { useEffect, useMemo, useState, useRef } from "react";
+import AdminSidebar from "./AdminSidebar.jsx";
 
 function AlbumsAdmin() {
   const [albums, setAlbums] = useState([]);
   const [songs, setSongs] = useState([]);
+  const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ name: "", artist: "", releaseDate: "", plays: "", cover: null });
+  const [form, setForm] = useState({ name: "", artist: "", releaseDate: "", plays: "", cover: null, genres: [] });
   const [selectedAlbumId, setSelectedAlbumId] = useState("");
   const selectedAlbum = useMemo(() => albums.find(a => a._id === selectedAlbumId) || null, [albums, selectedAlbumId]);
 
@@ -39,9 +17,11 @@ function AlbumsAdmin() {
     Promise.all([
       fetch("http://localhost:5000/api/albums").then(r=>r.json()),
       fetch("http://localhost:5000/api/songs").then(r=>r.json()),
-    ]).then(([a, s]) => {
+      fetch("http://localhost:5000/api/genres").then(r=>r.json()),
+    ]).then(([a, s, g]) => {
       setAlbums(a);
       setSongs(s);
+      setGenres(g);
     }).catch((e)=> setError(e.message || String(e))).finally(()=> setLoading(false));
   }, []);
 
@@ -59,12 +39,23 @@ function AlbumsAdmin() {
       fd.append("artist", form.artist);
       if (form.releaseDate) fd.append("releaseDate", form.releaseDate);
       if (form.plays !== "") fd.append("plays", String(form.plays));
+      if (form.genres.length > 0) fd.append("genres", JSON.stringify(form.genres));
       fd.append("cover", form.cover);
       const res = await fetch("http://localhost:5000/api/albums", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Tạo album thất bại");
-      setAlbums((prev)=> [data, ...prev]);
-      setForm({ name: "", artist: "", releaseDate: "", plays: "", cover: null });
+      
+      // Tạo object album với đầy đủ thông tin genres
+      const newAlbum = {
+        ...data,
+        genres: form.genres.map(genreId => {
+          const genre = genres.find(g => g._id === genreId);
+          return genre ? { _id: genre._id, name: genre.name } : { _id: genreId, name: "Unknown" };
+        })
+      };
+      
+      setAlbums((prev)=> [newAlbum, ...prev]);
+      setForm({ name: "", artist: "", releaseDate: "", plays: "", cover: null, genres: [] });
     } catch (e) {
       setError(e.message || String(e));
     } finally {
@@ -80,7 +71,17 @@ function AlbumsAdmin() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error || "Cập nhật album thất bại");
-    setAlbums((prev)=> prev.map((a)=> a._id === data._id ? data : a));
+    
+    // Tạo object updated với đầy đủ thông tin genres
+    const updatedAlbum = {
+      ...data,
+      genres: patch.genres ? patch.genres.map(genreId => {
+        const genre = genres.find(g => g._id === genreId);
+        return genre ? { _id: genre._id, name: genre.name } : { _id: genreId, name: "Unknown" };
+      }) : data.genres
+    };
+    
+    setAlbums((prev)=> prev.map((a)=> a._id === updatedAlbum._id ? updatedAlbum : a));
   };
 
   const deleteAlbum = async (albumId) => {
@@ -142,29 +143,28 @@ function AlbumsAdmin() {
     [songs, selectedAlbumId]
   );
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const contentOffset = sidebarOpen ? 220 : 0;
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
     <div className="music-app dark-theme" style={{ padding: 24 }}>
-      <Sidebar open={sidebarOpen} onToggle={()=> setSidebarOpen((v)=> !v)} />
+      <AdminSidebar open={sidebarOpen} onToggle={()=> setSidebarOpen((v)=> !v)} />
       {!sidebarOpen && (
         <button
           onClick={()=> setSidebarOpen(true)}
-          style={{ position: "fixed", left: 8, top: 12, zIndex: 1000, padding: "8px 10px", borderRadius: 8, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer" }}
+          style={{ position: "fixed", left: 8, top: 12, zIndex: 1001, padding: "8px 10px", borderRadius: 8, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer" }}
           title="Hiện menu"
         >
           ☰ Menu
         </button>
       )}
-      <div style={{ marginLeft: contentOffset, marginBottom: 16, display: "flex", justifyContent: "center" }}>
+      <div style={{ marginBottom: 16, display: "flex", justifyContent: "center" }}>
         <div className="logo-gradient" style={{ fontSize: 24, textAlign: "center" }}>Quản Lý Album</div>
       </div>
 
-      <section style={{ background: "#1e1e24", border: "1px solid #2e2e37", borderRadius: 12, padding: 16, marginLeft: contentOffset }}>
+      <section style={{ background: "#1e1e24", border: "1px solid #2e2e37", borderRadius: 12, padding: 16 }}>
         <div className="recommend-header" style={{ marginBottom: 12 }}>
           <div className="recommend-title">Tạo album mới</div>
         </div>
-        <form onSubmit={createAlbum} style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(200px,1fr))", gap: 12, alignItems: "end" }}>
+        <form onSubmit={createAlbum} style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(180px,1fr))", gap: 12, alignItems: "end" }}>
           <label style={{ display: "grid", gap: 6 }}>
             <span>Tên album</span>
             <input value={form.name} onChange={(e)=> setForm((f)=> ({...f, name: e.target.value}))} style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#1f1f1f", color: "#fff" }} />
@@ -182,6 +182,15 @@ function AlbumsAdmin() {
             <input type="number" min={0} value={form.plays} onChange={(e)=> setForm((f)=> ({...f, plays: e.target.value}))} placeholder="0" style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#1f1f1f", color: "#fff" }} />
           </label>
           <label style={{ display: "grid", gap: 6 }}>
+            <span>Thể loại</span>
+            <MultiGenreSelector
+              genres={genres}
+              value={form.genres}
+              onChange={(selectedGenres) => setForm((f) => ({ ...f, genres: selectedGenres }))}
+              placeholder="Chọn thể loại"
+            />
+          </label>
+          <label style={{ display: "grid", gap: 6 }}>
             <span>Cover</span>
             <input type="file" accept="image/*" onChange={(e)=> setForm((f)=> ({...f, cover: e.target.files?.[0] || null}))} />
           </label>
@@ -194,27 +203,28 @@ function AlbumsAdmin() {
         </form>
       </section>
 
-      <section style={{ marginTop: 24, marginLeft: contentOffset }}>
+      <section style={{ marginTop: 24 }}>
         <div className="recommend-header" style={{ marginBottom: 8 }}>
           <div className="recommend-title">Danh sách album</div>
           <div style={{ opacity: 0.8, fontSize: 14 }}>{loading ? "Đang tải..." : `${albums.length} album`}</div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 0.8fr 0.6fr 0.8fr", gap: 8, padding: "8px 12px", borderBottom: "1px solid #2e2e37", background: "#1a1a20", color: "#b3b3b3" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 0.8fr 0.6fr 0.8fr", gap: 8, padding: "8px 12px", borderBottom: "1px solid #2e2e37", background: "#1a1a20", color: "#b3b3b3" }}>
           <div>Tên album</div>
           <div>Nghệ sĩ</div>
+          <div>Thể loại</div>
           <div>Phát hành</div>
           <div>Lượt nghe</div>
           <div style={{ textAlign: "right" }}>Hành động</div>
         </div>
 
         {albums.map((al) => (
-          <AlbumRow key={al._id} album={al} onSave={saveAlbum} onDelete={deleteAlbum} onCover={changeCover} onSelect={()=> setSelectedAlbumId(al._id)} selected={selectedAlbumId === al._id} />
+          <AlbumRow key={al._id} album={al} genres={genres} onSave={saveAlbum} onDelete={deleteAlbum} onCover={changeCover} onSelect={()=> setSelectedAlbumId(al._id)} selected={selectedAlbumId === al._id} />
         ))}
       </section>
 
       {selectedAlbum && (
-        <section style={{ marginTop: 24, marginLeft: contentOffset }}>
+        <section style={{ marginTop: 24 }}>
           <div className="recommend-header" style={{ marginBottom: 8 }}>
             <div className="recommend-title">Thêm bài vào: {selectedAlbum.name}</div>
           </div>
@@ -248,15 +258,27 @@ function AlbumsAdmin() {
   );
 }
 
-function AlbumRow({ album, onSave, onDelete, onCover, onSelect, selected }) {
+function AlbumRow({ album, genres, onSave, onDelete, onCover, onSelect, selected }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: album.name, artist: album.artist, releaseDate: album.releaseDate ? new Date(album.releaseDate).toISOString().slice(0,10) : "", plays: album.plays ?? 0 });
+  const [form, setForm] = useState({ 
+    name: album.name, 
+    artist: album.artist, 
+    releaseDate: album.releaseDate ? new Date(album.releaseDate).toISOString().slice(0,10) : "", 
+    plays: album.plays ?? 0,
+    genres: album.genres?.map(g => g._id || g) || []
+  });
 
   const save = async () => {
     try {
       setSaving(true);
-      await onSave(album._id, { name: form.name, artist: form.artist, ...(form.releaseDate ? { releaseDate: form.releaseDate } : {}), plays: form.plays });
+      await onSave(album._id, { 
+        name: form.name, 
+        artist: form.artist, 
+        ...(form.releaseDate ? { releaseDate: form.releaseDate } : {}), 
+        plays: form.plays,
+        genres: form.genres
+      });
       setEditing(false);
     } catch (e) {
       alert(e.message || String(e));
@@ -266,7 +288,7 @@ function AlbumRow({ album, onSave, onDelete, onCover, onSelect, selected }) {
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 0.8fr 0.6fr 0.8fr", gap: 8, padding: "10px 12px", borderBottom: "1px solid #2e2e37", alignItems: "center", background: selected ? "#212129" : "transparent" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 0.8fr 0.6fr 0.8fr", gap: 8, padding: "10px 12px", borderBottom: "1px solid #2e2e37", alignItems: "center", background: selected ? "#212129" : "transparent" }}>
       {editing ? (
         <input value={form.name} onChange={(e)=> setForm((f)=> ({...f, name: e.target.value}))} style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #444", background: "#1f1f1f", color: "#fff" }} />
       ) : (
@@ -276,6 +298,18 @@ function AlbumRow({ album, onSave, onDelete, onCover, onSelect, selected }) {
         <input value={form.artist} onChange={(e)=> setForm((f)=> ({...f, artist: e.target.value}))} style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #444", background: "#1f1f1f", color: "#fff" }} />
       ) : (
         <div>{album.artist}</div>
+      )}
+      {editing ? (
+        <MultiGenreSelector
+          genres={genres}
+          value={form.genres}
+          onChange={(selectedGenres) => setForm((f) => ({ ...f, genres: selectedGenres }))}
+          placeholder="Chọn thể loại"
+        />
+      ) : (
+        <div style={{ color: "#b3b3b3" }}>
+          {album.genres?.length > 0 ? album.genres.map(g => g.name || g).join(", ") : "-"}
+        </div>
       )}
       {editing ? (
         <input type="date" value={form.releaseDate} onChange={(e)=> setForm((f)=> ({...f, releaseDate: e.target.value}))} style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #444", background: "#1f1f1f", color: "#fff" }} />
@@ -295,7 +329,7 @@ function AlbumRow({ album, onSave, onDelete, onCover, onSelect, selected }) {
               <input type="file" accept="image/*" onChange={(e)=> onCover(album._id, e.target.files?.[0])} />
             </label>
             <button onClick={save} disabled={saving} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #2e2e37", background: "#1db954", color: "#fff", cursor: "pointer" }}>{saving ? "Đang lưu..." : "Lưu"}</button>
-            <button onClick={()=> setEditing(false)} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer" }}>Huỷ</button>
+            <button onClick={()=> { setEditing(false); setForm({ name: album.name, artist: album.artist, releaseDate: album.releaseDate ? new Date(album.releaseDate).toISOString().slice(0,10) : "", plays: album.plays ?? 0, genres: album.genres?.map(g => g._id || g) || [] }); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer" }}>Huỷ</button>
           </>
         ) : (
           <>
@@ -304,6 +338,162 @@ function AlbumRow({ album, onSave, onDelete, onCover, onSelect, selected }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// Component MultiGenreSelector cho việc chọn nhiều thể loại
+function MultiGenreSelector({ genres, value, onChange, placeholder }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredGenres, setFilteredGenres] = useState(genres);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      const filtered = genres.filter(genre => 
+        genre.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredGenres(filtered);
+    } else {
+      setFilteredGenres(genres);
+    }
+  }, [searchTerm, genres]);
+
+  // Đóng dropdown khi click bên ngoài
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearchTerm("");
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const selectedGenres = genres.filter(g => value.includes(g._id));
+  const selectedNames = selectedGenres.map(g => g.name);
+
+  const toggleGenre = (genreId) => {
+    if (value.includes(genreId)) {
+      onChange(value.filter(id => id !== genreId));
+    } else {
+      onChange([...value, genreId]);
+    }
+  };
+
+  return (
+    <div ref={dropdownRef} style={{ position: "relative" }}>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          padding: "10px 12px",
+          borderRadius: 8,
+          border: "1px solid #444",
+          background: "#1f1f1f",
+          color: "#fff",
+          cursor: "pointer",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          minHeight: "20px"
+        }}
+      >
+        <span style={{ color: selectedNames.length > 0 ? "#fff" : "#888" }}>
+          {selectedNames.length > 0 
+            ? selectedNames.length === 1 
+              ? selectedNames[0]
+              : `${selectedNames.length} thể loại đã chọn`
+            : placeholder
+          }
+        </span>
+        <span style={{ color: "#888" }}>{isOpen ? "▲" : "▼"}</span>
+      </div>
+      
+      {isOpen && (
+        <div style={{
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          right: 0,
+          background: "#1f1f1f",
+          border: "1px solid #444",
+          borderRadius: 8,
+          marginTop: 4,
+          zIndex: 1000,
+          maxHeight: "250px",
+          overflow: "hidden"
+        }}>
+          <input
+            type="text"
+            placeholder="Tìm kiếm thể loại..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              border: "none",
+              background: "#2a2a2a",
+              color: "#fff",
+              outline: "none",
+              borderBottom: "1px solid #444"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+            {filteredGenres.map((genre) => (
+              <div
+                key={genre._id}
+                onClick={() => toggleGenre(genre._id)}
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  color: "#fff",
+                  borderBottom: "1px solid #333",
+                  backgroundColor: value.includes(genre._id) ? "#1db954" : "transparent",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}
+                onMouseEnter={(e) => {
+                  if (!value.includes(genre._id)) {
+                    e.target.style.backgroundColor = "#333";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!value.includes(genre._id)) {
+                    e.target.style.backgroundColor = "transparent";
+                  }
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={value.includes(genre._id)}
+                  onChange={() => {}} // Handled by parent div onClick
+                  style={{ margin: 0 }}
+                />
+                {genre.name}
+              </div>
+            ))}
+            {filteredGenres.length === 0 && (
+              <div style={{
+                padding: "8px 12px",
+                color: "#888",
+                textAlign: "center"
+              }}>
+                Không tìm thấy thể loại
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

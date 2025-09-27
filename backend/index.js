@@ -16,6 +16,7 @@ mongoose.connect(mongoURI, {
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT || 5000;
 
@@ -24,6 +25,7 @@ const songsRoute = require('./routes/songs');
 const uploadRoute = require('./routes/upload'); 
 const albumsRoute = require('./routes/albums');
 const genresRoute = require('./routes/genres');
+const regionsRoute = require('./routes/regions');
 
 app.get('/', (req, res) => {
   res.send('CoreSound backend is running!');
@@ -37,6 +39,9 @@ app.use('/api/albums', albumsRoute);
 
 // API genres
 app.use('/api/genres', genresRoute);
+
+// API regions
+app.use('/api/regions', regionsRoute);
 
 // API upload (cover & song)
 app.use('/api', uploadRoute);

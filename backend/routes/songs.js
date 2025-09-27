@@ -29,7 +29,7 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      const { title, artist, premium, plays, albumId, genreId } = req.body;
+      const { title, artist, premium, plays, albumId, genreId, regionId } = req.body;
       if (!title || !artist) {
         return res.status(400).json({ error: "Missing required fields: title, artist" });
       }
@@ -53,6 +53,7 @@ router.post(
         premium: String(premium) === "true",
         ...(albumId ? { album: albumId } : {}),
         ...(genreId ? { genre: genreId } : {}),
+        ...(regionId ? { region: regionId } : {}),
         ...(Number.isFinite(parsedPlays) && parsedPlays >= 0
           ? { plays: Math.floor(parsedPlays) }
           : {}),
@@ -69,7 +70,7 @@ router.post(
 // Lấy danh sách bài hát (populate album)
 router.get("/", async (req, res) => {
   try {
-    const songs = await Song.find().populate("album").populate("genre");
+    const songs = await Song.find().populate("album").populate("genre").populate("region");
     res.json(songs);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -108,9 +109,12 @@ router.patch(
 // Cập nhật thông tin bài hát (không bao gồm upload file)
 router.put("/:id", async (req, res) => {
   try {
+    if (!req.body) {
+      return res.status(400).json({ error: "Request body is required" });
+    }
     const { id } = req.params;
     const update = {};
-    const allowed = ["title", "artist", "plays", "premium", "album", "genre", "url", "cover"];
+    const allowed = ["title", "artist", "plays", "premium", "album", "genre", "region", "url", "cover"];
     for (const key of allowed) {
       if (req.body[key] !== undefined) update[key] = req.body[key];
     }

@@ -1,28 +1,5 @@
-import { useEffect, useState } from "react";
-
-function Sidebar({ open, onToggle }) {
-  const hash = typeof window !== "undefined" ? window.location.hash : "#/";
-  const linkStyle = (active) => ({
-    display: "block",
-    padding: "10px 12px",
-    borderRadius: 8,
-    color: active ? "#1db954" : "#e5e5e5",
-    background: active ? "#1f2a1f" : "transparent",
-    textDecoration: "none",
-    fontWeight: active ? 700 : 500,
-  });
-  return (
-    <aside style={{ position: "fixed", left: open ? 0 : -240, top: 0, bottom: 0, width: 220, background: "#151518", borderRight: "1px solid #23232b", padding: 16, transition: "left 0.2s ease" }}>
-      <div className="logo-gradient" style={{ fontSize: 22, marginBottom: 12 }}>CoreSound Admin</div>
-      <nav style={{ display: "grid", gap: 6 }}>
-        <a href="#/" style={linkStyle(hash === "#/" || hash === "#/")}>Trang chủ</a>
-        <a href="#/upload" style={linkStyle(hash.startsWith("#/upload"))}>Quản lý Bài hát</a>
-        <a href="#/albums-admin" style={linkStyle(hash.startsWith("#/albums-admin"))}>Quản lý Album</a>
-      </nav>
-      <button onClick={onToggle} style={{ marginTop: 16, padding: "8px 10px", borderRadius: 8, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer", width: "100%" }}>{open ? "Ẩn menu" : "Hiện menu"}</button>
-    </aside>
-  );
-}
+import { useEffect, useState, useRef } from "react";
+import AdminSidebar from "./AdminSidebar.jsx";
 
 function Upload() {
   const [form, setForm] = useState({
@@ -30,7 +7,8 @@ function Upload() {
     artist: "",
     premium: false,
     plays: "",
-    
+    genreId: "",
+    regionId: "",
   });
   const [coverFile, setCoverFile] = useState(null);
   const [songFile, setSongFile] = useState(null);
@@ -39,15 +17,28 @@ function Upload() {
   const [success, setSuccess] = useState("");
   const [songs, setSongs] = useState([]);
   const [loadingSongs, setLoadingSongs] = useState(true);
+  const [genres, setGenres] = useState([]);
+  const [loadingGenres, setLoadingGenres] = useState(true);
+  const [regions, setRegions] = useState([]);
+  const [loadingRegions, setLoadingRegions] = useState(true);
 
   useEffect(() => {
     document.title = "CoreSound";
-    // load danh sách bài hát
-    fetch("http://localhost:5000/api/songs")
-      .then((r) => r.json())
-      .then((data) => setSongs(data))
-      .catch(() => {})
-      .finally(() => setLoadingSongs(false));
+    // load danh sách bài hát, thể loại và khu vực
+    Promise.all([
+      fetch("http://localhost:5000/api/songs").then((r) => r.json()),
+      fetch("http://localhost:5000/api/genres").then((r) => r.json()),
+      fetch("http://localhost:5000/api/regions").then((r) => r.json())
+    ]).then(([songsData, genresData, regionsData]) => {
+      setSongs(songsData);
+      setGenres(genresData);
+      setRegions(regionsData);
+    }).catch(() => {})
+    .finally(() => {
+      setLoadingSongs(false);
+      setLoadingGenres(false);
+      setLoadingRegions(false);
+    });
   }, []);
 
   const handleSubmit = async (e) => {
@@ -65,6 +56,8 @@ function Upload() {
       fd.append("artist", form.artist);
       if (form.premium) fd.append("premium", String(form.premium));
       if (form.plays !== "") fd.append("plays", String(form.plays));
+      if (form.genreId) fd.append("genreId", form.genreId);
+      if (form.regionId) fd.append("regionId", form.regionId);
       
       fd.append("cover", coverFile);
       fd.append("song", songFile);
@@ -76,8 +69,16 @@ function Upload() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Upload thất bại");
       setSuccess("Tải lên thành công!");
-      setSongs((prev) => [data, ...prev]);
-      setForm({ title: "", artist: "", premium: false, plays: "" });
+      
+      // Tạo object song với đầy đủ thông tin genre và region
+      const newSong = {
+        ...data,
+        genre: form.genreId ? { _id: form.genreId, name: genres.find(g => g._id === form.genreId)?.name } : null,
+        region: form.regionId ? { _id: form.regionId, name: regions.find(r => r._id === form.regionId)?.name } : null
+      };
+      
+      setSongs((prev) => [newSong, ...prev]);
+      setForm({ title: "", artist: "", premium: false, plays: "", genreId: "", regionId: "" });
       setCoverFile(null);
       setSongFile(null);
     } catch (err) {
@@ -87,36 +88,34 @@ function Upload() {
     }
   };
 
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const contentOffset = sidebarOpen ? 220 : 0;
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
     <div className="music-app dark-theme" style={{ padding: 24 }}>
-      <Sidebar open={sidebarOpen} onToggle={()=> setSidebarOpen((v)=> !v)} />
+      <AdminSidebar open={sidebarOpen} onToggle={()=> setSidebarOpen((v)=> !v)} />
       {!sidebarOpen && (
         <button
           onClick={()=> setSidebarOpen(true)}
-          style={{ position: "fixed", left: 8, top: 12, zIndex: 1000, padding: "8px 10px", borderRadius: 8, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer" }}
+          style={{ position: "fixed", left: 8, top: 12, zIndex: 1001, padding: "8px 10px", borderRadius: 8, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer" }}
           title="Hiện menu"
         >
           ☰ Menu
         </button>
       )}
-      <div style={{ marginLeft: contentOffset, marginBottom: 16, display: "flex", justifyContent: "center" }}>
+      <div style={{ marginBottom: 16, display: "flex", justifyContent: "center" }}>
         <div className="logo-gradient" style={{ fontSize: 24, textAlign: "center" }}>Quản Lý Bài Hát</div>
       </div>
 
       <form onSubmit={handleSubmit}
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(5, minmax(220px, 1fr))",
-          gap: 12,
+          gridTemplateColumns: "repeat(4, minmax(250px, 1fr))",
+          gap: 16,
           alignItems: "end",
           background: "#1e1e24",
-          padding: 16,
+          padding: 20,
           borderRadius: 12,
           border: "1px solid #2e2e37",
           width: "100%",
-          marginLeft: contentOffset,
         }}
       >
         <label style={{ display: "grid", gap: 6 }}>
@@ -148,9 +147,24 @@ function Upload() {
             style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#1f1f1f", color: "#fff" }}
           />
         </label>
-
-        
-
+        <label style={{ display: "grid", gap: 6 }}>
+          <span>Thể loại (tuỳ chọn)</span>
+          <GenreSelector
+            genres={genres}
+            value={form.genreId}
+            onChange={(genreId) => setForm((f) => ({ ...f, genreId }))}
+            placeholder="Chọn thể loại"
+          />
+        </label>
+        <label style={{ display: "grid", gap: 6 }}>
+          <span>Khu vực (tuỳ chọn)</span>
+          <RegionSelector
+            regions={regions}
+            value={form.regionId}
+            onChange={(regionId) => setForm((f) => ({ ...f, regionId }))}
+            placeholder="Chọn khu vực"
+          />
+        </label>
         <label style={{ display: "grid", gap: 6 }}>
           <span>Cover (ảnh)</span>
           <input
@@ -190,7 +204,7 @@ function Upload() {
         </div>
       </form>
 
-      <div style={{ marginTop: 24, marginLeft: contentOffset }}>
+      <div style={{ marginTop: 24 }}>
         <div className="recommend-header" style={{ marginBottom: 8 }}>
           <div className="recommend-title">Danh sách bài hát</div>
           <div style={{ opacity: 0.8, fontSize: 14 }}>
@@ -200,7 +214,7 @@ function Upload() {
 
         <div style={{
           display: "grid",
-          gridTemplateColumns: "1.5fr 1.2fr 0.7fr 0.6fr",
+          gridTemplateColumns: "1.5fr 1.2fr 1fr 1fr 0.7fr 0.6fr",
           gap: 8,
           color: "#b3b3b3",
           padding: "8px 12px",
@@ -209,22 +223,31 @@ function Upload() {
         }}>
           <div>Tiêu đề</div>
           <div>Nghệ sĩ</div>
+          <div>Thể loại</div>
+          <div>Khu vực</div>
           <div>Lượt nghe</div>
           <div style={{ textAlign: "right" }}>Hành động</div>
         </div>
 
         {songs.map((s) => (
-          <SongRow key={s._id} song={s} onChange={(next) => setSongs((prev) => prev.map((x) => x._id === next._id ? next : x))} onDelete={(id)=> setSongs((prev)=> prev.filter((x)=> x._id !== id))} />
+          <SongRow key={s._id} song={s} genres={genres} regions={regions} onChange={(next) => setSongs((prev) => prev.map((x) => x._id === next._id ? next : x))} onDelete={(id)=> setSongs((prev)=> prev.filter((x)=> x._id !== id))} />
         ))}
       </div>
     </div>
   );
 }
 
-function SongRow({ song, onChange, onDelete }) {
+function SongRow({ song, genres, regions, onChange, onDelete }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ title: song.title, artist: song.artist, plays: song.plays ?? 0, premium: !!song.premium });
+  const [form, setForm] = useState({ 
+    title: song.title, 
+    artist: song.artist, 
+    plays: song.plays ?? 0, 
+    premium: !!song.premium,
+    genre: song.genre?._id || "",
+    region: song.region?._id || ""
+  });
   const [newCover, setNewCover] = useState(null);
   const [newSong, setNewSong] = useState(null);
 
@@ -234,7 +257,14 @@ function SongRow({ song, onChange, onDelete }) {
       const res = await fetch(`http://localhost:5000/api/songs/${song._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: form.title, artist: form.artist, plays: form.plays, premium: form.premium }),
+        body: JSON.stringify({ 
+          title: form.title, 
+          artist: form.artist, 
+          plays: form.plays, 
+          premium: form.premium,
+          genre: form.genre || null,
+          region: form.region || null
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Cập nhật thất bại");
@@ -248,7 +278,15 @@ function SongRow({ song, onChange, onDelete }) {
         if (!res2.ok) throw new Error(data2?.error || "Cập nhật file thất bại");
         updated = data2;
       }
-      onChange(updated);
+      
+      // Tạo object updated với đầy đủ thông tin genre và region
+      const updatedSong = {
+        ...updated,
+        genre: form.genre ? { _id: form.genre, name: genres.find(g => g._id === form.genre)?.name } : null,
+        region: form.region ? { _id: form.region, name: regions.find(r => r._id === form.region)?.name } : null
+      };
+      
+      onChange(updatedSong);
       setEditing(false);
       setNewCover(null);
       setNewSong(null);
@@ -270,7 +308,7 @@ function SongRow({ song, onChange, onDelete }) {
   return (
     <div style={{
       display: "grid",
-      gridTemplateColumns: "1.5fr 1.2fr 0.7fr 0.6fr",
+      gridTemplateColumns: "1.5fr 1.2fr 1fr 1fr 0.7fr 0.6fr",
       gap: 8,
       padding: "10px 12px",
       borderBottom: "1px solid #2e2e37",
@@ -286,6 +324,28 @@ function SongRow({ song, onChange, onDelete }) {
         <input value={form.artist} onChange={(e)=> setForm((f)=> ({...f, artist: e.target.value}))} style={{ padding: "6px 8px", borderRadius: 6, border: "1px solid #444", background: "#1f1f1f", color: "#fff" }} />
       ) : (
         <div>{song.artist}</div>
+      )}
+
+      {editing ? (
+        <GenreSelector
+          genres={genres}
+          value={form.genre}
+          onChange={(genreId) => setForm((f) => ({ ...f, genre: genreId }))}
+          placeholder="Không có thể loại"
+        />
+      ) : (
+        <div style={{ color: "#b3b3b3" }}>{song.genre?.name || "-"}</div>
+      )}
+
+      {editing ? (
+        <RegionSelector
+          regions={regions}
+          value={form.region}
+          onChange={(regionId) => setForm((f) => ({ ...f, region: regionId }))}
+          placeholder="Không có khu vực"
+        />
+      ) : (
+        <div style={{ color: "#b3b3b3" }}>{song.region?.name || "-"}</div>
       )}
 
       {editing ? (
@@ -308,7 +368,7 @@ function SongRow({ song, onChange, onDelete }) {
               </label>
             </div>
             <button onClick={save} disabled={saving} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #2e2e37", background: "#1db954", color: "#fff", cursor: "pointer" }}>{saving ? "Đang lưu..." : "Lưu"}</button>
-            <button onClick={()=> { setEditing(false); setForm({ title: song.title, artist: song.artist, plays: song.plays ?? 0, premium: !!song.premium }); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer" }}>Huỷ</button>
+            <button onClick={()=> { setEditing(false); setForm({ title: song.title, artist: song.artist, plays: song.plays ?? 0, premium: !!song.premium, genre: song.genre?._id || "", region: song.region?._id || "" }); setNewCover(null); setNewSong(null); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer" }}>Huỷ</button>
           </>
         ) : (
           <>
@@ -317,6 +377,310 @@ function SongRow({ song, onChange, onDelete }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// Component GenreSelector với dropdown có thể cuộn và tìm kiếm
+function GenreSelector({ genres, value, onChange, placeholder }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredGenres, setFilteredGenres] = useState(genres);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      const filtered = genres.filter(genre => 
+        genre.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredGenres(filtered);
+    } else {
+      setFilteredGenres(genres);
+    }
+  }, [searchTerm, genres]);
+
+  // Đóng dropdown khi click bên ngoài
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearchTerm("");
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const selectedGenre = genres.find(g => g._id === value);
+
+  return (
+    <div ref={dropdownRef} style={{ position: "relative" }}>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          padding: "10px 12px",
+          borderRadius: 8,
+          border: "1px solid #444",
+          background: "#1f1f1f",
+          color: "#fff",
+          cursor: "pointer",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          minHeight: "20px"
+        }}
+      >
+        <span style={{ color: selectedGenre ? "#fff" : "#888" }}>
+          {selectedGenre ? selectedGenre.name : placeholder}
+        </span>
+        <span style={{ color: "#888" }}>{isOpen ? "▲" : "▼"}</span>
+      </div>
+      
+      {isOpen && (
+        <div style={{
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          right: 0,
+          background: "#1f1f1f",
+          border: "1px solid #444",
+          borderRadius: 8,
+          marginTop: 4,
+          zIndex: 1000,
+          maxHeight: "200px",
+          overflow: "hidden"
+        }}>
+          <input
+            type="text"
+            placeholder="Tìm kiếm thể loại..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              border: "none",
+              background: "#2a2a2a",
+              color: "#fff",
+              outline: "none",
+              borderBottom: "1px solid #444"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div style={{ maxHeight: "150px", overflowY: "auto" }}>
+            <div
+              onClick={() => {
+                onChange("");
+                setIsOpen(false);
+                setSearchTerm("");
+              }}
+              style={{
+                padding: "8px 12px",
+                cursor: "pointer",
+                color: "#888",
+                borderBottom: "1px solid #333"
+              }}
+            >
+              Không chọn thể loại
+            </div>
+            {filteredGenres.map((genre) => (
+              <div
+                key={genre._id}
+                onClick={() => {
+                  onChange(genre._id);
+                  setIsOpen(false);
+                  setSearchTerm("");
+                }}
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  color: "#fff",
+                  borderBottom: "1px solid #333",
+                  backgroundColor: value === genre._id ? "#1db954" : "transparent"
+                }}
+                onMouseEnter={(e) => {
+                  if (value !== genre._id) {
+                    e.target.style.backgroundColor = "#333";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (value !== genre._id) {
+                    e.target.style.backgroundColor = "transparent";
+                  }
+                }}
+              >
+                {genre.name}
+              </div>
+            ))}
+            {filteredGenres.length === 0 && (
+              <div style={{
+                padding: "8px 12px",
+                color: "#888",
+                textAlign: "center"
+              }}>
+                Không tìm thấy thể loại
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Component RegionSelector với dropdown có thể cuộn và tìm kiếm
+function RegionSelector({ regions, value, onChange, placeholder }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredRegions, setFilteredRegions] = useState(regions);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      const filtered = regions.filter(region => 
+        region.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredRegions(filtered);
+    } else {
+      setFilteredRegions(regions);
+    }
+  }, [searchTerm, regions]);
+
+  // Đóng dropdown khi click bên ngoài
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setSearchTerm("");
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const selectedRegion = regions.find(r => r._id === value);
+
+  return (
+    <div ref={dropdownRef} style={{ position: "relative" }}>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          padding: "10px 12px",
+          borderRadius: 8,
+          border: "1px solid #444",
+          background: "#1f1f1f",
+          color: "#fff",
+          cursor: "pointer",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          minHeight: "20px"
+        }}
+      >
+        <span style={{ color: selectedRegion ? "#fff" : "#888" }}>
+          {selectedRegion ? selectedRegion.name : placeholder}
+        </span>
+        <span style={{ color: "#888" }}>{isOpen ? "▲" : "▼"}</span>
+      </div>
+      
+      {isOpen && (
+        <div style={{
+          position: "absolute",
+          top: "100%",
+          left: 0,
+          right: 0,
+          background: "#1f1f1f",
+          border: "1px solid #444",
+          borderRadius: 8,
+          marginTop: 4,
+          zIndex: 1000,
+          maxHeight: "200px",
+          overflow: "hidden"
+        }}>
+          <input
+            type="text"
+            placeholder="Tìm kiếm khu vực..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              border: "none",
+              background: "#2a2a2a",
+              color: "#fff",
+              outline: "none",
+              borderBottom: "1px solid #444"
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div style={{ maxHeight: "150px", overflowY: "auto" }}>
+            <div
+              onClick={() => {
+                onChange("");
+                setIsOpen(false);
+                setSearchTerm("");
+              }}
+              style={{
+                padding: "8px 12px",
+                cursor: "pointer",
+                color: "#888",
+                borderBottom: "1px solid #333"
+              }}
+            >
+              Không chọn khu vực
+            </div>
+            {filteredRegions.map((region) => (
+              <div
+                key={region._id}
+                onClick={() => {
+                  onChange(region._id);
+                  setIsOpen(false);
+                  setSearchTerm("");
+                }}
+                style={{
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  color: "#fff",
+                  borderBottom: "1px solid #333",
+                  backgroundColor: value === region._id ? "#1db954" : "transparent"
+                }}
+                onMouseEnter={(e) => {
+                  if (value !== region._id) {
+                    e.target.style.backgroundColor = "#333";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (value !== region._id) {
+                    e.target.style.backgroundColor = "transparent";
+                  }
+                }}
+              >
+                {region.name}
+              </div>
+            ))}
+            {filteredRegions.length === 0 && (
+              <div style={{
+                padding: "8px 12px",
+                color: "#888",
+                textAlign: "center"
+              }}>
+                Không tìm thấy khu vực
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

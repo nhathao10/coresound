@@ -8,7 +8,8 @@ const SongSchema = new mongoose.Schema({
   plays: { type: Number, default: 0 },     // số lượt nghe
   premium: { type: Boolean, default: false },
   album: { type: mongoose.Schema.Types.ObjectId, ref: "Album" },
-  genre: { type: mongoose.Schema.Types.ObjectId, ref: "Genre" }
+  genre: { type: mongoose.Schema.Types.ObjectId, ref: "Genre" },
+  region: { type: mongoose.Schema.Types.ObjectId, ref: "Region" }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Song", SongSchema);
