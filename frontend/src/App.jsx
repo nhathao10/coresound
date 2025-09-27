@@ -156,6 +156,15 @@ function App() {
       });
   }, [current]);
 
+  // Cập nhật tiêu đề tab khi có bài hát đang phát
+  useEffect(() => {
+    if (current && isPlaying) {
+      document.title = `♪ ${current.title} - ${current.artist} | CoreSound`;
+    } else {
+      document.title = "CoreSound - Music Player";
+    }
+  }, [current, isPlaying]);
+
   return (
     <div className="music-app dark-theme">
       <header className="header">

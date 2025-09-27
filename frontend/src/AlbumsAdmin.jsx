@@ -134,9 +134,10 @@ function AlbumsAdmin() {
   const availableSongs = useMemo(
     () => songs.filter((s) => {
       const aid = getAlbumId(s);
-      return !aid || String(aid) !== String(selectedAlbumId);
+      // Chỉ hiển thị những bài hát chưa thuộc album nào
+      return !aid;
     }),
-    [songs, selectedAlbumId]
+    [songs]
   );
   const albumSongs = useMemo(
     () => songs.filter((s) => String(getAlbumId(s)) === String(selectedAlbumId)),
