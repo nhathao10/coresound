@@ -7,7 +7,7 @@ function Upload() {
     artist: "",
     premium: false,
     plays: "",
-    genreId: "",
+    genres: [],
     regionId: "",
   });
   const [coverFile, setCoverFile] = useState(null);
@@ -56,7 +56,7 @@ function Upload() {
       fd.append("artist", form.artist);
       if (form.premium) fd.append("premium", String(form.premium));
       if (form.plays !== "") fd.append("plays", String(form.plays));
-      if (form.genreId) fd.append("genreId", form.genreId);
+      if (form.genres.length > 0) fd.append("genres", JSON.stringify(form.genres));
       if (form.regionId) fd.append("regionId", form.regionId);
       
       fd.append("cover", coverFile);
@@ -70,15 +70,18 @@ function Upload() {
       if (!res.ok) throw new Error(data?.error || "Upload thất bại");
       setSuccess("Tải lên thành công!");
       
-      // Tạo object song với đầy đủ thông tin genre và region
+      // Tạo object song với đầy đủ thông tin genres và region
       const newSong = {
         ...data,
-        genre: form.genreId ? { _id: form.genreId, name: genres.find(g => g._id === form.genreId)?.name } : null,
+        genres: form.genres.map(genreId => {
+          const genre = genres.find(g => g._id === genreId);
+          return genre ? { _id: genre._id, name: genre.name } : { _id: genreId, name: "Unknown" };
+        }),
         region: form.regionId ? { _id: form.regionId, name: regions.find(r => r._id === form.regionId)?.name } : null
       };
       
       setSongs((prev) => [newSong, ...prev]);
-      setForm({ title: "", artist: "", premium: false, plays: "", genreId: "", regionId: "" });
+      setForm({ title: "", artist: "", premium: false, plays: "", genres: [], regionId: "" });
       setCoverFile(null);
       setSongFile(null);
     } catch (err) {
@@ -149,10 +152,10 @@ function Upload() {
         </label>
         <label style={{ display: "grid", gap: 6 }}>
           <span>Thể loại (tuỳ chọn)</span>
-          <GenreSelector
+          <MultiGenreSelector
             genres={genres}
-            value={form.genreId}
-            onChange={(genreId) => setForm((f) => ({ ...f, genreId }))}
+            value={form.genres}
+            onChange={(selectedGenres) => setForm((f) => ({ ...f, genres: selectedGenres }))}
             placeholder="Chọn thể loại"
           />
         </label>
@@ -214,7 +217,7 @@ function Upload() {
 
         <div style={{
           display: "grid",
-          gridTemplateColumns: "1.5fr 1.2fr 1fr 1fr 0.7fr 0.6fr",
+          gridTemplateColumns: "1.5fr 1.2fr 1.5fr 1fr 0.7fr 0.6fr",
           gap: 8,
           color: "#b3b3b3",
           padding: "8px 12px",
@@ -245,26 +248,39 @@ function SongRow({ song, genres, regions, onChange, onDelete }) {
     artist: song.artist, 
     plays: song.plays ?? 0, 
     premium: !!song.premium,
-    genre: song.genre?._id || "",
+    genres: song.genres?.map(g => g._id || g) || [],
     region: song.region?._id || ""
   });
   const [newCover, setNewCover] = useState(null);
   const [newSong, setNewSong] = useState(null);
 
+  // Cập nhật form khi song thay đổi
+  useEffect(() => {
+    setForm({ 
+      title: song.title, 
+      artist: song.artist, 
+      plays: song.plays ?? 0, 
+      premium: !!song.premium,
+      genres: song.genres?.map(g => g._id || g) || [],
+      region: song.region?._id || ""
+    });
+  }, [song]);
+
   const save = async () => {
     setSaving(true);
     try {
+      const updateData = { 
+        title: form.title, 
+        artist: form.artist, 
+        plays: form.plays, 
+        premium: form.premium,
+        genres: form.genres,
+        region: form.region || null
+      };
       const res = await fetch(`http://localhost:5000/api/songs/${song._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          title: form.title, 
-          artist: form.artist, 
-          plays: form.plays, 
-          premium: form.premium,
-          genre: form.genre || null,
-          region: form.region || null
-        }),
+        body: JSON.stringify(updateData),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Cập nhật thất bại");
@@ -279,12 +295,23 @@ function SongRow({ song, genres, regions, onChange, onDelete }) {
         updated = data2;
       }
       
-      // Tạo object updated với đầy đủ thông tin genre và region
+      // Tạo object updated với đầy đủ thông tin genres và region
       const updatedSong = {
         ...updated,
-        genre: form.genre ? { _id: form.genre, name: genres.find(g => g._id === form.genre)?.name } : null,
+        genres: updated.genres || (form.genres ? form.genres.map(genreId => {
+          const genre = genres.find(g => g._id === genreId);
+          return genre ? { _id: genre._id, name: genre.name } : { _id: genreId, name: "Unknown" };
+        }) : []),
         region: form.region ? { _id: form.region, name: regions.find(r => r._id === form.region)?.name } : null
       };
+      
+      // Nếu backend không trả về genres, sử dụng genres từ form
+      if (!updated.genres && form.genres && form.genres.length > 0) {
+        updatedSong.genres = form.genres.map(genreId => {
+          const genre = genres.find(g => g._id === genreId);
+          return genre ? { _id: genre._id, name: genre.name } : { _id: genreId, name: "Unknown" };
+        });
+      }
       
       onChange(updatedSong);
       setEditing(false);
@@ -308,7 +335,7 @@ function SongRow({ song, genres, regions, onChange, onDelete }) {
   return (
     <div style={{
       display: "grid",
-      gridTemplateColumns: "1.5fr 1.2fr 1fr 1fr 0.7fr 0.6fr",
+      gridTemplateColumns: "1.5fr 1.2fr 1.5fr 1fr 0.7fr 0.6fr",
       gap: 8,
       padding: "10px 12px",
       borderBottom: "1px solid #2e2e37",
@@ -327,14 +354,16 @@ function SongRow({ song, genres, regions, onChange, onDelete }) {
       )}
 
       {editing ? (
-        <GenreSelector
+        <MultiGenreSelector
           genres={genres}
-          value={form.genre}
-          onChange={(genreId) => setForm((f) => ({ ...f, genre: genreId }))}
+          value={form.genres}
+          onChange={(selectedGenres) => setForm((f) => ({ ...f, genres: selectedGenres }))}
           placeholder="Không có thể loại"
         />
       ) : (
-        <div style={{ color: "#b3b3b3" }}>{song.genre?.name || "-"}</div>
+        <div style={{ color: "#b3b3b3" }}>
+          {song.genres?.length > 0 ? song.genres.map(g => g.name || g).join(", ") : "-"}
+        </div>
       )}
 
       {editing ? (
@@ -368,7 +397,7 @@ function SongRow({ song, genres, regions, onChange, onDelete }) {
               </label>
             </div>
             <button onClick={save} disabled={saving} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #2e2e37", background: "#1db954", color: "#fff", cursor: "pointer" }}>{saving ? "Đang lưu..." : "Lưu"}</button>
-            <button onClick={()=> { setEditing(false); setForm({ title: song.title, artist: song.artist, plays: song.plays ?? 0, premium: !!song.premium, genre: song.genre?._id || "", region: song.region?._id || "" }); setNewCover(null); setNewSong(null); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer" }}>Huỷ</button>
+            <button onClick={()=> { setEditing(false); setForm({ title: song.title, artist: song.artist, plays: song.plays ?? 0, premium: !!song.premium, genres: song.genres?.map(g => g._id || g) || [], region: song.region?._id || "" }); setNewCover(null); setNewSong(null); }} style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #2e2e37", background: "#23232b", color: "#fff", cursor: "pointer" }}>Huỷ</button>
           </>
         ) : (
           <>
@@ -381,8 +410,8 @@ function SongRow({ song, genres, regions, onChange, onDelete }) {
   );
 }
 
-// Component GenreSelector với dropdown có thể cuộn và tìm kiếm
-function GenreSelector({ genres, value, onChange, placeholder }) {
+// Component MultiGenreSelector cho việc chọn nhiều thể loại
+function MultiGenreSelector({ genres, value, onChange, placeholder }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredGenres, setFilteredGenres] = useState(genres);
@@ -417,7 +446,16 @@ function GenreSelector({ genres, value, onChange, placeholder }) {
     };
   }, [isOpen]);
 
-  const selectedGenre = genres.find(g => g._id === value);
+  const selectedGenres = genres.filter(g => value.includes(g._id));
+  const selectedNames = selectedGenres.map(g => g.name);
+
+  const toggleGenre = (genreId) => {
+    if (value.includes(genreId)) {
+      onChange(value.filter(id => id !== genreId));
+    } else {
+      onChange([...value, genreId]);
+    }
+  };
 
   return (
     <div ref={dropdownRef} style={{ position: "relative" }}>
@@ -436,8 +474,13 @@ function GenreSelector({ genres, value, onChange, placeholder }) {
           minHeight: "20px"
         }}
       >
-        <span style={{ color: selectedGenre ? "#fff" : "#888" }}>
-          {selectedGenre ? selectedGenre.name : placeholder}
+        <span style={{ color: selectedNames.length > 0 ? "#fff" : "#888" }}>
+          {selectedNames.length > 0 
+            ? selectedNames.length === 1 
+              ? selectedNames[0]
+              : `${selectedNames.length} thể loại đã chọn`
+            : placeholder
+          }
         </span>
         <span style={{ color: "#888" }}>{isOpen ? "▲" : "▼"}</span>
       </div>
@@ -453,7 +496,7 @@ function GenreSelector({ genres, value, onChange, placeholder }) {
           borderRadius: 8,
           marginTop: 4,
           zIndex: 1000,
-          maxHeight: "200px",
+          maxHeight: "250px",
           overflow: "hidden"
         }}>
           <input
@@ -472,48 +515,38 @@ function GenreSelector({ genres, value, onChange, placeholder }) {
             }}
             onClick={(e) => e.stopPropagation()}
           />
-          <div style={{ maxHeight: "150px", overflowY: "auto" }}>
-            <div
-              onClick={() => {
-                onChange("");
-                setIsOpen(false);
-                setSearchTerm("");
-              }}
-              style={{
-                padding: "8px 12px",
-                cursor: "pointer",
-                color: "#888",
-                borderBottom: "1px solid #333"
-              }}
-            >
-              Không chọn thể loại
-            </div>
+          <div style={{ maxHeight: "200px", overflowY: "auto" }}>
             {filteredGenres.map((genre) => (
               <div
                 key={genre._id}
-                onClick={() => {
-                  onChange(genre._id);
-                  setIsOpen(false);
-                  setSearchTerm("");
-                }}
+                onClick={() => toggleGenre(genre._id)}
                 style={{
                   padding: "8px 12px",
                   cursor: "pointer",
                   color: "#fff",
                   borderBottom: "1px solid #333",
-                  backgroundColor: value === genre._id ? "#1db954" : "transparent"
+                  backgroundColor: value.includes(genre._id) ? "#1db954" : "transparent",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
                 }}
                 onMouseEnter={(e) => {
-                  if (value !== genre._id) {
+                  if (!value.includes(genre._id)) {
                     e.target.style.backgroundColor = "#333";
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (value !== genre._id) {
+                  if (!value.includes(genre._id)) {
                     e.target.style.backgroundColor = "transparent";
                   }
                 }}
               >
+                <input
+                  type="checkbox"
+                  checked={value.includes(genre._id)}
+                  onChange={() => {}} // Handled by parent div onClick
+                  style={{ margin: 0 }}
+                />
                 {genre.name}
               </div>
             ))}

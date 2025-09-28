@@ -9,6 +9,7 @@ function App() {
   const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
   const { setQueueAndPlay, currentIdx, isPlaying, setIsPlaying, queue, setCurrentIdx, current } = usePlayer();
   const [displayedSongs, setDisplayedSongs] = useState([]); // 7 bài hát hiển thị
+  const [displayedAlbums, setDisplayedAlbums] = useState([]); // 7 album hiển thị
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [recentSongs, setRecentSongs] = useState([]);
@@ -23,6 +24,7 @@ function App() {
       setSongs(songsData);
       setAlbums(albumsData);
       setDisplayedSongs(getRandomSongs(songsData, 7));
+      setDisplayedAlbums(getRandomAlbums(albumsData, 7));
     });
   }, []);
 
@@ -65,16 +67,52 @@ function App() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  // Hàm lấy 7 bài hát ngẫu nhiên
-  const getRandomSongs = (allSongs, count) => {
+  // Hàm lấy 7 bài hát ngẫu nhiên (tránh trùng với danh sách hiện tại)
+  const getRandomSongs = (allSongs, count, excludeIds = []) => {
     if (allSongs.length <= count) return allSongs;
-    const shuffled = [...allSongs].sort(() => 0.5 - Math.random());
+    
+    // Lọc ra những bài hát không có trong danh sách hiện tại
+    const availableSongs = allSongs.filter(song => !excludeIds.includes(song._id));
+    
+    // Nếu không đủ bài hát khác, thì lấy tất cả
+    if (availableSongs.length < count) {
+      const shuffled = [...allSongs].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count);
+    }
+    
+    // Lấy ngẫu nhiên từ những bài hát còn lại
+    const shuffled = [...availableSongs].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  };
+
+  // Hàm lấy 7 album ngẫu nhiên (tránh trùng với danh sách hiện tại)
+  const getRandomAlbums = (allAlbums, count, excludeIds = []) => {
+    if (allAlbums.length <= count) return allAlbums;
+    
+    // Lọc ra những album không có trong danh sách hiện tại
+    const availableAlbums = allAlbums.filter(album => !excludeIds.includes(album._id));
+    
+    // Nếu không đủ album khác, thì lấy tất cả
+    if (availableAlbums.length < count) {
+      const shuffled = [...allAlbums].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count);
+    }
+    
+    // Lấy ngẫu nhiên từ những album còn lại
+    const shuffled = [...availableAlbums].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, count);
   };
 
   // Hàm làm mới danh sách gợi ý
   const refreshRecommendations = () => {
-    setDisplayedSongs(getRandomSongs(songs, 7));
+    const currentSongIds = displayedSongs.map(song => song._id);
+    setDisplayedSongs(getRandomSongs(songs, 7, currentSongIds));
+  };
+
+  // Hàm làm mới danh sách album
+  const refreshAlbums = () => {
+    const currentAlbumIds = displayedAlbums.map(album => album._id);
+    setDisplayedAlbums(getRandomAlbums(albums, 7, currentAlbumIds));
   };
 
   const playSong = (idx) => {
@@ -358,9 +396,16 @@ function App() {
         <section className="recommend-section recommend-section-horizontal">
           <div className="recommend-header">
             <div className="recommend-title">Album Mới</div>
+            <button
+              className="refresh-btn"
+              onClick={refreshAlbums}
+              title="Làm mới album"
+            >
+              ↻
+            </button>
           </div>
           <div className="recommend-horizontal-list album-list">
-            {albums.map((al) => (
+            {displayedAlbums.map((al) => (
               <a key={al._id} href={`#/album/${encodeURIComponent(al._id)}`} className="recommend-horizontal-card" style={{ textDecoration: "none", color: "inherit" }}>
                 <img
                   className="recommend-horizontal-art"

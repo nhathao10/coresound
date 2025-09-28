@@ -41,11 +41,8 @@ router.post("/", upload.fields([
   { name: "flag", maxCount: 1 }
 ]), async (req, res) => {
   try {
-    console.log("Request body:", req.body);
-    console.log("Request files:", req.files);
     
     if (!req.body || typeof req.body !== 'object') {
-      console.error("req.body is not an object:", req.body);
       return res.status(400).json({ error: "Request body is not properly formatted" });
     }
     
@@ -68,7 +65,6 @@ router.post("/", upload.fields([
     await region.save();
     res.status(201).json(region);
   } catch (err) {
-    console.error("Error creating region:", err);
     if (err && err.code === 11000) {
       return res.status(409).json({ error: "Region name already exists" });
     }
@@ -105,7 +101,6 @@ router.put("/:id", async (req, res) => {
     if (!updated) return res.status(404).json({ error: "Region not found" });
     res.json(updated);
   } catch (err) {
-    console.error("Error updating region:", err);
     if (err && err.code === 11000) {
       return res.status(409).json({ error: "Region name already exists" });
     }

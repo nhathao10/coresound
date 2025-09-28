@@ -29,7 +29,17 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      const { title, artist, premium, plays, albumId, genreId, regionId } = req.body;
+      const { title, artist, premium, plays, albumId, genres, regionId } = req.body;
+      
+      // Xử lý genres từ FormData (JSON string)
+      let parsedGenres = [];
+      if (genres) {
+        try {
+          parsedGenres = JSON.parse(genres);
+        } catch (e) {
+          parsedGenres = [];
+        }
+      }
       if (!title || !artist) {
         return res.status(400).json({ error: "Missing required fields: title, artist" });
       }
@@ -52,7 +62,7 @@ router.post(
         url: songPath,
         premium: String(premium) === "true",
         ...(albumId ? { album: albumId } : {}),
-        ...(genreId ? { genre: genreId } : {}),
+        ...(parsedGenres && parsedGenres.length > 0 ? { genres: parsedGenres } : {}),
         ...(regionId ? { region: regionId } : {}),
         ...(Number.isFinite(parsedPlays) && parsedPlays >= 0
           ? { plays: Math.floor(parsedPlays) }
@@ -60,7 +70,11 @@ router.post(
       });
 
       await newSong.save();
-      res.status(201).json(newSong);
+      const populatedSong = await Song.findById(newSong._id)
+        .populate("album")
+        .populate("genres")
+        .populate("region");
+      res.status(201).json(populatedSong);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -70,8 +84,23 @@ router.post(
 // Lấy danh sách bài hát (populate album)
 router.get("/", async (req, res) => {
   try {
-    const songs = await Song.find().populate("album").populate("genre").populate("region");
+    const songs = await Song.find().populate("album").populate("genres").populate("region");
     res.json(songs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Lấy thông tin một bài hát cụ thể
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const song = await Song.findById(id)
+      .populate("album")
+      .populate("genres")
+      .populate("region");
+    if (!song) return res.status(404).json({ error: "Song not found" });
+    res.json(song);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -97,7 +126,10 @@ router.patch(
       if (Object.keys(update).length === 0) {
         return res.status(400).json({ error: "No files provided" });
       }
-      const updated = await Song.findByIdAndUpdate(id, { $set: update }, { new: true });
+      const updated = await Song.findByIdAndUpdate(id, { $set: update }, { new: true })
+        .populate("album")
+        .populate("genres")
+        .populate("region");
       if (!updated) return res.status(404).json({ error: "Song not found" });
       res.json(updated);
     } catch (err) {
@@ -114,12 +146,34 @@ router.put("/:id", async (req, res) => {
     }
     const { id } = req.params;
     const update = {};
-    const allowed = ["title", "artist", "plays", "premium", "album", "genre", "region", "url", "cover"];
+    const allowed = ["title", "artist", "plays", "premium", "album", "genres", "region", "url", "cover"];
     for (const key of allowed) {
       if (req.body[key] !== undefined) update[key] = req.body[key];
     }
-    const updated = await Song.findByIdAndUpdate(id, { $set: update }, { new: true });
+    
+    // Xử lý genres
+    if (req.body.genres !== undefined) {
+      if (Array.isArray(req.body.genres)) {
+        // Nếu là array trực tiếp (từ JSON request)
+        update.genres = req.body.genres;
+      } else if (typeof req.body.genres === 'string') {
+        // Nếu là JSON string (từ FormData)
+        try {
+          const parsedGenres = JSON.parse(req.body.genres);
+          update.genres = Array.isArray(parsedGenres) ? parsedGenres : [];
+        } catch (e) {
+          update.genres = [];
+        }
+      } else {
+        update.genres = [];
+      }
+    }
+    const updated = await Song.findByIdAndUpdate(id, { $set: update }, { new: true })
+      .populate("album")
+      .populate("genres")
+      .populate("region");
     if (!updated) return res.status(404).json({ error: "Song not found" });
+    
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });

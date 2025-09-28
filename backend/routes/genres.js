@@ -38,13 +38,9 @@ router.get("/", async (req, res) => {
 // POST /api/genres → thêm thể loại mới (với file upload)
 router.post("/", upload.single("cover"), async (req, res) => {
   try {
-    console.log("Request body:", req.body);
-    console.log("Request file:", req.file);
-    console.log("Request headers:", req.headers);
     
     // Kiểm tra nếu req.body là undefined hoặc null
     if (!req.body || typeof req.body !== 'object') {
-      console.error("req.body is not an object:", req.body);
       return res.status(400).json({ error: "Request body is not properly formatted" });
     }
     
@@ -59,7 +55,6 @@ router.post("/", upload.single("cover"), async (req, res) => {
     await genre.save();
     res.status(201).json(genre);
   } catch (err) {
-    console.error("Error creating genre:", err);
     if (err && err.code === 11000) {
       return res.status(409).json({ error: "Genre name already exists" });
     }
