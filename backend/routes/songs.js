@@ -196,9 +196,18 @@ router.delete("/:id", async (req, res) => {
 router.post("/:id/play", async (req, res) => {
   try {
     const { id } = req.params;
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
     const updated = await Song.findByIdAndUpdate(
       id,
-      { $inc: { plays: 1 } },
+      { 
+        $inc: { 
+          plays: 1,
+          weeklyPlays: 1
+        },
+        $set: { lastPlayed: now }
+      },
       { new: true }
     );
     if (!updated) return res.status(404).json({ error: "Song not found" });
@@ -227,6 +236,83 @@ router.patch("/:id/plays", async (req, res) => {
     );
     if (!updated) return res.status(404).json({ error: "Song not found" });
     res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Lấy trending songs theo khu vực
+router.get("/trending/:region", async (req, res) => {
+  try {
+    const { region } = req.params;
+    const { limit = 5 } = req.query;
+    
+    // Map region names to region IDs or search patterns
+    let regionFilter = {};
+    if (region === "vietnam" || region === "viet-nam") {
+      regionFilter = { 
+        $or: [
+          { "region.name": { $regex: /việt nam|vietnam/i } },
+          { "region.name": { $regex: /viet nam/i } }
+        ]
+      };
+    } else if (region === "us-uk" || region === "usuk") {
+      regionFilter = { 
+        $or: [
+          { "region.name": { $regex: /us-uk|usuk|mỹ|anh|america|britain/i } },
+          { "region.name": { $regex: /âu mỹ|au my/i } }
+        ]
+      };
+    } else if (region === "korea" || region === "k-pop" || region === "kpop") {
+      regionFilter = { 
+        $or: [
+          { "region.name": { $regex: /hàn quốc|korea|k-pop|kpop/i } },
+          { "region.name": { $regex: /han quoc/i } }
+        ]
+      };
+    }
+    
+    const songs = await Song.find(regionFilter)
+      .populate("album")
+      .populate("genres")
+      .populate("region")
+      .sort({ weeklyPlays: -1, plays: -1, createdAt: -1 })
+      .limit(parseInt(limit));
+    
+    res.json(songs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Reset weekly plays (chạy mỗi tuần)
+router.post("/reset-weekly-plays", async (req, res) => {
+  try {
+    const result = await Song.updateMany(
+      {},
+      { $set: { weeklyPlays: 0 } }
+    );
+    res.json({ 
+      message: "Weekly plays reset successfully", 
+      modifiedCount: result.modifiedCount 
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Cập nhật weeklyPlays cho tất cả bài hát (migration)
+router.post("/update-weekly-plays", async (req, res) => {
+  try {
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    
+    // Reset tất cả weeklyPlays về 0
+    await Song.updateMany({}, { $set: { weeklyPlays: 0 } });
+    
+    // Có thể thêm logic phức tạp hơn ở đây nếu cần
+    // Ví dụ: tính weeklyPlays dựa trên lastPlayed
+    
+    res.json({ message: "Weekly plays updated successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

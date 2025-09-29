@@ -15,6 +15,11 @@ function App() {
   const [recentSongs, setRecentSongs] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const searchWrapRef = useRef(null);
+  const [trendingSongs, setTrendingSongs] = useState({
+    vietnam: [],
+    usuk: [],
+    korea: []
+  });
 
   useEffect(() => {
     Promise.all([
@@ -27,6 +32,131 @@ function App() {
       setDisplayedAlbums(getRandomAlbums(albumsData, 7));
     });
   }, []);
+
+  // Load trending songs by region - always filter by region, never use random
+  useEffect(() => {
+    const loadTrendingSongs = async () => {
+      try {
+        // Try to load from API first
+        const [vietnamResponse, usukResponse, koreaResponse] = await Promise.all([
+          fetch("http://localhost:5000/api/songs/trending/vietnam?limit=5").catch(() => null),
+          fetch("http://localhost:5000/api/songs/trending/us-uk?limit=5").catch(() => null),
+          fetch("http://localhost:5000/api/songs/trending/korea?limit=5").catch(() => null)
+        ]);
+
+        let vietnamData = [], usukData = [], koreaData = [];
+
+        if (vietnamResponse && vietnamResponse.ok) {
+          vietnamData = await vietnamResponse.json();
+        }
+        if (usukResponse && usukResponse.ok) {
+          usukData = await usukResponse.json();
+        }
+        if (koreaResponse && koreaResponse.ok) {
+          koreaData = await koreaResponse.json();
+        }
+
+        // Always use local filtering as primary method to ensure correct regions
+        console.log('Filtering songs by region from local data...');
+        
+        // Local filtering by region - this is the main method
+        const vietnamSongs = songs.filter(song => 
+          song.region && song.region.name && (
+            song.region.name.toLowerCase().includes('vietnam') ||
+            song.region.name.toLowerCase().includes('việt nam') ||
+            song.region.name.toLowerCase().includes('viet nam')
+          )
+        ).sort((a, b) => {
+          // Sort by weeklyPlays first, then by total plays, then by creation date
+          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+        
+        const usukSongs = songs.filter(song => 
+          song.region && song.region.name && (
+            song.region.name.toLowerCase().includes('us') || 
+            song.region.name.toLowerCase().includes('uk') ||
+            song.region.name.toLowerCase().includes('america') ||
+            song.region.name.toLowerCase().includes('britain') ||
+            song.region.name.toLowerCase().includes('âu mỹ') ||
+            song.region.name.toLowerCase().includes('au my') ||
+            song.region.name.toLowerCase().includes('mỹ') ||
+            song.region.name.toLowerCase().includes('anh')
+          )
+        ).sort((a, b) => {
+          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+        
+        const koreaSongs = songs.filter(song => 
+          song.region && song.region.name && (
+            song.region.name.toLowerCase().includes('korea') ||
+            song.region.name.toLowerCase().includes('k-pop') ||
+            song.region.name.toLowerCase().includes('kpop') ||
+            song.region.name.toLowerCase().includes('hàn quốc') ||
+            song.region.name.toLowerCase().includes('han quoc')
+          )
+        ).sort((a, b) => {
+          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+
+        // Use API data if available and not empty, otherwise use local filtering
+        setTrendingSongs({
+          vietnam: (vietnamData && vietnamData.length > 0) ? vietnamData : vietnamSongs.slice(0, 5),
+          usuk: (usukData && usukData.length > 0) ? usukData : usukSongs.slice(0, 5),
+          korea: (koreaData && koreaData.length > 0) ? koreaData : koreaSongs.slice(0, 5)
+        });
+
+        console.log('Trending songs loaded:', {
+          vietnam: (vietnamData && vietnamData.length > 0) ? vietnamData.length : vietnamSongs.length,
+          usuk: (usukData && usukData.length > 0) ? usukData.length : usukSongs.length,
+          korea: (koreaData && koreaData.length > 0) ? koreaData.length : koreaSongs.length
+        });
+
+      } catch (error) {
+        console.log('Error loading trending songs:', error);
+        // Final fallback - still filter by region, never use random
+        const vietnamSongs = songs.filter(song => 
+          song.region && song.region.name && song.region.name.toLowerCase().includes('vietnam')
+        ).sort((a, b) => {
+          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+        const usukSongs = songs.filter(song => 
+          song.region && song.region.name && (
+            song.region.name.toLowerCase().includes('us') || 
+            song.region.name.toLowerCase().includes('uk')
+          )
+        ).sort((a, b) => {
+          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+        const koreaSongs = songs.filter(song => 
+          song.region && song.region.name && song.region.name.toLowerCase().includes('korea')
+        ).sort((a, b) => {
+          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+
+        setTrendingSongs({
+          vietnam: vietnamSongs.slice(0, 5),
+          usuk: usukSongs.slice(0, 5),
+          korea: koreaSongs.slice(0, 5)
+        });
+      }
+    };
+
+    if (songs.length > 0) {
+      loadTrendingSongs();
+    }
+  }, [songs]); // Removed displayedSongs dependency to avoid random data
 
   // Load recent songs history
   useEffect(() => {
@@ -425,6 +555,208 @@ function App() {
             ))}
           </div>
         </section>
+        
+        {/* Bảng Xếp Hạng Tuần */}
+        <section style={{ marginTop: "0", padding: "1rem 0" }}>
+          <h2 style={{ color: "#fff", fontSize: "1.5rem", marginBottom: "1rem" }}>Bảng Xếp Hạng Tuần</h2>
+          <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+            {/* Việt Nam */}
+            <div style={{ flex: "1", minWidth: "250px", background: "#1e1e24", padding: "1rem", borderRadius: "8px" }}>
+              <h3 style={{ color: "#fff", marginBottom: "1rem" }}>Việt Nam</h3>
+              {trendingSongs.vietnam.length > 0 ? trendingSongs.vietnam.map((song, index) => (
+                <div 
+                  key={song._id} 
+                  style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "0.5rem", 
+                    padding: "0.5rem", 
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    background: current && current._id === song._id ? "rgba(29, 185, 84, 0.1)" : "transparent",
+                    borderBottom: "1px solid #333"
+                  }}
+                  onClick={() => {
+                    const realIdx = songs.findIndex((s) => s._id === song._id);
+                    if (realIdx !== -1) {
+                      const isCurrent = current && current._id === song._id;
+                      if (isCurrent) {
+                        setIsPlaying((prev) => !prev);
+                      } else {
+                        playSong(realIdx);
+                      }
+                    }
+                  }}
+                >
+                  <span style={{ color: "#b3b3b3", minWidth: "20px" }}>{index + 1}</span>
+                  <img src={withMediaBase(song.cover) || "/default-cover.png"} alt={song.title} style={{ width: "30px", height: "30px", borderRadius: "4px" }} />
+                  <div style={{ flex: "1", minWidth: "0" }}>
+                    <div style={{ color: "#fff", fontSize: "0.9rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.title}</div>
+                    <div style={{ color: "#b3b3b3", fontSize: "0.8rem" }}>{song.artist}</div>
+                  </div>
+                  <button 
+                    style={{ 
+                      background: "transparent", 
+                      border: "none", 
+                      color: "#b3b3b3", 
+                      cursor: "pointer", 
+                      padding: "4px",
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const realIdx = songs.findIndex((s) => s._id === song._id);
+                      if (realIdx !== -1) {
+                        const isCurrent = current && current._id === song._id;
+                        if (isCurrent) {
+                          setIsPlaying((prev) => !prev);
+                        } else {
+                          playSong(realIdx);
+                        }
+                      }
+                    }}
+                  >
+                    {current && current._id === song._id && isPlaying ? <FaPause /> : <FaPlay />}
+                  </button>
+                </div>
+              )) : <div style={{ color: "#b3b3b3" }}>Đang tải...</div>}
+            </div>
+            
+            {/* US-UK */}
+            <div style={{ flex: "1", minWidth: "250px", background: "#1e1e24", padding: "1rem", borderRadius: "8px" }}>
+              <h3 style={{ color: "#fff", marginBottom: "1rem" }}>US-UK</h3>
+              {trendingSongs.usuk.length > 0 ? trendingSongs.usuk.map((song, index) => (
+                <div 
+                  key={`us-${song._id}`} 
+                  style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "0.5rem", 
+                    padding: "0.5rem", 
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    background: current && current._id === song._id ? "rgba(29, 185, 84, 0.1)" : "transparent",
+                    borderBottom: "1px solid #333"
+                  }}
+                  onClick={() => {
+                    const realIdx = songs.findIndex((s) => s._id === song._id);
+                    if (realIdx !== -1) {
+                      const isCurrent = current && current._id === song._id;
+                      if (isCurrent) {
+                        setIsPlaying((prev) => !prev);
+                      } else {
+                        playSong(realIdx);
+                      }
+                    }
+                  }}
+                >
+                  <span style={{ color: "#b3b3b3", minWidth: "20px" }}>{index + 1}</span>
+                  <img src={withMediaBase(song.cover) || "/default-cover.png"} alt={song.title} style={{ width: "30px", height: "30px", borderRadius: "4px" }} />
+                  <div style={{ flex: "1", minWidth: "0" }}>
+                    <div style={{ color: "#fff", fontSize: "0.9rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.title}</div>
+                    <div style={{ color: "#b3b3b3", fontSize: "0.8rem" }}>{song.artist}</div>
+                  </div>
+                  <button 
+                    style={{ 
+                      background: "transparent", 
+                      border: "none", 
+                      color: "#b3b3b3", 
+                      cursor: "pointer", 
+                      padding: "4px",
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const realIdx = songs.findIndex((s) => s._id === song._id);
+                      if (realIdx !== -1) {
+                        const isCurrent = current && current._id === song._id;
+                        if (isCurrent) {
+                          setIsPlaying((prev) => !prev);
+                        } else {
+                          playSong(realIdx);
+                        }
+                      }
+                    }}
+                  >
+                    {current && current._id === song._id && isPlaying ? <FaPause /> : <FaPlay />}
+                  </button>
+                </div>
+              )) : <div style={{ color: "#b3b3b3" }}>Đang tải...</div>}
+            </div>
+            
+            {/* K-Pop */}
+            <div style={{ flex: "1", minWidth: "250px", background: "#1e1e24", padding: "1rem", borderRadius: "8px" }}>
+              <h3 style={{ color: "#fff", marginBottom: "1rem" }}>K-Pop</h3>
+              {trendingSongs.korea.length > 0 ? trendingSongs.korea.map((song, index) => (
+                <div 
+                  key={`k-${song._id}`} 
+                  style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: "0.5rem", 
+                    padding: "0.5rem", 
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                    background: current && current._id === song._id ? "rgba(29, 185, 84, 0.1)" : "transparent",
+                    borderBottom: "1px solid #333"
+                  }}
+                  onClick={() => {
+                    const realIdx = songs.findIndex((s) => s._id === song._id);
+                    if (realIdx !== -1) {
+                      const isCurrent = current && current._id === song._id;
+                      if (isCurrent) {
+                        setIsPlaying((prev) => !prev);
+                      } else {
+                        playSong(realIdx);
+                      }
+                    }
+                  }}
+                >
+                  <span style={{ color: "#b3b3b3", minWidth: "20px" }}>{index + 1}</span>
+                  <img src={withMediaBase(song.cover) || "/default-cover.png"} alt={song.title} style={{ width: "30px", height: "30px", borderRadius: "4px" }} />
+                  <div style={{ flex: "1", minWidth: "0" }}>
+                    <div style={{ color: "#fff", fontSize: "0.9rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.title}</div>
+                    <div style={{ color: "#b3b3b3", fontSize: "0.8rem" }}>{song.artist}</div>
+                  </div>
+                  <button 
+                    style={{ 
+                      background: "transparent", 
+                      border: "none", 
+                      color: "#b3b3b3", 
+                      cursor: "pointer", 
+                      padding: "4px",
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const realIdx = songs.findIndex((s) => s._id === song._id);
+                      if (realIdx !== -1) {
+                        const isCurrent = current && current._id === song._id;
+                        if (isCurrent) {
+                          setIsPlaying((prev) => !prev);
+                        } else {
+                          playSong(realIdx);
+                        }
+                      }
+                    }}
+                  >
+                    {current && current._id === song._id && isPlaying ? <FaPause /> : <FaPlay />}
+                  </button>
+                </div>
+              )) : <div style={{ color: "#b3b3b3" }}>Đang tải...</div>}
+            </div>
+          </div>
+        </section>
+        
         {/* Các thành phần khác sẽ thêm vào đây sau này */}
       </main>
       {/* GlobalPlayer renders persistently in main.jsx */}
