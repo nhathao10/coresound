@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from "react";
-import { FaPause, FaPlay, FaRandom, FaRedo, FaStepBackward, FaStepForward, FaVolumeUp } from "react-icons/fa";
+import React, { useEffect, useRef, useState } from "react";
+import { FaPause, FaPlay, FaRandom, FaRedo, FaStepBackward, FaStepForward, FaVolumeUp, FaList, FaGripVertical } from "react-icons/fa";
 import { usePlayer } from "./PlayerContext.jsx";
 
 const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
@@ -22,9 +22,17 @@ export default function GlobalPlayer() {
     setDuration,
     setVolume,
     setCurrentIdx,
+    setQueueAndPlay,
+    setQueue,
   } = usePlayer();
 
   const audioRef = useRef(null);
+  const [showNextSongPanel, setShowNextSongPanel] = useState(false);
+  const [currentQueue, setCurrentQueue] = useState([]);
+  const [queueContext, setQueueContext] = useState("suggestions");
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const scrollContainerRef = useRef(null);
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
@@ -86,6 +94,110 @@ export default function GlobalPlayer() {
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
+  // Get all songs in queue with current song at top
+  const getAllSongs = () => {
+    if (!queue || queue.length === 0 || currentIdx === null) return [];
+    
+    const allSongs = [];
+    
+    // Add current song first
+    allSongs.push({ ...queue[currentIdx], queueIndex: currentIdx, isCurrent: true });
+    
+    // Add remaining songs after current
+    for (let i = currentIdx + 1; i < queue.length; i++) {
+      allSongs.push({ ...queue[i], queueIndex: i, isCurrent: false });
+    }
+    
+    // Add songs before current (for circular queue)
+    for (let i = 0; i < currentIdx; i++) {
+      allSongs.push({ ...queue[i], queueIndex: i, isCurrent: false });
+    }
+    
+    return allSongs;
+  };
+
+  const allSongs = getAllSongs();
+
+  // Drag and drop handlers
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.target.outerHTML);
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+    
+    // Auto-scroll when dragging near edges
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const rect = container.getBoundingClientRect();
+      const scrollThreshold = 50;
+      
+      if (e.clientY - rect.top < scrollThreshold) {
+        // Scroll up
+        container.scrollTop -= 10;
+      } else if (rect.bottom - e.clientY < scrollThreshold) {
+        // Scroll down
+        container.scrollTop += 10;
+      }
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // Reorder the queue
+    const newQueue = [...queue];
+    const draggedSong = newQueue[draggedIndex];
+    
+    // Remove dragged song
+    newQueue.splice(draggedIndex, 1);
+    
+    // Insert at new position
+    const newIndex = dropIndex > draggedIndex ? dropIndex - 1 : dropIndex;
+    newQueue.splice(newIndex, 0, draggedSong);
+    
+    // Calculate new current index after reordering
+    let newCurrentIdx = currentIdx;
+    
+    // If we're moving the currently playing song
+    if (draggedIndex === currentIdx) {
+      newCurrentIdx = newIndex;
+    } else if (draggedIndex < currentIdx && newIndex >= currentIdx) {
+      // Moving a song from before current to after current
+      newCurrentIdx = currentIdx - 1;
+    } else if (draggedIndex > currentIdx && newIndex <= currentIdx) {
+      // Moving a song from after current to before current
+      newCurrentIdx = currentIdx + 1;
+    }
+    
+    // Update queue without restarting playback
+    // We need to update the queue and current index without calling playAt
+    setQueue(newQueue);
+    setCurrentIdx(newCurrentIdx);
+    
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   if (!current) return null;
 
   return (
@@ -113,6 +225,13 @@ export default function GlobalPlayer() {
           </button>
           <button className={`spotify-btn repeat${repeat ? " active" : ""}`} onClick={() => setRepeat((r) => !r)} title="Repeat">
             <FaRedo />
+          </button>
+          <button 
+            className="spotify-btn next-song" 
+            onClick={() => setShowNextSongPanel(!showNextSongPanel)} 
+            title="Danh sách bài hát tiếp theo"
+          >
+            <FaList />
           </button>
         </div>
         <div className="spotify-progress-row">
@@ -150,6 +269,195 @@ export default function GlobalPlayer() {
         />
       </div>
       <audio ref={audioRef} src={withMediaBase(current.url)} autoPlay={isPlaying} onEnded={onEnded} />
+      
+      {/* Next Songs Panel */}
+      {showNextSongPanel && (
+        <div style={{
+          position: "absolute",
+          bottom: "100%",
+          right: "90px",
+          width: "350px",
+          maxHeight: "400px",
+          background: "#1e1e24",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: "8px",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+          zIndex: 1000,
+          overflow: "hidden",
+          marginBottom: "10px"
+        }}>
+          <div style={{
+            padding: "1rem",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+            background: "#2a2a35"
+          }}>
+            <h3 style={{ 
+              color: "#fff", 
+              margin: 0, 
+              fontSize: "1rem",
+              fontWeight: "600"
+            }}>
+              Bài hát tiếp theo
+            </h3>
+            <p style={{ 
+              color: "#b3b3b3", 
+              margin: "0.25rem 0 0 0", 
+              fontSize: "0.8rem" 
+            }}>
+              {queue.length} bài hát trong danh sách • Kéo thả để sắp xếp
+            </p>
+          </div>
+          
+          <div ref={scrollContainerRef} style={{ maxHeight: "300px", overflowY: "auto" }}>
+            {allSongs.length > 0 ? allSongs.map((song, index) => (
+              <div
+                key={`${song._id}-${song.queueIndex}`}
+                draggable
+                onDragStart={(e) => handleDragStart(e, song.queueIndex)}
+                onDragOver={(e) => handleDragOver(e, song.queueIndex)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, song.queueIndex)}
+                onDragEnd={handleDragEnd}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  padding: "0.75rem 1rem",
+                  borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+                  cursor: "grab",
+                  transition: "all 0.2s ease",
+                  background: dragOverIndex === song.queueIndex ? "rgba(29, 185, 84, 0.1)" : 
+                             draggedIndex === song.queueIndex ? "rgba(255, 255, 255, 0.1)" : 
+                             song.isCurrent ? "rgba(29, 185, 84, 0.05)" : "transparent",
+                  opacity: draggedIndex === song.queueIndex ? 0.5 : 1,
+                  transform: draggedIndex === song.queueIndex ? "scale(0.98)" : "scale(1)",
+                  borderLeft: song.isCurrent ? "3px solid #1db954" : 
+                             dragOverIndex === song.queueIndex ? "3px solid rgba(29, 185, 84, 0.5)" : "3px solid transparent"
+                }}
+                onMouseEnter={(e) => {
+                  if (draggedIndex !== song.queueIndex && !song.isCurrent) {
+                    e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                  }
+                  // Highlight drag handle on hover
+                  const dragHandle = e.currentTarget.querySelector('.drag-handle');
+                  if (dragHandle) {
+                    dragHandle.style.color = "#1db954";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (draggedIndex !== song.queueIndex && dragOverIndex !== song.queueIndex && !song.isCurrent) {
+                    e.currentTarget.style.background = "transparent";
+                  } else if (song.isCurrent) {
+                    e.currentTarget.style.background = "rgba(29, 185, 84, 0.05)";
+                  }
+                  // Reset drag handle color
+                  const dragHandle = e.currentTarget.querySelector('.drag-handle');
+                  if (dragHandle) {
+                    dragHandle.style.color = "#888";
+                  }
+                }}
+                onClick={() => {
+                  setCurrentIdx(song.queueIndex);
+                  setIsPlaying(true);
+                }}
+              >
+                <div style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "0.5rem",
+                  minWidth: "40px"
+                }}>
+                  <FaGripVertical 
+                    className="drag-handle"
+                    style={{ 
+                      color: "#888", 
+                      fontSize: "0.9rem",
+                      cursor: "grab",
+                      transition: "color 0.2s ease"
+                    }} 
+                  />
+                  <span style={{ 
+                    color: song.isCurrent ? "#1db954" : "#b3b3b3", 
+                    fontSize: "0.8rem",
+                    fontWeight: song.isCurrent ? "600" : "normal"
+                  }}>
+                    {index + 1}
+                  </span>
+                  {song.isCurrent && (
+                    <FaPlay style={{ color: "#1db954", fontSize: "0.6rem", marginLeft: "0.25rem" }} />
+                  )}
+                </div>
+                <img 
+                  src={withMediaBase(song.cover) || "/default-cover.png"} 
+                  alt={song.title}
+                  style={{
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "4px",
+                    objectFit: "cover"
+                  }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ 
+                    color: "#fff", 
+                    fontSize: "0.9rem",
+                    fontWeight: "500",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis"
+                  }}>
+                    {song.title}
+                  </div>
+                  <div style={{ 
+                    color: "#b3b3b3", 
+                    fontSize: "0.8rem",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis"
+                  }}>
+                    {song.artist}
+                  </div>
+                </div>
+                <button
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "#b3b3b3",
+                    cursor: "pointer",
+                    padding: "4px",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "color 0.2s ease"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "#1db954";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = "#b3b3b3";
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentIdx(song.queueIndex);
+                    setIsPlaying(true);
+                  }}
+                >
+                  <FaPlay style={{ fontSize: "0.7rem" }} />
+                </button>
+              </div>
+            )) : (
+              <div style={{
+                padding: "2rem 1rem",
+                textAlign: "center",
+                color: "#b3b3b3"
+              }}>
+                Không có bài hát trong danh sách
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

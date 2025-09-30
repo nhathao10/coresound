@@ -20,143 +20,178 @@ function App() {
     usuk: [],
     korea: []
   });
+  const [trendingFilter, setTrendingFilter] = useState("region"); // "region" hoặc "genre"
+  const [genres, setGenres] = useState([]);
+  const [selectedGenres] = useState(["Pop", "R/B", "Rap"]);
+  const [showNextSongPanel, setShowNextSongPanel] = useState(false);
+  const [currentQueue, setCurrentQueue] = useState([]);
+  const [queueContext, setQueueContext] = useState("suggestions"); // "suggestions" hoặc "album"
 
   useEffect(() => {
     Promise.all([
       fetch("http://localhost:5000/api/songs").then((r) => r.json()),
       fetch("http://localhost:5000/api/albums").then((r) => r.json()),
-    ]).then(([songsData, albumsData]) => {
+      fetch("http://localhost:5000/api/genres").then((r) => r.json()),
+    ]).then(([songsData, albumsData, genresData]) => {
       setSongs(songsData);
       setAlbums(albumsData);
+      setGenres(genresData);
       setDisplayedSongs(getRandomSongs(songsData, 7));
       setDisplayedAlbums(getRandomAlbums(albumsData, 7));
     });
   }, []);
 
-  // Load trending songs by region - always filter by region, never use random
+  // Load trending songs by region or genre
   useEffect(() => {
     const loadTrendingSongs = async () => {
       try {
-        // Try to load from API first
-        const [vietnamResponse, usukResponse, koreaResponse] = await Promise.all([
-          fetch("http://localhost:5000/api/songs/trending/vietnam?limit=5").catch(() => null),
-          fetch("http://localhost:5000/api/songs/trending/us-uk?limit=5").catch(() => null),
-          fetch("http://localhost:5000/api/songs/trending/korea?limit=5").catch(() => null)
-        ]);
+        if (trendingFilter === "region") {
+          // Load by region (existing logic)
+          const [vietnamResponse, usukResponse, koreaResponse] = await Promise.all([
+            fetch("http://localhost:5000/api/songs/trending/vietnam?limit=5").catch(() => null),
+            fetch("http://localhost:5000/api/songs/trending/us-uk?limit=5").catch(() => null),
+            fetch("http://localhost:5000/api/songs/trending/korea?limit=5").catch(() => null)
+          ]);
 
-        let vietnamData = [], usukData = [], koreaData = [];
+          let vietnamData = [], usukData = [], koreaData = [];
 
-        if (vietnamResponse && vietnamResponse.ok) {
-          vietnamData = await vietnamResponse.json();
+          if (vietnamResponse && vietnamResponse.ok) {
+            vietnamData = await vietnamResponse.json();
+          }
+          if (usukResponse && usukResponse.ok) {
+            usukData = await usukResponse.json();
+          }
+          if (koreaResponse && koreaResponse.ok) {
+            koreaData = await koreaResponse.json();
+          }
+
+          // Local filtering by region
+          const vietnamSongs = songs.filter(song => 
+            song.region && song.region.name && (
+              song.region.name.toLowerCase().includes('vietnam') ||
+              song.region.name.toLowerCase().includes('việt nam') ||
+              song.region.name.toLowerCase().includes('viet nam')
+            )
+          ).sort((a, b) => {
+            if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+            if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          });
+          
+          const usukSongs = songs.filter(song => 
+            song.region && song.region.name && (
+              song.region.name.toLowerCase().includes('us') || 
+              song.region.name.toLowerCase().includes('uk') ||
+              song.region.name.toLowerCase().includes('america') ||
+              song.region.name.toLowerCase().includes('britain') ||
+              song.region.name.toLowerCase().includes('âu mỹ') ||
+              song.region.name.toLowerCase().includes('au my') ||
+              song.region.name.toLowerCase().includes('mỹ') ||
+              song.region.name.toLowerCase().includes('anh')
+            )
+          ).sort((a, b) => {
+            if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+            if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          });
+          
+          const koreaSongs = songs.filter(song => 
+            song.region && song.region.name && (
+              song.region.name.toLowerCase().includes('korea') ||
+              song.region.name.toLowerCase().includes('k-pop') ||
+              song.region.name.toLowerCase().includes('kpop') ||
+              song.region.name.toLowerCase().includes('hàn quốc') ||
+              song.region.name.toLowerCase().includes('han quoc')
+            )
+          ).sort((a, b) => {
+            if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+            if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          });
+
+          setTrendingSongs({
+            vietnam: (vietnamData && vietnamData.length > 0) ? vietnamData : vietnamSongs.slice(0, 5),
+            usuk: (usukData && usukData.length > 0) ? usukData : usukSongs.slice(0, 5),
+            korea: (koreaData && koreaData.length > 0) ? koreaData : koreaSongs.slice(0, 5)
+          });
+
+        } else if (trendingFilter === "genre") {
+          // Load by genre - fixed genres: Pop, R/B, Rap
+          const fixedGenres = ["Pop", "R/B", "Rap"];
+          const genrePromises = fixedGenres.map(genre => 
+            fetch(`http://localhost:5000/api/songs/trending/genre/${encodeURIComponent(genre)}?limit=5`).catch(() => null)
+          );
+
+          const genreResponses = await Promise.all(genrePromises);
+          const genreData = await Promise.all(
+            genreResponses.map(response => 
+              response && response.ok ? response.json() : []
+            )
+          );
+
+          // Local filtering by genre as fallback
+          const genreSongs = fixedGenres.map(genre => 
+            songs.filter(song => 
+              song.genres && song.genres.some(g => 
+                g.name && g.name.toLowerCase().includes(genre.toLowerCase())
+              )
+            ).sort((a, b) => {
+              if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+              if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+              return new Date(b.createdAt) - new Date(a.createdAt);
+            }).slice(0, 5)
+          );
+
+          // Map to trendingSongs structure
+          setTrendingSongs({
+            vietnam: genreData[0] && genreData[0].length > 0 ? genreData[0] : genreSongs[0] || [],
+            usuk: genreData[1] && genreData[1].length > 0 ? genreData[1] : genreSongs[1] || [],
+            korea: genreData[2] && genreData[2].length > 0 ? genreData[2] : genreSongs[2] || []
+          });
         }
-        if (usukResponse && usukResponse.ok) {
-          usukData = await usukResponse.json();
-        }
-        if (koreaResponse && koreaResponse.ok) {
-          koreaData = await koreaResponse.json();
-        }
-
-        // Always use local filtering as primary method to ensure correct regions
-        console.log('Filtering songs by region from local data...');
-        
-        // Local filtering by region - this is the main method
-        const vietnamSongs = songs.filter(song => 
-          song.region && song.region.name && (
-            song.region.name.toLowerCase().includes('vietnam') ||
-            song.region.name.toLowerCase().includes('việt nam') ||
-            song.region.name.toLowerCase().includes('viet nam')
-          )
-        ).sort((a, b) => {
-          // Sort by weeklyPlays first, then by total plays, then by creation date
-          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        });
-        
-        const usukSongs = songs.filter(song => 
-          song.region && song.region.name && (
-            song.region.name.toLowerCase().includes('us') || 
-            song.region.name.toLowerCase().includes('uk') ||
-            song.region.name.toLowerCase().includes('america') ||
-            song.region.name.toLowerCase().includes('britain') ||
-            song.region.name.toLowerCase().includes('âu mỹ') ||
-            song.region.name.toLowerCase().includes('au my') ||
-            song.region.name.toLowerCase().includes('mỹ') ||
-            song.region.name.toLowerCase().includes('anh')
-          )
-        ).sort((a, b) => {
-          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        });
-        
-        const koreaSongs = songs.filter(song => 
-          song.region && song.region.name && (
-            song.region.name.toLowerCase().includes('korea') ||
-            song.region.name.toLowerCase().includes('k-pop') ||
-            song.region.name.toLowerCase().includes('kpop') ||
-            song.region.name.toLowerCase().includes('hàn quốc') ||
-            song.region.name.toLowerCase().includes('han quoc')
-          )
-        ).sort((a, b) => {
-          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        });
-
-        // Use API data if available and not empty, otherwise use local filtering
-        setTrendingSongs({
-          vietnam: (vietnamData && vietnamData.length > 0) ? vietnamData : vietnamSongs.slice(0, 5),
-          usuk: (usukData && usukData.length > 0) ? usukData : usukSongs.slice(0, 5),
-          korea: (koreaData && koreaData.length > 0) ? koreaData : koreaSongs.slice(0, 5)
-        });
-
-        console.log('Trending songs loaded:', {
-          vietnam: (vietnamData && vietnamData.length > 0) ? vietnamData.length : vietnamSongs.length,
-          usuk: (usukData && usukData.length > 0) ? usukData.length : usukSongs.length,
-          korea: (koreaData && koreaData.length > 0) ? koreaData.length : koreaSongs.length
-        });
 
       } catch (error) {
         console.log('Error loading trending songs:', error);
-        // Final fallback - still filter by region, never use random
-        const vietnamSongs = songs.filter(song => 
-          song.region && song.region.name && song.region.name.toLowerCase().includes('vietnam')
-        ).sort((a, b) => {
-          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        });
-        const usukSongs = songs.filter(song => 
-          song.region && song.region.name && (
-            song.region.name.toLowerCase().includes('us') || 
-            song.region.name.toLowerCase().includes('uk')
-          )
-        ).sort((a, b) => {
-          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        });
-        const koreaSongs = songs.filter(song => 
-          song.region && song.region.name && song.region.name.toLowerCase().includes('korea')
-        ).sort((a, b) => {
-          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        });
+        // Fallback to local filtering
+        if (trendingFilter === "region") {
+          const vietnamSongs = songs.filter(song => 
+            song.region && song.region.name && song.region.name.toLowerCase().includes('vietnam')
+          ).sort((a, b) => {
+            if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+            if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          });
+          const usukSongs = songs.filter(song => 
+            song.region && song.region.name && (
+              song.region.name.toLowerCase().includes('us') || 
+              song.region.name.toLowerCase().includes('uk')
+            )
+          ).sort((a, b) => {
+            if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+            if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          });
+          const koreaSongs = songs.filter(song => 
+            song.region && song.region.name && song.region.name.toLowerCase().includes('korea')
+          ).sort((a, b) => {
+            if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+            if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          });
 
-        setTrendingSongs({
-          vietnam: vietnamSongs.slice(0, 5),
-          usuk: usukSongs.slice(0, 5),
-          korea: koreaSongs.slice(0, 5)
-        });
+          setTrendingSongs({
+            vietnam: vietnamSongs.slice(0, 5),
+            usuk: usukSongs.slice(0, 5),
+            korea: koreaSongs.slice(0, 5)
+          });
+        }
       }
     };
 
     if (songs.length > 0) {
       loadTrendingSongs();
     }
-  }, [songs]); // Removed displayedSongs dependency to avoid random data
+  }, [songs, trendingFilter]); // Removed displayedSongs dependency to avoid random data
 
   // Load recent songs history
   useEffect(() => {
@@ -245,14 +280,31 @@ function App() {
     setDisplayedAlbums(getRandomAlbums(albums, 7, currentAlbumIds));
   };
 
-  const playSong = (idx) => {
+  const playSong = (idx, context = "suggestions") => {
     // ensure the global queue contains the full songs list in the same order
     const queueMismatch = !queue || queue.length !== songs.length || songs.some((s, i) => queue[i]?._id !== s._id);
     if (queueMismatch) {
       setQueueAndPlay(songs, idx);
     } else {
       setCurrentIdx(idx);
-    setIsPlaying(true);
+      setIsPlaying(true);
+    }
+    
+    // Set queue context and current queue
+    setQueueContext(context);
+    if (context === "suggestions") {
+      setCurrentQueue(displayedSongs);
+    } else if (context === "album") {
+      // Find album songs if playing from album
+      const currentSong = songs[idx];
+      if (currentSong && currentSong.album) {
+        const albumSongs = songs.filter(song => 
+          song.album && song.album._id === currentSong.album._id
+        );
+        setCurrentQueue(albumSongs);
+      } else {
+        setCurrentQueue(songs);
+      }
     }
   };
 
@@ -437,16 +489,16 @@ function App() {
                   )}
                   <button
                     className="recommend-horizontal-play"
-                    onClick={() => {
-                      const realIdx = songs.findIndex((s) => s._id === song._id);
-                      if (realIdx === -1) return;
-                      const isCurrent = current && current._id === song._id;
-                      if (isCurrent) {
-                        setIsPlaying((prev) => !prev);
-                      } else {
-                        playSong(realIdx);
-                      }
-                    }}
+                      onClick={() => {
+                        const realIdx = songs.findIndex((s) => s._id === song._id);
+                        if (realIdx === -1) return;
+                        const isCurrent = current && current._id === song._id;
+                        if (isCurrent) {
+                          setIsPlaying((prev) => !prev);
+                        } else {
+                          playSong(realIdx, "suggestions");
+                        }
+                      }}
                   >
                     {current && current._id === song._id && isPlaying ? <FaPause /> : <FaPlay />}
                   </button>
@@ -558,11 +610,57 @@ function App() {
         
         {/* Bảng Xếp Hạng Tuần */}
         <section style={{ marginTop: "0", padding: "1rem 0" }}>
-          <h2 style={{ color: "#fff", fontSize: "1.5rem", marginBottom: "1rem" }}>Bảng Xếp Hạng Tuần</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <h2 style={{ color: "#fff", fontSize: "1.5rem", margin: 0 }}>Bảng Xếp Hạng Tuần</h2>
+            <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+              <div style={{ 
+                display: "flex", 
+                background: "#2a2a35", 
+                borderRadius: "8px", 
+                padding: "2px",
+                border: "1px solid rgba(255, 255, 255, 0.1)"
+              }}>
+                <button
+                  onClick={() => setTrendingFilter("region")}
+                  style={{
+                    background: trendingFilter === "region" ? "#1db954" : "transparent",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "0.5rem 1rem",
+                    fontSize: "0.9rem",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    fontWeight: "500"
+                  }}
+                >
+                  Theo Khu Vực
+                </button>
+                <button
+                  onClick={() => setTrendingFilter("genre")}
+                  style={{
+                    background: trendingFilter === "genre" ? "#1db954" : "transparent",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "0.5rem 1rem",
+                    fontSize: "0.9rem",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    fontWeight: "500"
+                  }}
+                >
+                  Theo Thể Loại
+                </button>
+              </div>
+            </div>
+          </div>
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
             {/* Việt Nam */}
             <div style={{ flex: "1", minWidth: "250px", background: "#1e1e24", padding: "1rem", borderRadius: "8px" }}>
-              <h3 style={{ color: "#fff", marginBottom: "1rem" }}>Việt Nam</h3>
+              <h3 style={{ color: "#fff", marginBottom: "1rem" }}>
+                {trendingFilter === "region" ? "Việt Nam" : "Pop"}
+              </h3>
               {trendingSongs.vietnam.length > 0 ? trendingSongs.vietnam.map((song, index) => (
                 <div 
                   key={song._id} 
@@ -614,7 +712,7 @@ function App() {
                         if (isCurrent) {
                           setIsPlaying((prev) => !prev);
                         } else {
-                          playSong(realIdx);
+                          playSong(realIdx, "suggestions");
                         }
                       }
                     }}
@@ -627,7 +725,9 @@ function App() {
             
             {/* US-UK */}
             <div style={{ flex: "1", minWidth: "250px", background: "#1e1e24", padding: "1rem", borderRadius: "8px" }}>
-              <h3 style={{ color: "#fff", marginBottom: "1rem" }}>US-UK</h3>
+              <h3 style={{ color: "#fff", marginBottom: "1rem" }}>
+                {trendingFilter === "region" ? "US-UK" : "R/B"}
+              </h3>
               {trendingSongs.usuk.length > 0 ? trendingSongs.usuk.map((song, index) => (
                 <div 
                   key={`us-${song._id}`} 
@@ -679,7 +779,7 @@ function App() {
                         if (isCurrent) {
                           setIsPlaying((prev) => !prev);
                         } else {
-                          playSong(realIdx);
+                          playSong(realIdx, "suggestions");
                         }
                       }
                     }}
@@ -692,7 +792,9 @@ function App() {
             
             {/* K-Pop */}
             <div style={{ flex: "1", minWidth: "250px", background: "#1e1e24", padding: "1rem", borderRadius: "8px" }}>
-              <h3 style={{ color: "#fff", marginBottom: "1rem" }}>K-Pop</h3>
+              <h3 style={{ color: "#fff", marginBottom: "1rem" }}>
+                {trendingFilter === "region" ? "K-Pop" : "Rap"}
+              </h3>
               {trendingSongs.korea.length > 0 ? trendingSongs.korea.map((song, index) => (
                 <div 
                   key={`k-${song._id}`} 
@@ -744,7 +846,7 @@ function App() {
                         if (isCurrent) {
                           setIsPlaying((prev) => !prev);
                         } else {
-                          playSong(realIdx);
+                          playSong(realIdx, "suggestions");
                         }
                       }
                     }}

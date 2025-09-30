@@ -318,4 +318,25 @@ router.post("/update-weekly-plays", async (req, res) => {
   }
 });
 
+// Lấy trending songs theo thể loại
+router.get("/trending/genre/:genre", async (req, res) => {
+  try {
+    const { genre } = req.params;
+    const limit = req.query.limit || 5;
+    
+    const songs = await Song.find({
+      "genres.name": { $regex: new RegExp(genre, 'i') }
+    })
+      .populate("album")
+      .populate("genres")
+      .populate("region")
+      .sort({ weeklyPlays: -1, plays: -1, createdAt: -1 })
+      .limit(parseInt(limit));
+    
+    res.json(songs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
