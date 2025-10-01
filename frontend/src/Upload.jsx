@@ -21,6 +21,22 @@ function Upload() {
   const [loadingGenres, setLoadingGenres] = useState(true);
   const [regions, setRegions] = useState([]);
   const [loadingRegions, setLoadingRegions] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filter songs based on search query
+  const filteredSongs = songs.filter(song => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      song.title.toLowerCase().includes(query) ||
+      song.artist.toLowerCase().includes(query) ||
+      (song.genres && song.genres.some(genre => 
+        genre.name && genre.name.toLowerCase().includes(query)
+      )) ||
+      (song.region && song.region.name && 
+        song.region.name.toLowerCase().includes(query))
+    );
+  });
 
   useEffect(() => {
     document.title = "CoreSound";
@@ -208,12 +224,67 @@ function Upload() {
       </form>
 
       <div style={{ marginTop: 24 }}>
-        <div className="recommend-header" style={{ marginBottom: 8 }}>
-          <div className="recommend-title">Danh sách bài hát</div>
-          <div style={{ opacity: 0.8, fontSize: 14 }}>
-            {loadingSongs ? "Đang tải..." : `${songs.length} bài`}
+        <div className="recommend-header" style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div className="recommend-title">Danh sách bài hát</div>
+            <div style={{ opacity: 0.8, fontSize: 14 }}>
+              {loadingSongs ? "Đang tải..." : `${songs.length} bài`}
+            </div>
+          </div>
+          
+          {/* Search Bar */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            maxWidth: "400px"
+          }}>
+            <input
+              type="text"
+              placeholder="Tìm kiếm bài hát, nghệ sĩ, thể loại, khu vực..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                flex: 1,
+                padding: "10px 12px",
+                borderRadius: "8px",
+                border: "1px solid #444",
+                background: "#1f1f1f",
+                color: "#fff",
+                fontSize: "14px",
+                minWidth: "300px"
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#888",
+                  cursor: "pointer",
+                  padding: "8px",
+                  borderRadius: "4px",
+                  fontSize: "16px"
+                }}
+                title="Xóa tìm kiếm"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
+        
+        {searchQuery && (
+          <div style={{
+            color: "#b3b3b3",
+            fontSize: "12px",
+            marginBottom: "8px",
+            paddingLeft: "12px"
+          }}>
+            Tìm thấy {filteredSongs.length} bài hát
+          </div>
+        )}
 
         <div style={{
           display: "grid",
@@ -232,9 +303,20 @@ function Upload() {
           <div style={{ textAlign: "right" }}>Hành động</div>
         </div>
 
-        {songs.map((s) => (
-          <SongRow key={s._id} song={s} genres={genres} regions={regions} onChange={(next) => setSongs((prev) => prev.map((x) => x._id === next._id ? next : x))} onDelete={(id)=> setSongs((prev)=> prev.filter((x)=> x._id !== id))} />
-        ))}
+        {filteredSongs.length > 0 ? (
+          filteredSongs.map((s) => (
+            <SongRow key={s._id} song={s} genres={genres} regions={regions} onChange={(next) => setSongs((prev) => prev.map((x) => x._id === next._id ? next : x))} onDelete={(id)=> setSongs((prev)=> prev.filter((x)=> x._id !== id))} />
+          ))
+        ) : (
+          <div style={{
+            padding: "40px 20px",
+            textAlign: "center",
+            color: "#888",
+            fontSize: "14px"
+          }}>
+            {searchQuery ? "Không tìm thấy bài hát nào" : "Chưa có bài hát nào"}
+          </div>
+        )}
       </div>
     </div>
   );

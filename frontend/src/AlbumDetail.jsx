@@ -224,6 +224,28 @@ function AlbumDetail() {
               <div style={{ color: "#cfd3da", marginBottom: 14, fontSize: 16 }}>
                 {album.artist} • {songs.length} bài • {formatTotalDuration(totalDuration)}
               </div>
+              {album.genres && album.genres.length > 0 && (
+                <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ color: "#89b4fa", fontSize: 14 }}>Thể loại</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {album.genres.map((genre, index) => (
+                      <span
+                        key={index}
+                        style={{
+                          background: "rgba(137, 180, 250, 0.1)",
+                          color: "#89b4fa",
+                          padding: "4px 12px",
+                          borderRadius: "16px",
+                          fontSize: "12px",
+                          border: "1px solid rgba(137, 180, 250, 0.2)"
+                        }}
+                      >
+                        {genre.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div style={{ display: "flex", gap: 10 }}>
                 <button className="spotify-btn playpause" onClick={() => songs.length && playAt(0)} title="Phát album" style={{ transform: "scale(1.2)" }}>
                   <FaPlay />
