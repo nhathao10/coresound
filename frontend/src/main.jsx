@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import Upload from './Upload.jsx'
 import AlbumsAdmin from './AlbumsAdmin.jsx'
+import ArtistsAdmin from './ArtistsAdmin.jsx'
 import GenresAdmin from './GenresAdmin.jsx'
 import RegionsAdmin from './RegionsAdmin.jsx'
 import AlbumDetail from './AlbumDetail.jsx'
@@ -17,6 +18,9 @@ function Router() {
   }
   if (hash.startsWith('#/albums-admin')) {
     return <AlbumsAdmin />
+  }
+  if (hash.startsWith('#/artists-admin')) {
+    return <ArtistsAdmin />
   }
   if (hash.startsWith('#/genres-admin')) {
     return <GenresAdmin />

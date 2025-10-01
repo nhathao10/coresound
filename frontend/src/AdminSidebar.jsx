@@ -70,6 +70,7 @@ function AdminSidebar({ open, onToggle }) {
         <a href="#/" style={linkStyle(hash === "#/" || hash === "#/")}>Trang chủ</a>
         <a href="#/upload" style={linkStyle(hash.startsWith("#/upload"))}>Quản lý Bài hát</a>
         <a href="#/albums-admin" style={linkStyle(hash.startsWith("#/albums-admin"))}>Quản lý Album</a>
+        <a href="#/artists-admin" style={linkStyle(hash.startsWith("#/artists-admin"))}>Quản lý Nghệ sĩ</a>
         <a href="#/genres-admin" style={linkStyle(hash.startsWith("#/genres-admin"))}>Quản lý Thể loại</a>
         <a href="#/regions-admin" style={linkStyle(hash.startsWith("#/regions-admin"))}>Quản lý Khu vực</a>
         </nav>

@@ -26,6 +26,7 @@ const uploadRoute = require('./routes/upload');
 const albumsRoute = require('./routes/albums');
 const genresRoute = require('./routes/genres');
 const regionsRoute = require('./routes/regions');
+const artistsRoute = require('./routes/artists');
 
 app.get('/', (req, res) => {
   res.send('CoreSound backend is running!');
@@ -42,6 +43,9 @@ app.use('/api/genres', genresRoute);
 
 // API regions
 app.use('/api/regions', regionsRoute);
+
+// API artists
+app.use('/api/artists', artistsRoute);
 
 // API upload (cover & song)
 app.use('/api', uploadRoute);
