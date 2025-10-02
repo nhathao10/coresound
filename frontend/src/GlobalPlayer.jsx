@@ -58,23 +58,55 @@ export default function GlobalPlayer() {
 
   const next = () => {
     if (queue.length === 0) return;
+    
     if (shuffle) {
       let n = Math.floor(Math.random() * queue.length);
       while (queue.length > 1 && n === currentIdx) n = Math.floor(Math.random() * queue.length);
       setCurrentIdx(n);
     } else {
-      setCurrentIdx((i) => (i === null || i === queue.length - 1 ? 0 : i + 1));
+      // Use allSongs order for next/prev navigation
+      if (allSongs.length > 0) {
+        const currentSongInPanel = allSongs.find(song => song.isCurrent);
+        if (currentSongInPanel) {
+          const currentPanelIndex = allSongs.findIndex(song => song.isCurrent);
+          const nextPanelIndex = (currentPanelIndex + 1) % allSongs.length;
+          const nextSong = allSongs[nextPanelIndex];
+          setCurrentIdx(nextSong.queueIndex);
+        } else {
+          // Fallback to original logic
+          setCurrentIdx((i) => (i === null || i === queue.length - 1 ? 0 : i + 1));
+        }
+      } else {
+        // Fallback to original logic
+        setCurrentIdx((i) => (i === null || i === queue.length - 1 ? 0 : i + 1));
+      }
     }
     setIsPlaying(true);
   };
   const prev = () => {
     if (queue.length === 0) return;
+    
     if (shuffle) {
       let n = Math.floor(Math.random() * queue.length);
       while (queue.length > 1 && n === currentIdx) n = Math.floor(Math.random() * queue.length);
       setCurrentIdx(n);
     } else {
-      setCurrentIdx((i) => (i === 0 || i === null ? queue.length - 1 : i - 1));
+      // Use allSongs order for next/prev navigation
+      if (allSongs.length > 0) {
+        const currentSongInPanel = allSongs.find(song => song.isCurrent);
+        if (currentSongInPanel) {
+          const currentPanelIndex = allSongs.findIndex(song => song.isCurrent);
+          const prevPanelIndex = currentPanelIndex === 0 ? allSongs.length - 1 : currentPanelIndex - 1;
+          const prevSong = allSongs[prevPanelIndex];
+          setCurrentIdx(prevSong.queueIndex);
+        } else {
+          // Fallback to original logic
+          setCurrentIdx((i) => (i === 0 || i === null ? queue.length - 1 : i - 1));
+        }
+      } else {
+        // Fallback to original logic
+        setCurrentIdx((i) => (i === 0 || i === null ? queue.length - 1 : i - 1));
+      }
     }
     setIsPlaying(true);
   };

@@ -191,4 +191,32 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+// POST /api/artists/:id/follow - Follow/Unfollow an artist
+router.post("/:id/follow", async (req, res) => {
+  try {
+    const { action } = req.body; // 'follow' or 'unfollow'
+    const artist = await Artist.findById(req.params.id);
+    
+    if (!artist) {
+      return res.status(404).json({ error: "Artist not found" });
+    }
+
+    if (action === "follow") {
+      artist.followers = (artist.followers || 0) + 1;
+    } else if (action === "unfollow") {
+      artist.followers = Math.max((artist.followers || 0) - 1, 0);
+    } else {
+      return res.status(400).json({ error: 'Invalid action. Use "follow" or "unfollow"' });
+    }
+
+    await artist.save();
+    res.json({ 
+      message: `Artist ${action}ed successfully`,
+      followers: artist.followers 
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

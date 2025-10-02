@@ -25,16 +25,20 @@ function App() {
   const [selectedGenres] = useState(["Pop", "R/B", "Rap"]);
   const [showNextSongPanel, setShowNextSongPanel] = useState(false);
   const [currentQueue, setCurrentQueue] = useState([]);
+  const [artists, setArtists] = useState([]);
+  const [followedArtists, setFollowedArtists] = useState(new Set());
 
   useEffect(() => {
     Promise.all([
       fetch("http://localhost:5000/api/songs").then((r) => r.json()),
       fetch("http://localhost:5000/api/albums").then((r) => r.json()),
       fetch("http://localhost:5000/api/genres").then((r) => r.json()),
-    ]).then(([songsData, albumsData, genresData]) => {
+      fetch("http://localhost:5000/api/artists").then((r) => r.json()),
+    ]).then(([songsData, albumsData, genresData, artistsData]) => {
       setSongs(songsData);
       setAlbums(albumsData);
       setGenres(genresData);
+      setArtists(artistsData);
       setDisplayedSongs(getRandomSongs(songsData, 7));
       setDisplayedAlbums(getRandomAlbums(albumsData, 7));
     });
@@ -304,6 +308,50 @@ function App() {
       } else {
         setCurrentQueue(songs);
       }
+    }
+  };
+
+  const toggleFollowArtist = async (artistId) => {
+    const isCurrentlyFollowed = followedArtists.has(artistId);
+    const action = isCurrentlyFollowed ? 'unfollow' : 'follow';
+    
+    try {
+      const response = await fetch(`http://localhost:5000/api/artists/${artistId}/follow`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update follow status');
+      }
+      
+      // Update local follow state
+      setFollowedArtists(prev => {
+        const newSet = new Set(prev);
+        if (isCurrentlyFollowed) {
+          newSet.delete(artistId);
+        } else {
+          newSet.add(artistId);
+        }
+        return newSet;
+      });
+      
+      // Update artist followers count in local state
+      setArtists(prev => prev.map(artist => 
+        artist._id === artistId 
+          ? { ...artist, followers: data.followers }
+          : artist
+      ));
+      
+    } catch (error) {
+      console.error('Error updating follow status:', error);
+      // Optionally show error message to user
+      alert('Không thể cập nhật trạng thái theo dõi. Vui lòng thử lại.');
     }
   };
 
@@ -855,6 +903,163 @@ function App() {
                 </div>
               )) : <div style={{ color: "#b3b3b3" }}>Đang tải...</div>}
             </div>
+          </div>
+        </section>
+
+        {/* Nghệ sĩ nổi bật */}
+        <section style={{ marginTop: "2rem", padding: "1rem 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+            <h2 style={{ color: "#fff", fontSize: "1.5rem", margin: 0 }}>Nghệ sĩ nổi bật</h2>
+            <button
+              onClick={() => {
+                // Shuffle artists list
+                const shuffled = [...artists].sort(() => Math.random() - 0.5);
+                setArtists(shuffled);
+              }}
+              style={{
+                background: "transparent",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                borderRadius: "20px",
+                color: "#b3b3b3",
+                padding: "0.5rem 1rem",
+                fontSize: "0.8rem",
+                cursor: "pointer",
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.borderColor = "#1db954";
+                e.target.style.color = "#1db954";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.borderColor = "rgba(255, 255, 255, 0.2)";
+                e.target.style.color = "#b3b3b3";
+              }}
+            >
+              Làm mới
+            </button>
+          </div>
+          
+          <div style={{ 
+            display: "flex", 
+            flexWrap: "wrap",
+            gap: "2rem",
+            justifyContent: "center",
+            maxWidth: "100%"
+          }}>
+            {artists.slice(0, 6).map((artist) => (
+              <div
+                key={artist._id}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-8px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                {/* Avatar */}
+                <div style={{ marginBottom: "1rem", position: "relative" }}>
+                  <img
+                    src={withMediaBase(artist.avatar) || "https://via.placeholder.com/140x140/18181b/fff?text=Artist"}
+                    alt={artist.name}
+                    style={{
+                      width: "140px",
+                      height: "140px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      border: "4px solid rgba(255, 255, 255, 0.1)",
+                      transition: "all 0.3s ease",
+                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.borderColor = "#1db954";
+                      e.target.style.transform = "scale(1.05)";
+                      e.target.style.boxShadow = "0 12px 40px rgba(29, 185, 84, 0.3)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                      e.target.style.transform = "scale(1)";
+                      e.target.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.3)";
+                    }}
+                  />
+                </div>
+                
+                {/* Artist Info */}
+                <h3 style={{ 
+                  color: "#fff", 
+                  fontSize: "1.2rem", 
+                  fontWeight: "600", 
+                  margin: "0 0 0.5rem 0",
+                  maxWidth: "160px",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }}>
+                  {artist.name}
+                </h3>
+                
+                <p style={{ 
+                  color: "#b3b3b3", 
+                  fontSize: "0.9rem", 
+                  margin: "0 0 1rem 0",
+                  fontWeight: "400"
+                }}>
+                  {(artist.followers || 0).toLocaleString("vi-VN")} người theo dõi
+                </p>
+                
+                {/* Follow Button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFollowArtist(artist._id);
+                  }}
+                  style={{
+                    background: followedArtists.has(artist._id) ? "rgba(29, 185, 84, 0.2)" : "transparent",
+                    border: `2px solid ${followedArtists.has(artist._id) ? "rgba(29, 185, 84, 0.6)" : "rgba(255, 255, 255, 0.3)"}`,
+                    borderRadius: "25px",
+                    color: followedArtists.has(artist._id) ? "#1db954" : "#fff",
+                    padding: "0.6rem 1.8rem",
+                    fontSize: "0.9rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    minWidth: "120px",
+                    boxShadow: followedArtists.has(artist._id) ? "0 2px 8px rgba(29, 185, 84, 0.15)" : "none"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!followedArtists.has(artist._id)) {
+                      e.target.style.borderColor = "#1db954";
+                      e.target.style.color = "#1db954";
+                      e.target.style.background = "rgba(29, 185, 84, 0.05)";
+                    } else {
+                      e.target.style.transform = "scale(1.05)";
+                      e.target.style.background = "rgba(29, 185, 84, 0.3)";
+                      e.target.style.borderColor = "rgba(29, 185, 84, 0.8)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!followedArtists.has(artist._id)) {
+                      e.target.style.borderColor = "rgba(255, 255, 255, 0.3)";
+                      e.target.style.color = "#fff";
+                      e.target.style.background = "transparent";
+                    } else {
+                      e.target.style.transform = "scale(1)";
+                      e.target.style.background = "rgba(29, 185, 84, 0.2)";
+                      e.target.style.borderColor = "rgba(29, 185, 84, 0.6)";
+                    }
+                  }}
+                >
+                  {followedArtists.has(artist._id) ? "Đang theo dõi" : "Theo dõi"}
+                </button>
+              </div>
+            ))}
           </div>
         </section>
         
