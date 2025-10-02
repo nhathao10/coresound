@@ -11,6 +11,7 @@ export function PlayerProvider({ children }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
+  const [queueContext, setQueueContext] = useState("suggestions"); // "suggestions" hoặc "album"
 
   const current = currentIdx !== null ? queue[currentIdx] : null;
 
@@ -40,6 +41,7 @@ export function PlayerProvider({ children }) {
       duration,
       volume,
       current,
+      queueContext,
       // setters/controls (GlobalPlayer wires audio side-effects)
       setQueueAndPlay,
       setQueue,
@@ -50,9 +52,10 @@ export function PlayerProvider({ children }) {
       setProgress,
       setDuration,
       setVolume,
+      setQueueContext,
       playAt,
     }),
-    [queue, currentIdx, isPlaying, shuffle, repeat, progress, duration, volume, current]
+    [queue, currentIdx, isPlaying, shuffle, repeat, progress, duration, volume, current, queueContext]
   );
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;

@@ -116,6 +116,7 @@ function AlbumDetail() {
     setVolume,
     setCurrentIdx,
     setQueueAndPlay,
+    setQueueContext,
   } = usePlayer();
   const audioRef = useRef(null);
 
@@ -151,6 +152,8 @@ function AlbumDetail() {
       setCurrentIdx(idx);
       setIsPlaying(true);
     }
+    // Set context to "album" when playing from album
+    setQueueContext("album");
   };
   const togglePlayPause = () => setIsPlaying((p) => !p);
   const next = () => {

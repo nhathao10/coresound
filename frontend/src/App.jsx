@@ -7,7 +7,7 @@ function App() {
   const [songs, setSongs] = useState([]);
   const [albums, setAlbums] = useState([]);
   const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
-  const { setQueueAndPlay, currentIdx, isPlaying, setIsPlaying, queue, setCurrentIdx, current } = usePlayer();
+  const { setQueueAndPlay, currentIdx, isPlaying, setIsPlaying, queue, setCurrentIdx, current, setQueueContext } = usePlayer();
   const [displayedSongs, setDisplayedSongs] = useState([]); // 7 bài hát hiển thị
   const [displayedAlbums, setDisplayedAlbums] = useState([]); // 7 album hiển thị
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,7 +25,6 @@ function App() {
   const [selectedGenres] = useState(["Pop", "R/B", "Rap"]);
   const [showNextSongPanel, setShowNextSongPanel] = useState(false);
   const [currentQueue, setCurrentQueue] = useState([]);
-  const [queueContext, setQueueContext] = useState("suggestions"); // "suggestions" hoặc "album"
 
   useEffect(() => {
     Promise.all([

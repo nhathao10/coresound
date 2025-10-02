@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { FaPause, FaPlay, FaRandom, FaRedo, FaStepBackward, FaStepForward, FaVolumeUp, FaList, FaGripVertical } from "react-icons/fa";
 import { usePlayer } from "./PlayerContext.jsx";
 
@@ -15,6 +15,7 @@ export default function GlobalPlayer() {
     progress,
     duration,
     volume,
+    queueContext,
     setIsPlaying,
     setShuffle,
     setRepeat,
@@ -29,7 +30,6 @@ export default function GlobalPlayer() {
   const audioRef = useRef(null);
   const [showNextSongPanel, setShowNextSongPanel] = useState(false);
   const [currentQueue, setCurrentQueue] = useState([]);
-  const [queueContext, setQueueContext] = useState("suggestions");
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const scrollContainerRef = useRef(null);
@@ -94,8 +94,8 @@ export default function GlobalPlayer() {
     return `${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
-  // Get all songs in queue with current song at top
-  const getAllSongs = () => {
+  // Get all songs in queue with current song at top - memoized to prevent random reshuffling
+  const allSongs = useMemo(() => {
     if (!queue || queue.length === 0 || currentIdx === null) return [];
     
     const allSongs = [];
@@ -113,10 +113,20 @@ export default function GlobalPlayer() {
       allSongs.push({ ...queue[i], queueIndex: i, isCurrent: false });
     }
     
+    // If context is "suggestions", limit to 20 songs total (including current)
+    if (queueContext === "suggestions" && allSongs.length > 20) {
+      // Keep current song and randomly select 19 more from the rest
+      const currentSong = allSongs[0]; // Current song is always first
+      const otherSongs = allSongs.slice(1); // All other songs
+      
+      // Randomly shuffle and take first 19
+      const shuffledOthers = [...otherSongs].sort(() => Math.random() - 0.5);
+      const selectedOthers = shuffledOthers.slice(0, 19);
+      
+      return [currentSong, ...selectedOthers];
+    }
     return allSongs;
-  };
-
-  const allSongs = getAllSongs();
+  }, [queue, currentIdx, queueContext]);
 
   // Drag and drop handlers
   const handleDragStart = (e, index) => {
@@ -304,7 +314,7 @@ export default function GlobalPlayer() {
               margin: "0.25rem 0 0 0", 
               fontSize: "0.8rem" 
             }}>
-              {queue.length} bài hát trong danh sách • Kéo thả để sắp xếp
+              {allSongs.length} bài hát trong danh sách • Kéo thả để sắp xếp
             </p>
           </div>
           

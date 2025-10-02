@@ -10,6 +10,8 @@ function AlbumsAdmin() {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: "", artist: "", releaseDate: "", plays: "", cover: null, genres: [] });
   const [selectedAlbumId, setSelectedAlbumId] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [songSearchQuery, setSongSearchQuery] = useState("");
   const selectedAlbum = useMemo(() => albums.find(a => a._id === selectedAlbumId) || null, [albums, selectedAlbumId]);
 
   useEffect(() => {
@@ -139,10 +141,73 @@ function AlbumsAdmin() {
     }),
     [songs]
   );
+
+  // Lọc bài hát có sẵn theo từ khóa tìm kiếm
+  const filteredAvailableSongs = useMemo(() => {
+    // Kiểm tra an toàn
+    if (!availableSongs || !Array.isArray(availableSongs)) {
+      return [];
+    }
+    
+    if (!songSearchQuery.trim()) return availableSongs;
+    
+    const query = songSearchQuery.toLowerCase().trim();
+    
+    // Debug: Log first song structure
+    if (availableSongs.length > 0 && songSearchQuery.length === 1) {
+      console.log('Sample song structure:', availableSongs[0]);
+    }
+    
+    return availableSongs.filter(song => {
+      if (!song) return false;
+      
+      try {
+        // Tìm kiếm theo tên bài hát
+        const matchTitle = song.title?.toLowerCase()?.includes(query) || false;
+        
+        // Tìm kiếm theo nghệ sĩ
+        const matchArtist = song.artist?.toLowerCase()?.includes(query) || false;
+        
+        // Tìm kiếm theo thể loại (có thể là object hoặc string)
+        const genreText = typeof song.genre === 'object' ? song.genre?.name : song.genre;
+        const matchGenre = genreText?.toLowerCase()?.includes(query) || false;
+        
+        // Tìm kiếm theo khu vực (có thể là object hoặc string)
+        const regionText = typeof song.region === 'object' ? song.region?.name : song.region;
+        const matchRegion = regionText?.toLowerCase()?.includes(query) || false;
+        
+        return matchTitle || matchArtist || matchGenre || matchRegion;
+      } catch (error) {
+        console.error('Error filtering song:', song, error);
+        return false;
+      }
+    });
+  }, [availableSongs, songSearchQuery]);
   const albumSongs = useMemo(
     () => songs.filter((s) => String(getAlbumId(s)) === String(selectedAlbumId)),
     [songs, selectedAlbumId]
   );
+
+  // Lọc album theo từ khóa tìm kiếm
+  const filteredAlbums = useMemo(() => {
+    if (!searchQuery.trim()) return albums;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return albums.filter(album => {
+      // Tìm kiếm theo tên album
+      const matchName = album.name?.toLowerCase().includes(query);
+      
+      // Tìm kiếm theo nghệ sĩ
+      const matchArtist = album.artist?.toLowerCase().includes(query);
+      
+      // Tìm kiếm theo thể loại
+      const matchGenre = album.genres?.some(genre => 
+        (genre.name || genre)?.toLowerCase().includes(query)
+      );
+      
+      return matchName || matchArtist || matchGenre;
+    });
+  }, [albums, searchQuery]);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   return (
@@ -205,10 +270,53 @@ function AlbumsAdmin() {
       </section>
 
       <section style={{ marginTop: 24 }}>
-        <div className="recommend-header" style={{ marginBottom: 8 }}>
-          <div className="recommend-title">Danh sách album</div>
-          <div style={{ opacity: 0.8, fontSize: 14 }}>{loading ? "Đang tải..." : `${albums.length} album`}</div>
+        <div className="recommend-header" style={{ marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div className="recommend-title">Danh sách album</div>
+            <div style={{ opacity: 0.8, fontSize: 14 }}>
+              {loading ? "Đang tải..." : `${albums.length} album`}
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", maxWidth: "400px" }}>
+            <input
+              type="text"
+              placeholder="Tìm kiếm album..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                flex: 1,
+                minWidth: "300px",
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: "1px solid #444",
+                background: "#1f1f1f",
+                color: "#fff",
+                fontSize: "14px"
+              }}
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 6,
+                  border: "1px solid #444",
+                  background: "#2a2a2a",
+                  color: "#b3b3b3",
+                  cursor: "pointer",
+                  fontSize: "12px"
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
+        {searchQuery && (
+          <div style={{ color: "#b3b3b3", fontSize: "12px", marginBottom: "8px", paddingLeft: "12px" }}>
+            Tìm thấy {filteredAlbums.length} album
+          </div>
+        )}
 
         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr 0.8fr 0.6fr 0.8fr", gap: 8, padding: "8px 12px", borderBottom: "1px solid #2e2e37", background: "#1a1a20", color: "#b3b3b3" }}>
           <div>Tên album</div>
@@ -219,8 +327,8 @@ function AlbumsAdmin() {
           <div style={{ textAlign: "right" }}>Hành động</div>
         </div>
 
-        {albums.map((al) => (
-          <AlbumRow key={al._id} album={al} genres={genres} onSave={saveAlbum} onDelete={deleteAlbum} onCover={changeCover} onSelect={()=> setSelectedAlbumId(al._id)} selected={selectedAlbumId === al._id} />
+        {filteredAlbums.map((al) => (
+          <AlbumRow key={al._id} album={al} genres={genres} onSave={saveAlbum} onDelete={deleteAlbum} onCover={changeCover} onSelect={()=> { setSelectedAlbumId(al._id); setSongSearchQuery(""); }} selected={selectedAlbumId === al._id} />
         ))}
       </section>
 
@@ -242,9 +350,51 @@ function AlbumsAdmin() {
               ))}
             </div>
             <div style={{ border: "1px solid #2e2e37", borderRadius: 12, padding: 12, background: "#1e1e24" }}>
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>Thêm bài hát có sẵn</div>
-              {availableSongs.length === 0 && <div style={{ opacity: 0.8 }}>Không còn bài nào để thêm</div>}
-              {availableSongs.map((s)=> (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ fontWeight: 700 }}>Thêm bài hát có sẵn</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", maxWidth: "250px" }}>
+                  <input
+                    type="text"
+                    placeholder="Tìm bài hát..."
+                    value={songSearchQuery}
+                    onChange={(e) => setSongSearchQuery(e.target.value)}
+                    style={{
+                      flex: 1,
+                      minWidth: "200px",
+                      padding: "6px 10px",
+                      borderRadius: 6,
+                      border: "1px solid #444",
+                      background: "#1f1f1f",
+                      color: "#fff",
+                      fontSize: "13px"
+                    }}
+                  />
+                  {songSearchQuery && (
+                    <button
+                      onClick={() => setSongSearchQuery("")}
+                      style={{
+                        padding: "6px 8px",
+                        borderRadius: 4,
+                        border: "1px solid #444",
+                        background: "#2a2a2a",
+                        color: "#b3b3b3",
+                        cursor: "pointer",
+                        fontSize: "11px"
+                      }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+              {songSearchQuery && (
+                <div style={{ color: "#b3b3b3", fontSize: "11px", marginBottom: "8px" }}>
+                  Tìm thấy {filteredAvailableSongs.length} bài hát
+                </div>
+              )}
+              {filteredAvailableSongs.length === 0 && !songSearchQuery && <div style={{ opacity: 0.8 }}>Không còn bài nào để thêm</div>}
+              {filteredAvailableSongs.length === 0 && songSearchQuery && <div style={{ opacity: 0.8 }}>Không tìm thấy bài hát nào</div>}
+              {filteredAvailableSongs.map((s)=> (
                 <div key={s._id} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #2a2a34" }}>
                   <div>{s.title}</div>
                   <div style={{ color: "#b3b3b3" }}>{s.artist}</div>
