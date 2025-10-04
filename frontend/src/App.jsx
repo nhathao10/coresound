@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
-import { FaPlay, FaPause } from "react-icons/fa";
+import { FaPlay, FaPause, FaCheckCircle } from "react-icons/fa";
 import { usePlayer } from "./PlayerContext.jsx";
+import Header from "./Header.jsx";
 
 function App() {
   const [songs, setSongs] = useState([]);
   const [albums, setAlbums] = useState([]);
   const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
-  const { setQueueAndPlay, currentIdx, isPlaying, setIsPlaying, queue, setCurrentIdx, current, setQueueContext } = usePlayer();
+  const { setQueueAndPlay, currentIdx, isPlaying, setIsPlaying, queue, setCurrentIdx, current, setQueueContext, setQueue } = usePlayer();
   const [displayedSongs, setDisplayedSongs] = useState([]); // 7 bài hát hiển thị
   const [displayedAlbums, setDisplayedAlbums] = useState([]); // 7 album hiển thị
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,6 +28,65 @@ function App() {
   const [currentQueue, setCurrentQueue] = useState([]);
   const [artists, setArtists] = useState([]);
   const [followedArtists, setFollowedArtists] = useState(new Set());
+  const [dropdownPosition, setDropdownPosition] = useState({ left: 0, top: 0, width: 0 });
+  const [searchHistory, setSearchHistory] = useState([]);
+
+  // Load search history from localStorage
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem('cs_search_history');
+      if (savedHistory) {
+        const history = JSON.parse(savedHistory);
+        if (Array.isArray(history)) {
+          setSearchHistory(history);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading search history:', error);
+    }
+  }, []);
+
+  // Save search history to localStorage
+  const saveSearchHistory = (history) => {
+    try {
+      localStorage.setItem('cs_search_history', JSON.stringify(history));
+      setSearchHistory(history);
+    } catch (error) {
+      console.error('Error saving search history:', error);
+    }
+  };
+
+  // Add song to search history
+  const addToSearchHistory = (song) => {
+    const newHistory = searchHistory.filter(item => item._id !== song._id);
+    newHistory.unshift(song);
+    const limitedHistory = newHistory.slice(0, 10); // Keep only 10 recent searches
+    saveSearchHistory(limitedHistory);
+  };
+
+  // Remove song from search history
+  const removeFromSearchHistory = (songId) => {
+    const newHistory = searchHistory.filter(item => item._id !== songId);
+    saveSearchHistory(newHistory);
+  };
+
+  // Clear all search history
+  const clearSearchHistory = () => {
+    saveSearchHistory([]);
+  };
+
+  // Calculate dropdown position based on search input
+  const updateDropdownPosition = () => {
+    const searchInput = document.querySelector('.header input[type="text"]');
+    if (searchInput) {
+      const rect = searchInput.getBoundingClientRect();
+      setDropdownPosition({
+        left: rect.left,
+        top: rect.bottom + 4,
+        width: rect.width
+      });
+    }
+  };
 
   useEffect(() => {
     Promise.all([
@@ -41,6 +101,15 @@ function App() {
       setArtists(artistsData);
       setDisplayedSongs(getRandomSongs(songsData, 7));
       setDisplayedAlbums(getRandomAlbums(albumsData, 7));
+
+      // Check for search query in URL
+      const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+      const searchParam = urlParams.get('search');
+      if (searchParam) {
+        setSearchQuery(searchParam);
+        // Clear the URL parameter after setting the search
+        window.location.hash = '#/';
+      }
     });
   }, []);
 
@@ -288,6 +357,13 @@ function App() {
     const queueMismatch = !queue || queue.length !== songs.length || songs.some((s, i) => queue[i]?._id !== s._id);
     if (queueMismatch) {
       setQueueAndPlay(songs, idx);
+      
+      // Fallback: set queue directly and then play
+      setTimeout(() => {
+        setQueue(songs);
+        setCurrentIdx(idx);
+        setIsPlaying(true);
+      }, 100);
     } else {
       setCurrentIdx(idx);
       setIsPlaying(true);
@@ -432,75 +508,187 @@ function App() {
     }
   }, [current, isPlaying]);
 
+  // Update dropdown position on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (showDropdown) {
+        updateDropdownPosition();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [showDropdown]);
+
   return (
     <div className="music-app dark-theme">
-      <header className="header">
-        <div className="header-logo-block">
-          <span className="logo-gradient">CoreSound</span>
-          <div ref={searchWrapRef} style={{ position: "relative", marginLeft: 16, width: 360, display: "inline-block" }}>
-          <input
-            type="text"
-            placeholder="Tìm kiếm bài hát hoặc nghệ sĩ..."
-            value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }}
-              onFocus={() => setShowDropdown(true)}
-              onKeyDown={(e) => { if (e.key === "Enter") { if (searchResults[0]) saveRecentSong(searchResults[0]); setShowDropdown(false); } }}
-            className="search-input"
-            style={{
-              padding: "8px 12px",
-              borderRadius: 8,
-              border: "1px solid #444",
-              background: "#1f1f1f",
-              color: "#fff",
-                width: "100%",
-                boxSizing: "border-box",
-              }}
-            />
-            {showDropdown && (
-            <div style={{ position: "absolute", left: 0, top: 40, width: "100%", background: "#1e1e24", border: "1px solid #2e2e37", borderRadius: 8, boxShadow: "0 6px 18px #0009", zIndex: 200, maxHeight: 360, overflowY: "auto" }}>
-              {searchQuery.trim() ? (
+      <Header 
+        showSearch={true}
+        showSearchResults={true}
+        onSearchChange={(value) => {
+          setSearchQuery(value);
+          updateDropdownPosition();
+          setShowDropdown(true);
+        }}
+        onSearchFocus={() => {
+          updateDropdownPosition();
+          setShowDropdown(true);
+        }}
+        searchValue={searchQuery}
+      />
+      
+      {/* Search Dropdown - Keep the complex search logic in App.jsx for now */}
+      {showDropdown && dropdownPosition.width > 0 && (
+        <div ref={searchWrapRef} style={{ 
+          position: "fixed", 
+          left: dropdownPosition.left, 
+          top: dropdownPosition.top, 
+          width: dropdownPosition.width, 
+          background: "#1e1e24", 
+          border: "1px solid #2e2e37", 
+          borderRadius: 8, 
+          boxShadow: "0 6px 18px rgba(0,0,0,0.3)", 
+          zIndex: 1000, 
+          maxHeight: 360, 
+          overflowY: "auto" 
+        }}>
+          {searchQuery.trim() ? (
+            <div>
+              {/* Search Results Only - No History when searching */}
+              {searchResults.length > 0 ? (
                 <div>
                   {searchResults.slice(0, 8).map((song) => (
-                    <div key={song._id} onMouseDown={(e) => e.preventDefault()} onClick={() => {
-                      saveRecentSong(song);
+                    <div key={song._id} onMouseDown={(e) => {
+                      addToSearchHistory(song);
                       const realIdx = songs.findIndex((s) => s._id === song._id);
-                      if (realIdx !== -1) playSong(realIdx);
+                      if (realIdx !== -1) {
+                        playSong(realIdx);
+                      } else {
+                        // If not found in current songs array, try to reload and play
+                        fetch("http://localhost:5000/api/songs")
+                          .then((r) => r.json())
+                          .then((data) => {
+                            const newSongs = data || [];
+                            const newIdx = newSongs.findIndex((s) => s._id === song._id);
+                            if (newIdx !== -1) {
+                              setSongs(newSongs);
+                              playSong(newIdx);
+                            }
+                          })
+                          .catch((e) => console.error("Error reloading songs:", e));
+                      }
                       setShowDropdown(false);
-                    }} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", cursor: "pointer" }}>
-                      <img src={withMediaBase(song.cover) || "/default-cover.png"} alt={song.title} style={{ width: 36, height: 36, borderRadius: 6, objectFit: "cover" }} />
-                      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                        <span style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.title}</span>
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }} style={{ 
+                      display: "flex", 
+                      alignItems: "center", 
+                      gap: 10, 
+                      padding: "8px 12px", 
+                      cursor: "pointer",
+                      borderBottom: "1px solid #2a2a34",
+                      transition: "background-color 0.2s ease"
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#2a2a34"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                    >
+                      <img src={withMediaBase(song.cover) || "/default-cover.png"} alt={song.title} style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover" }} />
+                      <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+                        <span style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "#fff" }}>{song.title}</span>
                         <span style={{ color: "#b3b3b3", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.artist}</span>
                       </div>
                     </div>
                   ))}
-                  {searchResults.length === 0 && (
-                    <div style={{ padding: 10, color: "#b3b3b3" }}>Không có gợi ý phù hợp</div>
-                  )}
                 </div>
               ) : (
-                <div>
-                  {recentSongs.length > 0 ? (
-                    recentSongs.map((song) => (
-                      <div key={song._id} onMouseDown={(e) => e.preventDefault()} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px" }}>
-                        <img src={withMediaBase(song.cover) || "/default-cover.png"} alt={song.title} style={{ width: 36, height: 36, borderRadius: 6, objectFit: "cover" }} />
-                        <div onClick={() => { const realIdx = songs.findIndex((s) => s._id === song._id); if (realIdx !== -1) playSong(realIdx); setShowDropdown(false); }} style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, cursor: "pointer" }}>
-                          <span style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.title}</span>
-                          <span style={{ color: "#b3b3b3", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.artist}</span>
-                        </div>
-                        <button onClick={(e) => { e.stopPropagation(); removeRecentSong(song._id); }} title="Xóa khỏi lịch sử" style={{ background: "transparent", border: "none", color: "#b3b3b3", fontSize: 16, cursor: "pointer", padding: 4, lineHeight: 1 }}>×</button>
-                      </div>
-                    ))
-                  ) : (
-                    <div style={{ padding: 10, color: "#b3b3b3" }}>Chưa có lịch sử tìm kiếm</div>
-                  )}
+                <div style={{ padding: "16px 12px", color: "#b3b3b3", textAlign: "center" }}>
+                  Không tìm thấy kết quả cho "{searchQuery}"
                 </div>
               )}
             </div>
-            )}
-          </div>
+          ) : (
+            <div>
+              {searchHistory.length > 0 ? (
+                <div>
+                  {searchHistory.slice(0, 8).map((song) => (
+                    <div key={song._id} onMouseDown={(e) => e.preventDefault()} style={{ 
+                      display: "flex", 
+                      alignItems: "center", 
+                      gap: 10, 
+                      padding: "8px 12px",
+                      borderBottom: "1px solid #2a2a34",
+                      transition: "background-color 0.2s ease"
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#2a2a34"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                    >
+                      <img src={withMediaBase(song.cover) || "/default-cover.png"} alt={song.title} style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover" }} />
+                      <div 
+                        onMouseDown={(e) => { 
+                          const realIdx = songs.findIndex((s) => s._id === song._id);
+                          if (realIdx !== -1) {
+                            playSong(realIdx);
+                          } else {
+                            // If not found in current songs array, try to reload and play
+                            fetch("http://localhost:5000/api/songs")
+                              .then((r) => r.json())
+                              .then((data) => {
+                                const newSongs = data || [];
+                                const newIdx = newSongs.findIndex((s) => s._id === song._id);
+                                if (newIdx !== -1) {
+                                  setSongs(newSongs);
+                                  playSong(newIdx);
+                                }
+                              })
+                              .catch((e) => console.error("Error reloading songs:", e));
+                          }
+                          setShowDropdown(false);
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }} 
+                        style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, cursor: "pointer" }}
+                      >
+                        <span style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "#fff" }}>{song.title}</span>
+                        <span style={{ color: "#b3b3b3", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.artist}</span>
+                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); removeFromSearchHistory(song._id); }} 
+                        title="Xóa khỏi lịch sử" 
+                        style={{ 
+                          background: "transparent", 
+                          border: "none", 
+                          color: "#b3b3b3", 
+                          fontSize: 16, 
+                          cursor: "pointer", 
+                          padding: 4, 
+                          lineHeight: 1,
+                          borderRadius: 4,
+                          transition: "all 0.2s ease"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = "#ff4444";
+                          e.target.style.color = "#fff";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = "transparent";
+                          e.target.style.color = "#b3b3b3";
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ padding: "16px 12px", color: "#b3b3b3", textAlign: "center" }}>
+                  <div style={{ marginBottom: "8px" }}>Chưa có lịch sử tìm kiếm</div>
+                  <div style={{ fontSize: "11px", opacity: 0.8 }}>Tìm kiếm bài hát để xem lịch sử</div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      </header>
+      )}
       <main className="main-content">
         {searchQuery.trim() && (
           <section className="recommend-section recommend-section-horizontal">
@@ -965,7 +1153,12 @@ function App() {
                 }}
               >
                 {/* Avatar */}
-                <div style={{ marginBottom: "1rem", position: "relative" }}>
+                <div 
+                  style={{ marginBottom: "1rem", position: "relative", cursor: "pointer" }}
+                  onClick={() => {
+                    window.location.hash = `#/artist/${artist._id}`;
+                  }}
+                >
                   <img
                     src={withMediaBase(artist.avatar) || "https://via.placeholder.com/140x140/18181b/fff?text=Artist"}
                     alt={artist.name}
@@ -1000,9 +1193,25 @@ function App() {
                   maxWidth: "160px",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
-                  whiteSpace: "nowrap"
+                  whiteSpace: "nowrap",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem"
                 }}>
-                  {artist.name}
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {artist.name}
+                  </span>
+                  {artist.isVerified && (
+                    <FaCheckCircle 
+                      style={{ 
+                        color: "#1db954", 
+                        fontSize: "1rem",
+                        flexShrink: 0,
+                        filter: "drop-shadow(0 1px 2px rgba(29, 185, 84, 0.3))"
+                      }} 
+                      title="Nghệ sĩ đã xác minh"
+                    />
+                  )}
                 </h3>
                 
                 <p style={{ 

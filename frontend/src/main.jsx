@@ -8,6 +8,7 @@ import ArtistsAdmin from './ArtistsAdmin.jsx'
 import GenresAdmin from './GenresAdmin.jsx'
 import RegionsAdmin from './RegionsAdmin.jsx'
 import AlbumDetail from './AlbumDetail.jsx'
+import ArtistDetail from './ArtistDetail.jsx'
 import { PlayerProvider } from './PlayerContext.jsx'
 import GlobalPlayer from './GlobalPlayer.jsx'
 
@@ -30,6 +31,9 @@ function Router() {
   }
   if (hash.startsWith('#/album/')) {
     return <AlbumDetail />
+  }
+  if (hash.startsWith('#/artist/')) {
+    return <ArtistDetail />
   }
   return <App />
 }
