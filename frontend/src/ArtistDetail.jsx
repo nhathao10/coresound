@@ -186,7 +186,7 @@ function ArtistDetail() {
       <Header showSearch={true} showSearchResults={false} />
 
       {/* Main Content */}
-      <main style={{ paddingTop: "80px" }}>
+      <main className="main-content">
         {/* Hero Section */}
         <div style={{
           background: "linear-gradient(180deg, rgba(29, 185, 84, 0.3) 0%, rgba(24, 24, 27, 0.8) 100%)",

@@ -213,7 +213,7 @@ function AlbumDetail() {
   return (
     <div className="music-app dark-theme" style={{ width: "100%", flex: 1, minWidth: 0, alignSelf: "stretch" }}>
       <Header showSearch={true} showSearchResults={false} />
-      <main className="main-content" style={{ padding: "9rem 2rem 140px", width: "100%", flex: 1, minWidth: 0 }}>
+      <main className="main-content" style={{ width: "100%", flex: 1, minWidth: 0 }}>
         <div style={{ maxWidth: 1280, margin: "0 auto" }}>
         <section className="recommend-section" style={{ width: "100%", padding: 20, background: "linear-gradient(180deg, #0f2a3a 0%, #15161a 70%)", borderRadius: 12 }}>
           <div style={{ display: "flex", gap: 20, alignItems: "center", marginBottom: 12 }}>

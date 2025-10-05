@@ -10,6 +10,7 @@ import RegionsAdmin from './RegionsAdmin.jsx'
 import AlbumDetail from './AlbumDetail.jsx'
 import ArtistDetail from './ArtistDetail.jsx'
 import { PlayerProvider } from './PlayerContext.jsx'
+import { SearchProvider } from './SearchContext.jsx'
 import GlobalPlayer from './GlobalPlayer.jsx'
 
 function Router() {
@@ -47,10 +48,12 @@ function Root() {
   }, [])
   return (
     <StrictMode>
-      <PlayerProvider>
-        <Router />
-        <GlobalPlayer />
-      </PlayerProvider>
+      <SearchProvider>
+        <PlayerProvider>
+          <Router />
+          <GlobalPlayer />
+        </PlayerProvider>
+      </SearchProvider>
     </StrictMode>
   )
 }

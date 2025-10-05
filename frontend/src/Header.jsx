@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, forwardRef } from "react";
 import { usePlayer } from "./PlayerContext";
+import { useSearch } from "./SearchContext";
 
 const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, searchValue = "", showSearchResults = false }, ref) => {
   const [searchQuery, setSearchQuery] = useState(searchValue);
@@ -10,6 +11,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
   const searchWrapRef = useRef(null);
   const searchInputRef = useRef(null);
   const { setQueueAndPlay, setCurrentIdx, setIsPlaying, setQueueContext, queue, setQueue } = usePlayer();
+  const { searchHistory, addToSearchHistory, removeFromSearchHistory } = useSearch();
 
   const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
 
@@ -252,7 +254,8 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                   {searchResults.slice(0, 8).map((song) => (
                     <div key={song._id} 
                       onMouseDown={(e) => {
-                        // Handle the click logic here since onMouseUp doesn't work
+                        // Add to search history
+                        addToSearchHistory(song);
                         
                         // Find song index and play directly
                         const realIdx = songs.findIndex((s) => s._id === song._id);
@@ -310,9 +313,94 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
               )}
             </div>
           ) : (
-            <div style={{ padding: "16px 12px", color: "#b3b3b3", textAlign: "center" }}>
-              <div style={{ marginBottom: "8px" }}>Nhập tên bài hát để tìm kiếm</div>
-              <div style={{ fontSize: "11px", opacity: 0.8 }}>Kết quả sẽ hiển thị khi bạn gõ</div>
+            <div>
+              {searchHistory.length > 0 ? (
+                <div>
+                  {searchHistory.slice(0, 8).map((song) => (
+                    <div key={song._id} 
+                      onMouseDown={(e) => {
+                        // Find song index and play directly
+                        const realIdx = songs.findIndex((s) => s._id === song._id);
+                        if (realIdx !== -1 && songs.length > 0) {
+                          playSong(realIdx);
+                        } else {
+                          // If not found or songs not loaded, reload and play
+                          fetch("http://localhost:5000/api/songs")
+                            .then((r) => r.json())
+                            .then((data) => {
+                              const newSongs = data || [];
+                              const newIdx = newSongs.findIndex((s) => s._id === song._id);
+                              if (newIdx !== -1) {
+                                setSongs(newSongs);
+                                setQueueAndPlay(newSongs, newIdx);
+                                setQueueContext("search");
+                              }
+                            })
+                            .catch((e) => console.error("Error reloading songs:", e));
+                        }
+                        setShowDropdown(false);
+                        
+                        // Prevent default and stop propagation after handling
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }} 
+                      style={{ 
+                        display: "flex", 
+                        alignItems: "center", 
+                        gap: 10, 
+                        padding: "8px 12px",
+                        borderBottom: "1px solid #2a2a34",
+                        transition: "background-color 0.2s ease"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#2a2a34"}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                    >
+                      <img 
+                        src={withMediaBase(song.cover) || "/default-cover.png"} 
+                        alt={song.title} 
+                        style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover", pointerEvents: "none" }} 
+                      />
+                      <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+                        <span style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "#fff" }}>{song.title}</span>
+                        <span style={{ color: "#b3b3b3", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.artist}</span>
+                      </div>
+                      <button 
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          removeFromSearchHistory(song._id); 
+                        }} 
+                        title="Xóa khỏi lịch sử" 
+                        style={{ 
+                          background: "transparent", 
+                          border: "none", 
+                          color: "#b3b3b3", 
+                          fontSize: 16, 
+                          cursor: "pointer", 
+                          padding: 4, 
+                          lineHeight: 1,
+                          borderRadius: 4,
+                          transition: "all 0.2s ease"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.backgroundColor = "#ff4444";
+                          e.target.style.color = "#fff";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.backgroundColor = "transparent";
+                          e.target.style.color = "#b3b3b3";
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ padding: "16px 12px", color: "#b3b3b3", textAlign: "center" }}>
+                  <div style={{ marginBottom: "8px" }}>Chưa có lịch sử tìm kiếm</div>
+                  <div style={{ fontSize: "11px", opacity: 0.8 }}>Tìm kiếm bài hát để xem lịch sử</div>
+                </div>
+              )}
             </div>
           )}
         </div>
