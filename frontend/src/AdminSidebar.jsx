@@ -73,6 +73,7 @@ function AdminSidebar({ open, onToggle }) {
         <a href="#/artists-admin" style={linkStyle(hash.startsWith("#/artists-admin"))}>Quản lý Nghệ sĩ</a>
         <a href="#/genres-admin" style={linkStyle(hash.startsWith("#/genres-admin"))}>Quản lý Thể loại</a>
         <a href="#/regions-admin" style={linkStyle(hash.startsWith("#/regions-admin"))}>Quản lý Khu vực</a>
+        <a href="#/users-admin" style={linkStyle(hash.startsWith("#/users-admin"))}>Quản lý Người dùng</a>
         </nav>
         <button 
           onClick={onToggle} 

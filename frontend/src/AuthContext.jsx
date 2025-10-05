@@ -1,0 +1,143 @@
+import { createContext, useContext, useState, useEffect } from 'react';
+
+const AuthContext = createContext();
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Load user from localStorage on app start
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('cs_user');
+      if (savedUser) {
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error('Error loading user from localStorage:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Login function
+  const login = async (email, password) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Đăng nhập thất bại');
+      }
+
+      // Save user and token to localStorage
+      const userWithToken = { ...data.user, token: data.token };
+      localStorage.setItem('cs_user', JSON.stringify(userWithToken));
+      setUser(userWithToken);
+      setIsAuthenticated(true);
+      
+      // Redirect admin to upload page
+      if (data.user.role === 'admin') {
+        window.location.hash = '#/upload';
+      }
+      
+      return { success: true, user: data.user };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: error.message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Register function
+  const register = async (name, email, password, role = 'user') => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password, role }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Đăng ký thất bại');
+      }
+
+      // Auto login after successful registration
+      const userWithToken = { ...data.user, token: data.token };
+      localStorage.setItem('cs_user', JSON.stringify(userWithToken));
+      setUser(userWithToken);
+      setIsAuthenticated(true);
+      
+      // Redirect admin to upload page
+      if (data.user.role === 'admin') {
+        window.location.hash = '#/upload';
+      }
+      
+      return { success: true, user: data.user };
+    } catch (error) {
+      console.error('Register error:', error);
+      return { success: false, error: error.message };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Logout function
+  const logout = () => {
+    localStorage.removeItem('cs_user');
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
+  // Check if user is admin
+  const isAdmin = () => {
+    return user && user.role === 'admin';
+  };
+
+  // Check if user can access admin routes
+  const canAccessAdmin = () => {
+    return isAuthenticated && isAdmin();
+  };
+
+  const value = {
+    user,
+    isAuthenticated,
+    isLoading,
+    login,
+    register,
+    logout,
+    isAdmin: isAdmin(),
+    canAccessAdmin: canAccessAdmin(),
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};

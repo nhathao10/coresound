@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, forwardRef } from "react";
 import { usePlayer } from "./PlayerContext";
 import { useSearch } from "./SearchContext";
+import { useAuth } from "./AuthContext";
+import LoginModal from "./LoginModal";
+import SignupModal from "./SignupModal";
 
 const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, searchValue = "", showSearchResults = false }, ref) => {
   const [searchQuery, setSearchQuery] = useState(searchValue);
@@ -12,6 +15,9 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
   const searchInputRef = useRef(null);
   const { setQueueAndPlay, setCurrentIdx, setIsPlaying, setQueueContext, queue, setQueue } = usePlayer();
   const { searchHistory, addToSearchHistory, removeFromSearchHistory } = useSearch();
+  const { user, isAuthenticated, logout, isAdmin } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
 
   const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
 
@@ -205,30 +211,156 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
         )}
       </div>
       
-      {/* User Section - Will be added later */}
+      {/* User Section */}
       <div className="header-user-section" style={{ marginRight: "1rem" }}>
-        {/* Placeholder for user menu, notifications, etc. */}
-        <div style={{ 
-          padding: "0.5rem 1.2rem", 
-          color: "#b3b3b3", 
-          fontSize: "0.9rem",
-          border: "1px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: "20px",
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-          whiteSpace: "nowrap"
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.borderColor = "#1db954";
-          e.target.style.color = "#1db954";
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.borderColor = "rgba(255, 255, 255, 0.1)";
-          e.target.style.color = "#b3b3b3";
-        }}
-        >
-          Đăng nhập
-        </div>
+        {isAuthenticated ? (
+          /* User Menu */
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            {/* User Info */}
+            <div style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "0.5rem",
+              padding: "0.5rem 1rem",
+              background: "rgba(255, 255, 255, 0.05)",
+              borderRadius: "25px",
+              border: "1px solid rgba(255, 255, 255, 0.1)"
+            }}>
+              <div style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #1db954, #1ed760)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#fff",
+                fontSize: "0.8rem",
+                fontWeight: "600"
+              }}>
+                {user?.name?.charAt(0)?.toUpperCase() || "U"}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                <span style={{ 
+                  color: "#fff", 
+                  fontSize: "0.85rem", 
+                  fontWeight: "500",
+                  lineHeight: 1
+                }}>
+                  {user?.name}
+                </span>
+                <span style={{ 
+                  color: "#b3b3b3", 
+                  fontSize: "0.75rem",
+                  lineHeight: 1
+                }}>
+                  {isAdmin ? "Admin" : "User"}
+                </span>
+              </div>
+            </div>
+
+            {/* Logout Button */}
+            <button
+              onClick={logout}
+              style={{
+                padding: "0.6rem 1.2rem",
+                color: "#b3b3b3",
+                fontSize: "0.9rem",
+                fontWeight: "500",
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                borderRadius: "25px",
+                cursor: "pointer",
+                transition: "all 0.3s ease",
+                whiteSpace: "nowrap"
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.borderColor = "#ff6b6b";
+                e.target.style.color = "#ff6b6b";
+                e.target.style.background = "rgba(255, 107, 107, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.borderColor = "rgba(255, 255, 255, 0.08)";
+                e.target.style.color = "#b3b3b3";
+                e.target.style.background = "rgba(255, 255, 255, 0.03)";
+              }}
+            >
+              Đăng xuất
+            </button>
+          </div>
+        ) : (
+          /* Auth Buttons */
+          <>
+            {/* Sign Up Button */}
+            <div style={{ 
+              padding: "0.6rem 1.4rem", 
+              color: "#fff", 
+              fontSize: "0.9rem",
+              fontWeight: "600",
+              background: "rgba(255, 255, 255, 0.05)",
+              border: "1px solid rgba(255, 255, 255, 0.15)",
+              borderRadius: "25px",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              whiteSpace: "nowrap",
+              marginRight: "0.4rem",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+              backdropFilter: "blur(10px)"
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = "#1db954";
+              e.target.style.color = "#1db954";
+              e.target.style.background = "rgba(29, 185, 84, 0.15)";
+              e.target.style.transform = "translateY(-1px)";
+              e.target.style.boxShadow = "0 4px 12px rgba(29, 185, 84, 0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = "rgba(255, 255, 255, 0.15)";
+              e.target.style.color = "#fff";
+              e.target.style.background = "rgba(255, 255, 255, 0.05)";
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.1)";
+            }}
+            onClick={() => setShowSignupModal(true)}
+            >
+              Đăng ký
+            </div>
+            
+            {/* Sign In Button */}
+            <div style={{ 
+              padding: "0.6rem 1.4rem", 
+              color: "#b3b3b3", 
+              fontSize: "0.9rem",
+              fontWeight: "500",
+              background: "rgba(255, 255, 255, 0.03)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              borderRadius: "25px",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              whiteSpace: "nowrap",
+              boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
+              backdropFilter: "blur(10px)"
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.borderColor = "#1db954";
+              e.target.style.color = "#1db954";
+              e.target.style.background = "rgba(29, 185, 84, 0.1)";
+              e.target.style.transform = "translateY(-1px)";
+              e.target.style.boxShadow = "0 4px 12px rgba(29, 185, 84, 0.15)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.borderColor = "rgba(255, 255, 255, 0.08)";
+              e.target.style.color = "#b3b3b3";
+              e.target.style.background = "rgba(255, 255, 255, 0.03)";
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "0 2px 6px rgba(0, 0, 0, 0.08)";
+            }}
+            onClick={() => setShowLoginModal(true)}
+            >
+              Đăng nhập
+            </div>
+          </>
+        )}
       </div>
       
       {/* Search Dropdown - Simple search for non-home pages */}
@@ -405,6 +537,25 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
           )}
         </div>
       )}
+
+      {/* Modals */}
+      <LoginModal 
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSwitchToSignup={() => {
+          setShowLoginModal(false);
+          setShowSignupModal(true);
+        }}
+      />
+      
+      <SignupModal 
+        isOpen={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
+        onSwitchToLogin={() => {
+          setShowSignupModal(false);
+          setShowLoginModal(true);
+        }}
+      />
     </header>
   );
 });

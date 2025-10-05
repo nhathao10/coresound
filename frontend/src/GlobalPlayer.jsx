@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { FaPause, FaPlay, FaRandom, FaRedo, FaStepBackward, FaStepForward, FaVolumeUp, FaList, FaGripVertical } from "react-icons/fa";
 import { usePlayer } from "./PlayerContext.jsx";
+import { useAuth } from "./AuthContext.jsx";
 
 const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
 
 export default function GlobalPlayer() {
+  const { user, isAuthenticated, isAdmin } = useAuth();
   const {
     queue,
     current,
@@ -34,9 +36,42 @@ export default function GlobalPlayer() {
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const scrollContainerRef = useRef(null);
 
+  // Check if we're on an admin page
+  const isOnAdminPage = () => {
+    const hash = window.location.hash || '#/';
+    return hash.startsWith('#/upload') || 
+           hash.startsWith('#/albums-admin') || 
+           hash.startsWith('#/artists-admin') || 
+           hash.startsWith('#/genres-admin') || 
+           hash.startsWith('#/regions-admin') || 
+           hash.startsWith('#/users-admin');
+  };
+
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
+
+  // Stop music when entering admin pages
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (isOnAdminPage() && isPlaying) {
+        setIsPlaying(false);
+        if (audioRef.current) {
+          audioRef.current.pause();
+        }
+      }
+    };
+
+    // Check immediately
+    handleHashChange();
+
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [isPlaying, setIsPlaying]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -240,6 +275,9 @@ export default function GlobalPlayer() {
     setDragOverIndex(null);
   };
 
+  // Don't show player on admin pages
+  if (isOnAdminPage()) return null;
+  
   if (!current) return null;
 
   return (

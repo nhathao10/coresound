@@ -7,28 +7,59 @@ import AlbumsAdmin from './AlbumsAdmin.jsx'
 import ArtistsAdmin from './ArtistsAdmin.jsx'
 import GenresAdmin from './GenresAdmin.jsx'
 import RegionsAdmin from './RegionsAdmin.jsx'
+import UsersAdmin from './UsersAdmin.jsx'
 import AlbumDetail from './AlbumDetail.jsx'
 import ArtistDetail from './ArtistDetail.jsx'
+import ProtectedRoute from './ProtectedRoute.jsx'
 import { PlayerProvider } from './PlayerContext.jsx'
 import { SearchProvider } from './SearchContext.jsx'
+import { AuthProvider } from './AuthContext.jsx'
+import { ToastProvider } from './ToastContext.jsx'
 import GlobalPlayer from './GlobalPlayer.jsx'
 
 function Router() {
   const hash = window.location.hash || '#/'
   if (hash.startsWith('#/upload')) {
-    return <Upload />
+    return (
+      <ProtectedRoute requireAdmin={true}>
+        <Upload />
+      </ProtectedRoute>
+    )
   }
   if (hash.startsWith('#/albums-admin')) {
-    return <AlbumsAdmin />
+    return (
+      <ProtectedRoute requireAdmin={true}>
+        <AlbumsAdmin />
+      </ProtectedRoute>
+    )
   }
   if (hash.startsWith('#/artists-admin')) {
-    return <ArtistsAdmin />
+    return (
+      <ProtectedRoute requireAdmin={true}>
+        <ArtistsAdmin />
+      </ProtectedRoute>
+    )
   }
   if (hash.startsWith('#/genres-admin')) {
-    return <GenresAdmin />
+    return (
+      <ProtectedRoute requireAdmin={true}>
+        <GenresAdmin />
+      </ProtectedRoute>
+    )
   }
   if (hash.startsWith('#/regions-admin')) {
-    return <RegionsAdmin />
+    return (
+      <ProtectedRoute requireAdmin={true}>
+        <RegionsAdmin />
+      </ProtectedRoute>
+    )
+  }
+  if (hash.startsWith('#/users-admin')) {
+    return (
+      <ProtectedRoute requireAdmin={true}>
+        <UsersAdmin />
+      </ProtectedRoute>
+    )
   }
   if (hash.startsWith('#/album/')) {
     return <AlbumDetail />
@@ -48,12 +79,16 @@ function Root() {
   }, [])
   return (
     <StrictMode>
-      <SearchProvider>
-        <PlayerProvider>
-          <Router />
-          <GlobalPlayer />
-        </PlayerProvider>
-      </SearchProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <SearchProvider>
+            <PlayerProvider>
+              <Router />
+              <GlobalPlayer />
+            </PlayerProvider>
+          </SearchProvider>
+        </AuthProvider>
+      </ToastProvider>
     </StrictMode>
   )
 }
