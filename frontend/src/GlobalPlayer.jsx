@@ -86,10 +86,55 @@ export default function GlobalPlayer() {
     };
   }, [currentIdx]);
 
+  // Re-setup audio event listeners when returning from admin page
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (!isOnAdminPage() && current && audioRef.current) {
+        // Re-setup event listeners after returning from admin
+        const audio = audioRef.current;
+        const onTime = () => setProgress(audio.currentTime);
+        const onMeta = () => setDuration(audio.duration || 0);
+        
+        // Remove existing listeners first
+        audio.removeEventListener("timeupdate", onTime);
+        audio.removeEventListener("loadedmetadata", onMeta);
+        
+        // Add listeners again
+        audio.addEventListener("timeupdate", onTime);
+        audio.addEventListener("loadedmetadata", onMeta);
+        
+        // Force update progress if audio is ready
+        if (audio.readyState >= 2) {
+          setProgress(audio.currentTime);
+          setDuration(audio.duration || 0);
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [current]);
+
   useEffect(() => {
     if (!audioRef.current) return;
     if (isPlaying) audioRef.current.play(); else audioRef.current.pause();
   }, [isPlaying, currentIdx]);
+
+  // Ensure progress updates continuously when component is visible
+  useEffect(() => {
+    if (!current || isOnAdminPage()) return;
+    
+    const interval = setInterval(() => {
+      if (audioRef.current && audioRef.current.readyState >= 2) {
+        setProgress(audioRef.current.currentTime);
+      }
+    }, 100); // Update every 100ms
+    
+    return () => clearInterval(interval);
+  }, [current, isOnAdminPage]);
 
   const next = () => {
     if (queue.length === 0) return;
