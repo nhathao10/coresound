@@ -34,7 +34,7 @@ const SignupModal = ({ isOpen, onClose, onSwitchToLogin }) => {
     const result = await register(name, email, password);
     
     if (result.success) {
-      showSuccess(`Chào mừng ${result.user.name}! Đăng ký thành công.`);
+      showSuccess('Đăng ký thành công');
       onClose();
       setName('');
       setEmail('');

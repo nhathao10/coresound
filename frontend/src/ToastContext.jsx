@@ -40,16 +40,31 @@ export const ToastProvider = ({ children }) => {
   return (
     <ToastContext.Provider value={{ showToast, showSuccess, showError, showInfo }}>
       {children}
-      {/* Render all toasts */}
-      {toasts.map(toast => (
-        <Toast
-          key={toast.id}
-          message={toast.message}
-          type={toast.type}
-          duration={toast.duration}
-          onClose={() => removeToast(toast.id)}
-        />
-      ))}
+      {/* Toast container - positioned in nice empty space */}
+      <div style={{
+        position: 'fixed',
+        top: '100px',
+        right: '20px',
+        zIndex: 10000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        pointerEvents: 'none' // Allow clicks to pass through container
+      }}>
+        {toasts.map((toast, index) => (
+          <div key={toast.id} style={{
+            pointerEvents: 'auto', // Re-enable clicks for individual toasts
+            transform: `translateY(${index * 10}px)` // Slight offset for multiple toasts
+          }}>
+            <Toast
+              message={toast.message}
+              type={toast.type}
+              duration={toast.duration}
+              onClose={() => removeToast(toast.id)}
+            />
+          </div>
+        ))}
+      </div>
     </ToastContext.Provider>
   );
 };

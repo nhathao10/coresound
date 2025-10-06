@@ -18,6 +18,8 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
   const { user, isAuthenticated, logout, isAdmin } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const userDropdownRef = useRef(null);
 
   const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
 
@@ -137,6 +139,9 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
       if (searchWrapRef.current && !searchWrapRef.current.contains(event.target)) {
         setShowDropdown(false);
       }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        setShowUserDropdown(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -214,79 +219,158 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
       {/* User Section */}
       <div className="header-user-section" style={{ marginRight: "1rem" }}>
         {isAuthenticated ? (
-          /* User Menu */
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            {/* User Info */}
-            <div style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: "0.5rem",
-              padding: "0.5rem 1rem",
-              background: "rgba(255, 255, 255, 0.05)",
-              borderRadius: "25px",
-              border: "1px solid rgba(255, 255, 255, 0.1)"
-            }}>
-              <div style={{
-                width: "32px",
-                height: "32px",
+          /* User Avatar with Dropdown */
+          <div ref={userDropdownRef} style={{ position: "relative" }}>
+            {/* Avatar Button */}
+            <div 
+              onClick={() => setShowUserDropdown(!showUserDropdown)}
+              style={{
+                width: "40px",
+                height: "40px",
                 borderRadius: "50%",
                 background: "linear-gradient(135deg, #1db954, #1ed760)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 color: "#fff",
-                fontSize: "0.8rem",
-                fontWeight: "600"
-              }}>
-                {user?.name?.charAt(0)?.toUpperCase() || "U"}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                <span style={{ 
-                  color: "#fff", 
-                  fontSize: "0.85rem", 
-                  fontWeight: "500",
-                  lineHeight: 1
-                }}>
-                  {user?.name}
-                </span>
-                <span style={{ 
-                  color: "#b3b3b3", 
-                  fontSize: "0.75rem",
-                  lineHeight: 1
-                }}>
-                  {isAdmin ? "Admin" : "User"}
-                </span>
-              </div>
-            </div>
-
-            {/* Logout Button */}
-            <button
-              onClick={logout}
-              style={{
-                padding: "0.6rem 1.2rem",
-                color: "#b3b3b3",
-                fontSize: "0.9rem",
-                fontWeight: "500",
-                background: "rgba(255, 255, 255, 0.03)",
-                border: "1px solid rgba(255, 255, 255, 0.08)",
-                borderRadius: "25px",
+                fontSize: "1rem",
+                fontWeight: "600",
                 cursor: "pointer",
                 transition: "all 0.3s ease",
-                whiteSpace: "nowrap"
+                border: "2px solid rgba(255, 255, 255, 0.1)",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)"
               }}
               onMouseEnter={(e) => {
-                e.target.style.borderColor = "#ff6b6b";
-                e.target.style.color = "#ff6b6b";
-                e.target.style.background = "rgba(255, 107, 107, 0.1)";
+                e.target.style.transform = "scale(1.05)";
+                e.target.style.boxShadow = "0 4px 12px rgba(29, 185, 84, 0.3)";
               }}
               onMouseLeave={(e) => {
-                e.target.style.borderColor = "rgba(255, 255, 255, 0.08)";
-                e.target.style.color = "#b3b3b3";
-                e.target.style.background = "rgba(255, 255, 255, 0.03)";
+                e.target.style.transform = "scale(1)";
+                e.target.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.2)";
               }}
             >
-              Đăng xuất
-            </button>
+              {user?.name?.charAt(0)?.toUpperCase() || "U"}
+            </div>
+
+            {/* User Dropdown Menu */}
+            {showUserDropdown && (
+              <div style={{
+                position: "absolute",
+                top: "100%",
+                right: "0",
+                marginTop: "8px",
+                minWidth: "200px",
+                background: "#1e1e24",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "12px",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+                zIndex: 1000,
+                overflow: "hidden",
+                animation: "dropdownSlideIn 0.2s ease-out"
+              }}>
+                {/* User Info Header */}
+                <div style={{
+                  padding: "1rem",
+                  borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                  background: "rgba(255, 255, 255, 0.02)"
+                }}>
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.75rem"
+                  }}>
+                    <div style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "50%",
+                      background: "linear-gradient(135deg, #1db954, #1ed760)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#fff",
+                      fontSize: "1rem",
+                      fontWeight: "600"
+                    }}>
+                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                    </div>
+                    <div>
+                      <div style={{
+                        color: "#fff",
+                        fontSize: "0.9rem",
+                        fontWeight: "600",
+                        lineHeight: 1.2
+                      }}>
+                        {user?.name}
+                      </div>
+                      <div style={{
+                        color: "#b3b3b3",
+                        fontSize: "0.8rem",
+                        lineHeight: 1.2
+                      }}>
+                        {isAdmin ? "Quản trị viên" : "Người dùng"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Menu Items */}
+                <div style={{ padding: "0.5rem 0" }}>
+                  {/* Admin Panel Link */}
+                  {isAdmin && (
+                    <div
+                      onClick={() => {
+                        window.location.hash = "#/upload";
+                        setShowUserDropdown(false);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                        padding: "0.75rem 1rem",
+                        color: "#fff",
+                        cursor: "pointer",
+                        transition: "background-color 0.2s ease",
+                        fontSize: "0.9rem"
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = "rgba(29, 185, 84, 0.1)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                      }}
+                    >
+                      <span>Bảng quản trị</span>
+                    </div>
+                  )}
+
+                  {/* Logout Button */}
+                  <div
+                    onClick={() => {
+                      logout();
+                      setShowUserDropdown(false);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.75rem",
+                      padding: "0.75rem 1rem",
+                      color: "#ff6b6b",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s ease",
+                      fontSize: "0.9rem"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(255, 107, 107, 0.1)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                  >
+                    <span>Đăng xuất</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           /* Auth Buttons */

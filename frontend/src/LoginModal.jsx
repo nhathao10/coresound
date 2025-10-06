@@ -18,7 +18,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToSignup }) => {
     const result = await login(email, password);
     
     if (result.success) {
-      showSuccess(`Chào mừng ${result.user.name}! Đăng nhập thành công.`);
+      showSuccess('Đăng nhập thành công');
       onClose();
       setEmail('');
       setPassword('');

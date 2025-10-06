@@ -55,11 +55,6 @@ export const AuthProvider = ({ children }) => {
       setUser(userWithToken);
       setIsAuthenticated(true);
       
-      // Redirect admin to upload page
-      if (data.user.role === 'admin') {
-        window.location.hash = '#/upload';
-      }
-      
       return { success: true, user: data.user };
     } catch (error) {
       console.error('Login error:', error);
@@ -93,11 +88,6 @@ export const AuthProvider = ({ children }) => {
       setUser(userWithToken);
       setIsAuthenticated(true);
       
-      // Redirect admin to upload page
-      if (data.user.role === 'admin') {
-        window.location.hash = '#/upload';
-      }
-      
       return { success: true, user: data.user };
     } catch (error) {
       console.error('Register error:', error);
@@ -112,6 +102,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('cs_user');
     setUser(null);
     setIsAuthenticated(false);
+    window.location.hash = '#/'; // Redirect to home after logout
   };
 
   // Check if user is admin

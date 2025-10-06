@@ -16,15 +16,12 @@ const Toast = ({ message, type = 'success', duration = 3000, onClose }) => {
 
   const getToastStyle = () => {
     const baseStyle = {
-      position: 'fixed',
-      top: '16px',
-      right: '16px',
+      position: 'relative',
       padding: '0.75rem 1rem',
       borderRadius: '8px',
       color: '#fff',
       fontSize: '0.85rem',
       fontWeight: '500',
-      zIndex: 10001,
       display: 'flex',
       alignItems: 'center',
       gap: '0.5rem',
