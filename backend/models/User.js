@@ -29,6 +29,20 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'other'],
+    default: null
+  },
+  dateOfBirth: {
+    type: Date,
+    default: null
+  },
+  region: {
+    type: String,
+    enum: ['vietnam', 'usa', 'korea', 'japan', 'china', 'thailand', 'singapore', 'malaysia', 'philippines', 'indonesia', 'uk', 'france', 'germany', 'australia', 'canada', 'other'],
+    default: null
+  },
   isActive: {
     type: Boolean,
     default: true

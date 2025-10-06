@@ -8,6 +8,7 @@ import ArtistsAdmin from './ArtistsAdmin.jsx'
 import GenresAdmin from './GenresAdmin.jsx'
 import RegionsAdmin from './RegionsAdmin.jsx'
 import UsersAdmin from './UsersAdmin.jsx'
+import Profile from './Profile.jsx'
 import AlbumDetail from './AlbumDetail.jsx'
 import ArtistDetail from './ArtistDetail.jsx'
 import ProtectedRoute from './ProtectedRoute.jsx'
@@ -58,6 +59,13 @@ function Router() {
     return (
       <ProtectedRoute requireAdmin={true}>
         <UsersAdmin />
+      </ProtectedRoute>
+    )
+  }
+  if (hash.startsWith('#/profile')) {
+    return (
+      <ProtectedRoute requireAdmin={false}>
+        <Profile />
       </ProtectedRoute>
     )
   }

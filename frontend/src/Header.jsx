@@ -222,13 +222,18 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
           /* User Avatar with Dropdown */
           <div ref={userDropdownRef} style={{ position: "relative" }}>
             {/* Avatar Button */}
-            <div 
+            <div
               onClick={() => setShowUserDropdown(!showUserDropdown)}
               style={{
                 width: "40px",
                 height: "40px",
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #1db954, #1ed760)",
+                background: user?.avatar ? 
+                  `url(${user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}`})` :
+                  "linear-gradient(135deg, #1db954, #1ed760)",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -249,7 +254,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                 e.target.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.2)";
               }}
             >
-              {user?.name?.charAt(0)?.toUpperCase() || "U"}
+              {!user?.avatar && (user?.name?.charAt(0)?.toUpperCase() || "U")}
             </div>
 
             {/* User Dropdown Menu */}
@@ -283,7 +288,12 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                       width: "40px",
                       height: "40px",
                       borderRadius: "50%",
-                      background: "linear-gradient(135deg, #1db954, #1ed760)",
+                      background: user?.avatar ? 
+                        `url(${user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}`})` :
+                        "linear-gradient(135deg, #1db954, #1ed760)",
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      backgroundRepeat: "no-repeat",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
@@ -291,7 +301,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                       fontSize: "1rem",
                       fontWeight: "600"
                     }}>
-                      {user?.name?.charAt(0)?.toUpperCase() || "U"}
+                      {!user?.avatar && (user?.name?.charAt(0)?.toUpperCase() || "U")}
                     </div>
                     <div>
                       <div style={{
@@ -315,6 +325,32 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
 
                 {/* Menu Items */}
                 <div style={{ padding: "0.5rem 0" }}>
+                  {/* Profile Link */}
+                  <div
+                    onClick={() => {
+                      window.location.hash = "#/profile";
+                      setShowUserDropdown(false);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.75rem",
+                      padding: "0.75rem 1rem",
+                      color: "#fff",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s ease",
+                      fontSize: "0.9rem"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(29, 185, 84, 0.1)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                  >
+                    <span>Hồ sơ</span>
+                  </div>
+
                   {/* Admin Panel Link */}
                   {isAdmin && (
                     <div

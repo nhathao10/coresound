@@ -115,6 +115,19 @@ export const AuthProvider = ({ children }) => {
     return isAuthenticated && isAdmin();
   };
 
+  // Refresh user data from localStorage
+  const refreshUser = () => {
+    try {
+      const savedUser = localStorage.getItem('cs_user');
+      if (savedUser) {
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    }
+  };
+
   const value = {
     user,
     isAuthenticated,
@@ -122,6 +135,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    refreshUser,
     isAdmin: isAdmin(),
     canAccessAdmin: canAccessAdmin(),
   };

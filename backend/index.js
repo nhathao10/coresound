@@ -29,6 +29,7 @@ const regionsRoute = require('./routes/regions');
 const artistsRoute = require('./routes/artists');
 const authRoute = require('./routes/auth');
 const usersRoute = require('./routes/users');
+const profileRoute = require('./routes/profile');
 
 app.get('/', (req, res) => {
   res.send('CoreSound backend is running!');
@@ -54,6 +55,9 @@ app.use('/api/auth', authRoute);
 
 // API users (admin only)
 app.use('/api/users', usersRoute);
+
+// API profile
+app.use('/api/profile', profileRoute);
 
 // API upload (cover & song)
 app.use('/api', uploadRoute);
