@@ -120,8 +120,15 @@ export default function GlobalPlayer() {
 
   useEffect(() => {
     if (!audioRef.current) return;
-    if (isPlaying) audioRef.current.play(); else audioRef.current.pause();
-  }, [isPlaying, currentIdx]);
+    
+    if (isPlaying) {
+      audioRef.current.play().catch(error => {
+        console.error('Audio play error:', error);
+      });
+    } else {
+      audioRef.current.pause();
+    }
+  }, [isPlaying, currentIdx, current]);
 
   // Ensure progress updates continuously when component is visible
   useEffect(() => {

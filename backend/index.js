@@ -30,6 +30,7 @@ const artistsRoute = require('./routes/artists');
 const authRoute = require('./routes/auth');
 const usersRoute = require('./routes/users');
 const profileRoute = require('./routes/profile');
+const favoritesRoute = require('./routes/favorites');
 
 app.get('/', (req, res) => {
   res.send('CoreSound backend is running!');
@@ -58,6 +59,9 @@ app.use('/api/users', usersRoute);
 
 // API profile
 app.use('/api/profile', profileRoute);
+
+// API favorites
+app.use('/api/favorites', favoritesRoute);
 
 // API upload (cover & song)
 app.use('/api', uploadRoute);

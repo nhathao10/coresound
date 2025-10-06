@@ -4,6 +4,7 @@ import { FaPlay, FaPause, FaCheckCircle } from "react-icons/fa";
 import { usePlayer } from "./PlayerContext.jsx";
 import { useSearch } from "./SearchContext.jsx";
 import Header from "./Header.jsx";
+import HeartIcon from "./HeartIcon.jsx";
 
 function App() {
   const [songs, setSongs] = useState([]);
@@ -665,7 +666,9 @@ function App() {
                   className={`recommend-horizontal-card${
                     current && current._id === song._id ? " active" : ""
                   }`}
+                  style={{ position: 'relative' }}
                 >
+                  <HeartIcon type="song" itemId={song._id} />
                   <img
                     className="recommend-horizontal-art"
                     src={withMediaBase(song.cover) || "/default-cover.png"}
@@ -721,7 +724,9 @@ function App() {
                 className={`recommend-horizontal-card${
                   current && current._id === song._id ? " active" : ""
                 }`}
+                style={{ position: 'relative' }}
               >
+                <HeartIcon type="song" itemId={song._id} />
                 <img
                   className="recommend-horizontal-art"
                   src={withMediaBase(song.cover) || "/default-cover.png"}
@@ -781,7 +786,8 @@ function App() {
           </div>
           <div className="recommend-horizontal-list album-list">
             {displayedAlbums.map((al) => (
-              <a key={al._id} href={`#/album/${encodeURIComponent(al._id)}`} className="recommend-horizontal-card" style={{ textDecoration: "none", color: "inherit" }}>
+              <a key={al._id} href={`#/album/${encodeURIComponent(al._id)}`} className="recommend-horizontal-card" style={{ textDecoration: "none", color: "inherit", position: "relative" }}>
+                <HeartIcon type="album" itemId={al._id} />
                 <img
                   className="recommend-horizontal-art"
                   src={withMediaBase(al.cover) || "/default-cover.png"}
@@ -865,7 +871,8 @@ function App() {
                     borderRadius: "4px",
                     cursor: "pointer",
                     background: current && current._id === song._id ? "rgba(29, 185, 84, 0.1)" : "transparent",
-                    borderBottom: "1px solid #333"
+                    borderBottom: "1px solid #333",
+                    position: "relative"
                   }}
                   onClick={() => {
                     const realIdx = songs.findIndex((s) => s._id === song._id);

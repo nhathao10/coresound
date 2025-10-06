@@ -9,6 +9,7 @@ import GenresAdmin from './GenresAdmin.jsx'
 import RegionsAdmin from './RegionsAdmin.jsx'
 import UsersAdmin from './UsersAdmin.jsx'
 import Profile from './Profile.jsx'
+import Favorites from './Favorites.jsx'
 import AlbumDetail from './AlbumDetail.jsx'
 import ArtistDetail from './ArtistDetail.jsx'
 import ProtectedRoute from './ProtectedRoute.jsx'
@@ -16,6 +17,7 @@ import { PlayerProvider } from './PlayerContext.jsx'
 import { SearchProvider } from './SearchContext.jsx'
 import { AuthProvider } from './AuthContext.jsx'
 import { ToastProvider } from './ToastContext.jsx'
+import { FavoritesProvider } from './FavoritesContext.jsx'
 import GlobalPlayer from './GlobalPlayer.jsx'
 
 function Router() {
@@ -69,6 +71,13 @@ function Router() {
       </ProtectedRoute>
     )
   }
+  if (hash.startsWith('#/favorites')) {
+    return (
+      <ProtectedRoute requireAdmin={false}>
+        <Favorites />
+      </ProtectedRoute>
+    )
+  }
   if (hash.startsWith('#/album/')) {
     return <AlbumDetail />
   }
@@ -89,12 +98,14 @@ function Root() {
     <StrictMode>
       <ToastProvider>
         <AuthProvider>
-          <SearchProvider>
-            <PlayerProvider>
-              <Router />
-              <GlobalPlayer />
-            </PlayerProvider>
-          </SearchProvider>
+          <FavoritesProvider>
+            <SearchProvider>
+              <PlayerProvider>
+                <Router />
+                <GlobalPlayer />
+              </PlayerProvider>
+            </SearchProvider>
+          </FavoritesProvider>
         </AuthProvider>
       </ToastProvider>
     </StrictMode>
