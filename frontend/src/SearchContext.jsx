@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useAuth } from './AuthContext';
 
 const SearchContext = createContext();
 
@@ -11,27 +12,61 @@ export const useSearch = () => {
 };
 
 export const SearchProvider = ({ children }) => {
+  const { user, isAuthenticated } = useAuth();
   const [searchHistory, setSearchHistory] = useState([]);
 
-  // Load search history from localStorage
+  // Get localStorage key for current user
+  const getSearchHistoryKey = useCallback(() => {
+    if (user && user._id) {
+      return `cs_search_history_${user._id}`;
+    }
+    return 'cs_search_history_guest'; // For non-authenticated users
+  }, [user?._id]);
+
+  // Load search history from localStorage when user changes
   useEffect(() => {
     try {
-      const savedHistory = localStorage.getItem('cs_search_history');
+      const key = getSearchHistoryKey();
+      let savedHistory = localStorage.getItem(key);
+      
+      // If no user-specific history exists, try to migrate from old global history
+      if (!savedHistory && user && user._id) {
+        const oldHistory = localStorage.getItem('cs_search_history');
+        if (oldHistory) {
+          // Migrate old history to user-specific key
+          localStorage.setItem(key, oldHistory);
+          savedHistory = oldHistory;
+          // Remove old global history
+          localStorage.removeItem('cs_search_history');
+        }
+      }
+      
       if (savedHistory) {
         const history = JSON.parse(savedHistory);
         if (Array.isArray(history)) {
           setSearchHistory(history);
         }
+      } else {
+        setSearchHistory([]); // Clear history when switching users
       }
     } catch (error) {
       console.error('Error loading search history:', error);
+      setSearchHistory([]);
     }
-  }, []);
+  }, [getSearchHistoryKey, isAuthenticated, user?._id]); // Reload when user ID changes
+
+  // Clear search history when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setSearchHistory([]);
+    }
+  }, [isAuthenticated]);
 
   // Save search history to localStorage
   const saveSearchHistory = (history) => {
     try {
-      localStorage.setItem('cs_search_history', JSON.stringify(history));
+      const key = getSearchHistoryKey();
+      localStorage.setItem(key, JSON.stringify(history));
       setSearchHistory(history);
     } catch (error) {
       console.error('Error saving search history:', error);

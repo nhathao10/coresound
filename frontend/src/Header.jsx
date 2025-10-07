@@ -23,28 +23,11 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
 
   const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
 
-  // Play song function - same logic as App.jsx
+  // Play song function - simplified for better reliability
   const playSong = (idx) => {
     if (idx >= 0 && idx < songs.length && songs.length > 0) {
-      // Check if queue needs to be updated (same logic as App.jsx)
-      const queueMismatch = !queue || queue.length !== songs.length || songs.some((s, i) => queue[i]?._id !== s._id);
-      
-      if (queueMismatch) {
-        // Try setQueueAndPlay first
-        setQueueAndPlay(songs, idx);
-        
-        // Fallback: set queue directly and then play
-        setTimeout(() => {
-          setQueue(songs);
-          setCurrentIdx(idx);
-          setIsPlaying(true);
-        }, 100);
-      } else {
-        setCurrentIdx(idx);
-        setIsPlaying(true);
-      }
-      
-      // Set queue context
+      // Always use setQueueAndPlay for consistency
+      setQueueAndPlay(songs, idx);
       setQueueContext("search");
     }
   };
@@ -535,25 +518,20 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                         // Add to search history
                         addToSearchHistory(song);
                         
-                        // Find song index and play directly
-                        const realIdx = songs.findIndex((s) => s._id === song._id);
-                        if (realIdx !== -1 && songs.length > 0) {
-                          playSong(realIdx);
-                        } else {
-                          // If not found or songs not loaded, reload and play
-                          fetch("http://localhost:5000/api/songs")
-                            .then((r) => r.json())
-                            .then((data) => {
-                              const newSongs = data || [];
-                              const newIdx = newSongs.findIndex((s) => s._id === song._id);
-                              if (newIdx !== -1) {
-                                setSongs(newSongs);
-                                setQueueAndPlay(newSongs, newIdx);
-                                setQueueContext("search");
-                              }
-                            })
-                            .catch((e) => console.error("Error reloading songs:", e));
-                        }
+                        // Simplified approach: always fetch fresh songs and play
+                        fetch("http://localhost:5000/api/songs")
+                          .then((r) => r.json())
+                          .then((data) => {
+                            const newSongs = data || [];
+                            const newIdx = newSongs.findIndex((s) => s._id === song._id);
+                            if (newIdx !== -1) {
+                              setSongs(newSongs);
+                              setQueueAndPlay(newSongs, newIdx);
+                              setQueueContext("search");
+                            }
+                          })
+                          .catch((e) => console.error("Error loading songs:", e));
+                        
                         setShowDropdown(false);
                         
                         // Prevent default and stop propagation after handling
@@ -597,25 +575,20 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                   {searchHistory.slice(0, 8).map((song) => (
                     <div key={song._id} 
                       onMouseDown={(e) => {
-                        // Find song index and play directly
-                        const realIdx = songs.findIndex((s) => s._id === song._id);
-                        if (realIdx !== -1 && songs.length > 0) {
-                          playSong(realIdx);
-                        } else {
-                          // If not found or songs not loaded, reload and play
-                          fetch("http://localhost:5000/api/songs")
-                            .then((r) => r.json())
-                            .then((data) => {
-                              const newSongs = data || [];
-                              const newIdx = newSongs.findIndex((s) => s._id === song._id);
-                              if (newIdx !== -1) {
-                                setSongs(newSongs);
-                                setQueueAndPlay(newSongs, newIdx);
-                                setQueueContext("search");
-                              }
-                            })
-                            .catch((e) => console.error("Error reloading songs:", e));
-                        }
+                        // Simplified approach: always fetch fresh songs and play
+                        fetch("http://localhost:5000/api/songs")
+                          .then((r) => r.json())
+                          .then((data) => {
+                            const newSongs = data || [];
+                            const newIdx = newSongs.findIndex((s) => s._id === song._id);
+                            if (newIdx !== -1) {
+                              setSongs(newSongs);
+                              setQueueAndPlay(newSongs, newIdx);
+                              setQueueContext("search");
+                            }
+                          })
+                          .catch((e) => console.error("Error loading songs:", e));
+                        
                         setShowDropdown(false);
                         
                         // Prevent default and stop propagation after handling

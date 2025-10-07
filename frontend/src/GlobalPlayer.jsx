@@ -34,6 +34,7 @@ export default function GlobalPlayer() {
   const [showNextSongPanel, setShowNextSongPanel] = useState(false);
   const [currentQueue, setCurrentQueue] = useState([]);
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [wasAuthenticated, setWasAuthenticated] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const scrollContainerRef = useRef(null);
 
@@ -144,12 +145,25 @@ export default function GlobalPlayer() {
     return () => clearInterval(interval);
   }, [current, isOnAdminPage]);
 
-  // Stop music when user logs out
+  // Track authentication state changes
   useEffect(() => {
-    if (!isAuthenticated && queue.length > 0) {
-      stopPlayer();
+    if (isAuthenticated) {
+      setWasAuthenticated(true);
     }
-  }, [isAuthenticated, queue.length, stopPlayer]);
+  }, [isAuthenticated]);
+
+  // Stop music when user logs out (but allow guest users to play music)
+  useEffect(() => {
+    console.log("GlobalPlayer: Auth check - isAuthenticated:", isAuthenticated, "queue.length:", queue.length, "wasAuthenticated:", wasAuthenticated);
+    // Only stop music if user was previously authenticated and now is not (logout scenario)
+    // Guest users (never authenticated) should be able to play music
+    if (!isAuthenticated && queue.length > 0 && wasAuthenticated) {
+      // This is a logout, stop music
+      console.log("GlobalPlayer: Stopping music due to logout");
+      stopPlayer();
+      setWasAuthenticated(false);
+    }
+  }, [isAuthenticated, queue.length, stopPlayer, wasAuthenticated]);
 
   const next = () => {
     if (queue.length === 0) return;
@@ -173,7 +187,7 @@ export default function GlobalPlayer() {
         }
       } else {
         // Fallback to original logic
-        setCurrentIdx((i) => (i === null || i === queue.length - 1 ? 0 : i + 1));
+      setCurrentIdx((i) => (i === null || i === queue.length - 1 ? 0 : i + 1));
       }
     }
     setIsPlaying(true);
@@ -200,7 +214,7 @@ export default function GlobalPlayer() {
         }
       } else {
         // Fallback to original logic
-        setCurrentIdx((i) => (i === 0 || i === null ? queue.length - 1 : i - 1));
+      setCurrentIdx((i) => (i === 0 || i === null ? queue.length - 1 : i - 1));
       }
     }
     setIsPlaying(true);
@@ -337,7 +351,7 @@ export default function GlobalPlayer() {
 
   // Don't show player on admin pages
   if (isOnAdminPage()) return null;
-  
+
   if (!current) return null;
 
   return (
@@ -408,7 +422,12 @@ export default function GlobalPlayer() {
           title="Âm lượng"
         />
       </div>
-      <audio ref={audioRef} src={withMediaBase(current.url)} autoPlay={isPlaying} onEnded={onEnded} />
+      <audio 
+        ref={audioRef} 
+        src={withMediaBase(current.url)} 
+        autoPlay={isPlaying} 
+        onEnded={onEnded}
+      />
       
       {/* Next Songs Panel */}
       {showNextSongPanel && (
