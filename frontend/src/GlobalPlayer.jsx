@@ -27,6 +27,7 @@ export default function GlobalPlayer() {
     setCurrentIdx,
     setQueueAndPlay,
     setQueue,
+    stopPlayer,
   } = usePlayer();
 
   const audioRef = useRef(null);
@@ -142,6 +143,13 @@ export default function GlobalPlayer() {
     
     return () => clearInterval(interval);
   }, [current, isOnAdminPage]);
+
+  // Stop music when user logs out
+  useEffect(() => {
+    if (!isAuthenticated && queue.length > 0) {
+      stopPlayer();
+    }
+  }, [isAuthenticated, queue.length, stopPlayer]);
 
   const next = () => {
     if (queue.length === 0) return;

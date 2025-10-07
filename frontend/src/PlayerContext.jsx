@@ -29,6 +29,14 @@ export function PlayerProvider({ children }) {
     setTimeout(() => playAt(startIndex), 0);
   };
 
+  const stopPlayer = () => {
+    setQueue([]);
+    setCurrentIdx(null);
+    setIsPlaying(false);
+    setProgress(0);
+    setDuration(0);
+  };
+
   const value = useMemo(
     () => ({
       // state
@@ -54,6 +62,7 @@ export function PlayerProvider({ children }) {
       setVolume,
       setQueueContext,
       playAt,
+      stopPlayer,
     }),
     [queue, currentIdx, isPlaying, shuffle, repeat, progress, duration, volume, current, queueContext]
   );
