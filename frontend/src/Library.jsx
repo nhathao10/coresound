@@ -6,6 +6,7 @@ import { useToast } from './ToastContext';
 import CreatePlaylistModal from './CreatePlaylistModal';
 import FollowButton from './FollowButton';
 import Header from './Header';
+import ConfirmationModal from './ConfirmationModal';
 
 const Library = () => {
   const { user, isAuthenticated, updateUserFollowedArtists } = useAuth();
@@ -22,6 +23,15 @@ const Library = () => {
   const [editingPlaylist, setEditingPlaylist] = useState(null);
   const [showPlaylistDetail, setShowPlaylistDetail] = useState(false);
   const [selectedPlaylist, setSelectedPlaylist] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState({
+    title: "Xác nhận",
+    message: "",
+    confirmText: "Xác nhận",
+    cancelText: "Hủy",
+    type: "warning"
+  });
 
   // Create unique history (latest play time for each song)
   useEffect(() => {
@@ -253,6 +263,37 @@ const Library = () => {
     } catch (error) {
       showError('Lỗi khi xóa bài hát');
     }
+  };
+
+  const handleClearHistory = () => {
+    setConfirmAction(() => async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/history', {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${user?.token}`
+          }
+        });
+
+        if (response.ok) {
+          showSuccess('Đã xóa toàn bộ lịch sử nghe nhạc');
+          setListeningHistory([]);
+          setUniqueHistory([]);
+        } else {
+          showError('Không thể xóa lịch sử nghe nhạc');
+        }
+      } catch (error) {
+        showError('Lỗi khi xóa lịch sử nghe nhạc');
+      }
+    });
+    setConfirmConfig({
+      title: "Xóa lịch sử nghe nhạc",
+      message: "Bạn có chắc chắn muốn xóa toàn bộ lịch sử nghe nhạc? Hành động này không thể hoàn tác.",
+      confirmText: "Xóa hết",
+      cancelText: "Hủy",
+      type: "danger"
+    });
+    setShowConfirmModal(true);
   };
 
 
@@ -537,9 +578,17 @@ const Library = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (window.confirm(`Bạn có chắc muốn xóa playlist "${playlist.name}"?`)) {
+                            setConfirmAction(() => () => {
                               handleDeletePlaylist(playlist._id);
-                            }
+                            });
+                            setConfirmConfig({
+                              title: "Xóa playlist",
+                              message: `Bạn có chắc muốn xóa playlist "${playlist.name}"?`,
+                              confirmText: "Xóa",
+                              cancelText: "Hủy",
+                              type: "danger"
+                            });
+                            setShowConfirmModal(true);
                           }}
                           style={{
                             position: 'absolute',
@@ -703,9 +752,40 @@ const Library = () => {
             {/* History Tab */}
             {activeTab === 'history' && (
               <div>
-                <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '2rem' }}>
-                  Lịch sử nghe nhạc
-                </h2>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '2rem'
+                }}>
+                  <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: 0 }}>
+                    Lịch sử nghe nhạc
+                  </h2>
+                  {uniqueHistory.length > 0 && (
+                    <button
+                      onClick={handleClearHistory}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.75rem 1.5rem',
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '25px',
+                        fontSize: '1rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = '#c82333'}
+                      onMouseLeave={(e) => e.target.style.background = '#dc3545'}
+                    >
+                      <FaTrash size="1rem" />
+                      Xóa hết lịch sử
+                    </button>
+                  )}
+                </div>
 
                 {uniqueHistory.length === 0 ? (
                   <div style={{
@@ -1061,9 +1141,17 @@ const Library = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (window.confirm(`Bạn có chắc muốn xóa "${song.title}" khỏi playlist?`)) {
+                          setConfirmAction(() => () => {
                             handleRemoveSongFromPlaylist(selectedPlaylist._id, song._id);
-                          }
+                          });
+                          setConfirmConfig({
+                            title: "Xóa bài hát",
+                            message: `Bạn có chắc muốn xóa "${song.title}" khỏi playlist?`,
+                            confirmText: "Xóa",
+                            cancelText: "Hủy",
+                            type: "danger"
+                          });
+                          setShowConfirmModal(true);
                         }}
                         style={{
                           background: 'rgba(255, 0, 0, 0.1)',
@@ -1107,6 +1195,18 @@ const Library = () => {
         }}
         onSuccess={handleCreatePlaylistSuccess}
         editingPlaylist={editingPlaylist}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={confirmAction}
+        title={confirmConfig.title}
+        message={confirmConfig.message}
+        confirmText={confirmConfig.confirmText}
+        cancelText={confirmConfig.cancelText}
+        type={confirmConfig.type}
       />
       </div>
     </div>
