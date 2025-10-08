@@ -57,6 +57,7 @@ router.post('/register', async (req, res) => {
       gender: user.gender,
       dateOfBirth: user.dateOfBirth,
       avatar: user.avatar,
+      followedArtists: user.followedArtists || [],
       createdAt: user.createdAt
     };
 
@@ -109,6 +110,7 @@ router.post('/login', async (req, res) => {
       gender: user.gender,
       dateOfBirth: user.dateOfBirth,
       avatar: user.avatar,
+      followedArtists: user.followedArtists || [],
       createdAt: user.createdAt
     };
 

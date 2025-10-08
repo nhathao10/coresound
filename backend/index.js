@@ -33,6 +33,7 @@ const profileRoute = require('./routes/profile');
 const favoritesRoute = require('./routes/favorites');
 const playlistsRoute = require('./routes/playlists');
 const historyRoute = require('./routes/history');
+const notificationsRoute = require('./routes/notifications');
 
 app.get('/', (req, res) => {
   res.send('CoreSound backend is running!');
@@ -70,6 +71,9 @@ app.use('/api/playlists', playlistsRoute);
 
 // API listening history
 app.use('/api/history', historyRoute);
+
+// API notifications
+app.use('/api/notifications', notificationsRoute);
 
 // API upload (cover & song)
 app.use('/api', uploadRoute);

@@ -1,6 +1,8 @@
 const express = require("express");
 const multer = require("multer");
 const Album = require("../models/Album");
+const Artist = require("../models/Artist");
+const NotificationService = require("../services/notificationService");
 
 const router = express.Router();
 
@@ -37,6 +39,25 @@ router.post("/", uploadCover.single("cover"), async (req, res) => {
       ...(plays !== undefined ? { plays: Math.max(0, Math.floor(Number(plays) || 0)) } : {}),
     });
     await album.save();
+
+    // Tạo thông báo cho user theo dõi nghệ sĩ
+    // CHỈ khi tạo album mới (phát hành album mới)
+    try {
+      // Tìm artist ID từ tên artist
+      const artistDoc = await Artist.findOne({ name: artist });
+      if (artistDoc) {
+        await NotificationService.notifyNewAlbum(artistDoc._id, {
+          _id: album._id,
+          title: name,
+          artistName: artist,
+          cover: coverPath
+        });
+      }
+    } catch (notificationError) {
+      console.error('Error creating notifications for new album:', notificationError);
+      // Không throw error để không ảnh hưởng đến việc tạo album
+    }
+
     res.status(201).json(album);
   } catch (err) {
     res.status(500).json({ error: err.message });

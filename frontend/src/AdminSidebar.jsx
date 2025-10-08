@@ -68,12 +68,12 @@ function AdminSidebar({ open, onToggle }) {
         <div className="logo-gradient" style={{ fontSize: 22, marginBottom: 12 }}>CoreSound Admin</div>
         <nav style={{ display: "grid", gap: 6 }}>
         <a href="#/" style={linkStyle(hash === "#/" || hash === "#/")}>Trang chủ</a>
-        <a href="#/upload" style={linkStyle(hash.startsWith("#/upload"))}>Quản lý Bài hát</a>
-        <a href="#/albums-admin" style={linkStyle(hash.startsWith("#/albums-admin"))}>Quản lý Album</a>
-        <a href="#/artists-admin" style={linkStyle(hash.startsWith("#/artists-admin"))}>Quản lý Nghệ sĩ</a>
-        <a href="#/genres-admin" style={linkStyle(hash.startsWith("#/genres-admin"))}>Quản lý Thể loại</a>
-        <a href="#/regions-admin" style={linkStyle(hash.startsWith("#/regions-admin"))}>Quản lý Khu vực</a>
-        <a href="#/users-admin" style={linkStyle(hash.startsWith("#/users-admin"))}>Quản lý Người dùng</a>
+        <a href="#/upload" style={linkStyle(hash.startsWith("#/upload"))}>Bài hát</a>
+        <a href="#/albums-admin" style={linkStyle(hash.startsWith("#/albums-admin"))}>Album</a>
+        <a href="#/artists-admin" style={linkStyle(hash.startsWith("#/artists-admin"))}>Nghệ sĩ</a>
+        <a href="#/genres-admin" style={linkStyle(hash.startsWith("#/genres-admin"))}>Thể loại</a>
+        <a href="#/regions-admin" style={linkStyle(hash.startsWith("#/regions-admin"))}>Khu vực</a>
+        <a href="#/users-admin" style={linkStyle(hash.startsWith("#/users-admin"))}>Người dùng</a>
         </nav>
         <button 
           onClick={onToggle} 

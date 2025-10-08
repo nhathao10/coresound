@@ -1,9 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
 import { FaPlay, FaPause, FaCalendarAlt, FaGlobe, FaUsers, FaHeadphones, FaCheckCircle } from "react-icons/fa";
 import { usePlayer } from "./PlayerContext.jsx";
+import { useAuth } from "./AuthContext.jsx";
+import { useToast } from "./ToastContext.jsx";
 import Header from "./Header.jsx";
 
 function ArtistDetail() {
+  const { user, isAuthenticated, updateUserFollowedArtists } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [artist, setArtist] = useState(null);
   const [allSongs, setAllSongs] = useState([]);
   const [allAlbums, setAllAlbums] = useState([]);
@@ -61,6 +65,68 @@ function ArtistDetail() {
     };
   }, [artistId]);
 
+  // Load followed artists from API and sync with events
+  useEffect(() => {
+    const loadFollowedArtists = async () => {
+      if (isAuthenticated && user?.token) {
+        try {
+          const response = await fetch('http://localhost:5000/api/artists/followed', {
+            headers: {
+              'Authorization': `Bearer ${user.token}`
+            }
+          });
+          
+          if (response.ok) {
+            const artists = await response.json();
+            const artistIds = artists.map(artist => artist._id);
+            setFollowedArtists(new Set(artistIds));
+            console.log('ArtistDetail: Loaded followed artists from API:', artistIds);
+          } else {
+            // Fallback to user data
+            setFollowedArtists(new Set(user.followedArtists || []));
+          }
+        } catch (error) {
+          console.error('Error loading followed artists:', error);
+          // Fallback to user data
+          setFollowedArtists(new Set(user.followedArtists || []));
+        }
+      } else {
+        setFollowedArtists(new Set());
+      }
+    };
+    
+    loadFollowedArtists();
+  }, [isAuthenticated, user?._id]);
+
+  // Listen for follow status changes
+  useEffect(() => {
+    const handleFollowStatusChanged = (event) => {
+      const { artistId: changedArtistId, isFollowing } = event.detail;
+      setFollowedArtists(prev => {
+        const newSet = new Set(prev);
+        if (isFollowing) {
+          newSet.add(changedArtistId);
+        } else {
+          newSet.delete(changedArtistId);
+        }
+        console.log('ArtistDetail: Updated followed artists after follow change:', Array.from(newSet));
+        return newSet;
+      });
+    };
+
+    const handleUserLoggedOut = () => {
+      setFollowedArtists(new Set());
+    };
+
+    window.addEventListener('followStatusChanged', handleFollowStatusChanged);
+    window.addEventListener('userLoggedOut', handleUserLoggedOut);
+    
+    return () => {
+      window.removeEventListener('followStatusChanged', handleFollowStatusChanged);
+      window.removeEventListener('userLoggedOut', handleUserLoggedOut);
+    };
+  }, []);
+
   // Filter songs and albums by artist
   const artistSongs = useMemo(() => {
     if (!artist) return [];
@@ -86,6 +152,11 @@ function ArtistDetail() {
   }, [allAlbums, artist]);
 
   const toggleFollowArtist = async (artistId) => {
+    if (!isAuthenticated) {
+      showError('Vui lòng đăng nhập để theo dõi nghệ sĩ');
+      return;
+    }
+
     const isCurrentlyFollowed = followedArtists.has(artistId);
     const action = isCurrentlyFollowed ? 'unfollow' : 'follow';
     
@@ -94,6 +165,7 @@ function ArtistDetail() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user?.token}`
         },
         body: JSON.stringify({ action }),
       });
@@ -104,7 +176,8 @@ function ArtistDetail() {
         throw new Error(data.error || 'Failed to update follow status');
       }
       
-      // Update local follow state
+      // Update local follow state immediately
+      const newFollowingState = !isCurrentlyFollowed;
       setFollowedArtists(prev => {
         const newSet = new Set(prev);
         if (isCurrentlyFollowed) {
@@ -115,12 +188,23 @@ function ArtistDetail() {
         return newSet;
       });
       
+      // Update user's followed artists in AuthContext
+      updateUserFollowedArtists(artistId, newFollowingState);
+      
+      // Dispatch event to notify other components
+      window.dispatchEvent(new CustomEvent('followStatusChanged', {
+        detail: { artistId: artistId, isFollowing: newFollowingState }
+      }));
+      
       // Update artist followers count
       setArtist(prev => prev ? { ...prev, followers: data.followers } : null);
       
+      // Show success message
+      showSuccess(isCurrentlyFollowed ? 'Đã bỏ theo dõi nghệ sĩ' : 'Đã theo dõi nghệ sĩ');
+      
     } catch (error) {
       console.error('Error updating follow status:', error);
-      alert('Không thể cập nhật trạng thái theo dõi. Vui lòng thử lại.');
+      showError('Không thể cập nhật trạng thái theo dõi. Vui lòng thử lại.');
     }
   };
 

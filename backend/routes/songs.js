@@ -2,6 +2,8 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const Song = require("../models/Song");
+const Artist = require("../models/Artist");
+const NotificationService = require("../services/notificationService");
 
 const router = express.Router();
 
@@ -74,6 +76,25 @@ router.post(
         .populate("album")
         .populate("genres")
         .populate("region");
+
+      // Tạo thông báo cho user theo dõi nghệ sĩ
+      // CHỈ khi tạo bài hát mới (phát hành bài hát mới)
+      try {
+        // Tìm artist ID từ tên artist
+        const artistDoc = await Artist.findOne({ name: artist });
+        if (artistDoc) {
+          await NotificationService.notifyNewSong(artistDoc._id, {
+            _id: newSong._id,
+            title: title,
+            artistName: artist,
+            cover: coverPath
+          });
+        }
+      } catch (notificationError) {
+        console.error('Error creating notifications for new song:', notificationError);
+        // Không throw error để không ảnh hưởng đến việc tạo bài hát
+      }
+
       res.status(201).json(populatedSong);
     } catch (err) {
       res.status(500).json({ error: err.message });

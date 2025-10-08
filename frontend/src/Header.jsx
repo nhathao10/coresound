@@ -4,6 +4,7 @@ import { useSearch } from "./SearchContext";
 import { useAuth } from "./AuthContext";
 import LoginModal from "./LoginModal";
 import SignupModal from "./SignupModal";
+import NotificationBell from "./NotificationBell";
 
 const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, searchValue = "", showSearchResults = false }, ref) => {
   const [searchQuery, setSearchQuery] = useState(searchValue);
@@ -200,10 +201,14 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
       </div>
       
       {/* User Section */}
-      <div className="header-user-section" style={{ marginRight: "1rem" }}>
+      <div className="header-user-section" style={{ marginRight: "1rem", display: "flex", alignItems: "center" }}>
         {isAuthenticated ? (
-          /* User Avatar with Dropdown */
-          <div ref={userDropdownRef} style={{ position: "relative" }}>
+          <>
+            {/* Notification Bell */}
+            <NotificationBell />
+            
+            {/* User Avatar with Dropdown */}
+            <div ref={userDropdownRef} style={{ position: "relative" }}>
             {/* Avatar Button */}
             <div
               onClick={() => setShowUserDropdown(!showUserDropdown)}
@@ -443,6 +448,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
               </div>
             )}
           </div>
+          </>
         ) : (
           /* Auth Buttons */
           <>

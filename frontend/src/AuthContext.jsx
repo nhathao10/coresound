@@ -17,18 +17,45 @@ export const AuthProvider = ({ children }) => {
 
   // Load user from localStorage on app start
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem('cs_user');
-      if (savedUser) {
-        const userData = JSON.parse(savedUser);
-        setUser(userData);
-        setIsAuthenticated(true);
+    const loadUser = async () => {
+      try {
+        const savedUser = localStorage.getItem('cs_user');
+        if (savedUser) {
+          const userData = JSON.parse(savedUser);
+          
+          // Try to refresh user data from server to get latest followedArtists
+          try {
+            const response = await fetch('http://localhost:5000/api/auth/me', {
+              headers: {
+                'Authorization': `Bearer ${userData.token}`
+              }
+            });
+            
+            if (response.ok) {
+              const serverData = await response.json();
+              const updatedUser = { ...serverData.user, token: userData.token };
+              localStorage.setItem('cs_user', JSON.stringify(updatedUser));
+              setUser(updatedUser);
+            } else {
+              // If server request fails, use localStorage data
+              setUser(userData);
+            }
+          } catch (error) {
+            // If server request fails, use localStorage data
+            console.error('Error refreshing user from server:', error);
+            setUser(userData);
+          }
+          
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error('Error loading user from localStorage:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading user from localStorage:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    };
+    
+    loadUser();
   }, []);
 
   // Login function
@@ -102,6 +129,10 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('cs_user');
     setUser(null);
     setIsAuthenticated(false);
+    
+    // Dispatch event to notify other components to clear their data
+    window.dispatchEvent(new CustomEvent('userLoggedOut'));
+    
     window.location.hash = '#/'; // Redirect to home after logout
   };
 

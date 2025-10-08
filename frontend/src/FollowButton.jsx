@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 
-const FollowButton = ({ artist, onFollowChange }) => {
+const FollowButton = ({ artist, onFollowChange, isFollowing: externalIsFollowing }) => {
   const { user, isAuthenticated, updateUserFollowedArtists } = useAuth();
   const { showSuccess, showError } = useToast();
   const [isFollowing, setIsFollowing] = useState(false);
@@ -10,10 +10,18 @@ const FollowButton = ({ artist, onFollowChange }) => {
 
   // Check if user is following this artist
   useEffect(() => {
-    if (isAuthenticated && user?.followedArtists) {
-      setIsFollowing(user.followedArtists.includes(artist._id));
+    if (externalIsFollowing !== undefined) {
+      // Use external prop if provided (for Library component)
+      setIsFollowing(externalIsFollowing);
+    } else if (isAuthenticated && user?.followedArtists) {
+      // Use user data (for Homepage component)
+      const isUserFollowing = user.followedArtists.includes(artist._id);
+      setIsFollowing(isUserFollowing);
+      console.log(`FollowButton: Artist ${artist.name}, isFollowing: ${isUserFollowing}, followedArtists:`, user.followedArtists);
+    } else {
+      setIsFollowing(false);
     }
-  }, [isAuthenticated, user?.followedArtists, artist._id]);
+  }, [isAuthenticated, user?.followedArtists, artist._id, externalIsFollowing]);
 
   const handleFollowToggle = async () => {
     if (!isAuthenticated) {
@@ -62,7 +70,34 @@ const FollowButton = ({ artist, onFollowChange }) => {
   };
 
   if (!isAuthenticated) {
-    return null;
+    return (
+      <button
+        onClick={() => showError('Vui lòng đăng nhập để theo dõi nghệ sĩ')}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.5rem 1rem',
+          background: 'rgba(255, 255, 255, 0.1)',
+          color: '#b3b3b3',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '20px',
+          fontSize: '0.9rem',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+          e.target.style.color = 'white';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+          e.target.style.color = '#b3b3b3';
+        }}
+      >
+        Theo dõi
+      </button>
+    );
   }
 
   return (

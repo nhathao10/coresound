@@ -3,6 +3,7 @@ import "./App.css";
 import { FaPlay, FaPause, FaCheckCircle } from "react-icons/fa";
 import { usePlayer } from "./PlayerContext.jsx";
 import { useSearch } from "./SearchContext.jsx";
+import { useAuth } from "./AuthContext.jsx";
 import Header from "./Header.jsx";
 import HeartIcon from "./HeartIcon.jsx";
 import AddToPlaylistIcon from "./AddToPlaylistIcon.jsx";
@@ -14,6 +15,7 @@ function App() {
   const [albums, setAlbums] = useState([]);
   const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
   const { setQueueAndPlay, currentIdx, isPlaying, setIsPlaying, queue, setCurrentIdx, current, setQueueContext, setQueue } = usePlayer();
+  const { user, isAuthenticated } = useAuth();
   const [displayedSongs, setDisplayedSongs] = useState([]); // 7 bài hát hiển thị
   const [displayedAlbums, setDisplayedAlbums] = useState([]); // 7 album hiển thị
   const [searchQuery, setSearchQuery] = useState("");
@@ -494,6 +496,68 @@ function App() {
 
     window.addEventListener('openAddToPlaylist', handleOpenAddToPlaylist);
     return () => window.removeEventListener('openAddToPlaylist', handleOpenAddToPlaylist);
+  }, []);
+
+  // Load followed artists when user changes
+  useEffect(() => {
+    const loadFollowedArtists = async () => {
+      if (isAuthenticated && user?.token) {
+        try {
+          const response = await fetch('http://localhost:5000/api/artists/followed', {
+            headers: {
+              'Authorization': `Bearer ${user.token}`
+            }
+          });
+          
+          if (response.ok) {
+            const artists = await response.json();
+            const artistIds = artists.map(artist => artist._id);
+            setFollowedArtists(new Set(artistIds));
+            console.log('App: Loaded followed artists from API:', artistIds);
+          } else {
+            // Fallback to user data
+            setFollowedArtists(new Set(user.followedArtists || []));
+          }
+        } catch (error) {
+          console.error('Error loading followed artists:', error);
+          // Fallback to user data
+          setFollowedArtists(new Set(user.followedArtists || []));
+        }
+      } else {
+        setFollowedArtists(new Set());
+      }
+    };
+    
+    loadFollowedArtists();
+  }, [isAuthenticated, user?._id]);
+
+  // Listen for user logout to clear followed artists
+  useEffect(() => {
+    const handleUserLoggedOut = () => {
+      setFollowedArtists(new Set());
+    };
+
+    const handleFollowStatusChanged = (event) => {
+      const { artistId, isFollowing } = event.detail;
+      setFollowedArtists(prev => {
+        const newSet = new Set(prev);
+        if (isFollowing) {
+          newSet.add(artistId);
+        } else {
+          newSet.delete(artistId);
+        }
+        console.log('App: Updated followed artists after follow change:', Array.from(newSet));
+        return newSet;
+      });
+    };
+
+    window.addEventListener('userLoggedOut', handleUserLoggedOut);
+    window.addEventListener('followStatusChanged', handleFollowStatusChanged);
+    
+    return () => {
+      window.removeEventListener('userLoggedOut', handleUserLoggedOut);
+      window.removeEventListener('followStatusChanged', handleFollowStatusChanged);
+    };
   }, []);
 
   return (

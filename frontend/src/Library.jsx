@@ -13,12 +13,26 @@ const Library = () => {
   const { setQueueAndPlay, setQueueContext, current, isPlaying, setIsPlaying } = usePlayer();
   const { showSuccess, showError } = useToast();
   
+  // Add CSS animation for spinner
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+  
   const [activeTab, setActiveTab] = useState('playlists');
   const [playlists, setPlaylists] = useState([]);
   const [followedArtists, setFollowedArtists] = useState([]);
   const [listeningHistory, setListeningHistory] = useState([]);
   const [uniqueHistory, setUniqueHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingArtists, setIsLoadingArtists] = useState(false);
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
   const [editingPlaylist, setEditingPlaylist] = useState(null);
   const [showPlaylistDetail, setShowPlaylistDetail] = useState(false);
@@ -83,8 +97,20 @@ const Library = () => {
       }
     };
 
+    const handleUserLoggedOut = () => {
+      setFollowedArtists([]);
+      setPlaylists([]);
+      setListeningHistory([]);
+      setUniqueHistory([]);
+    };
+
     window.addEventListener('followStatusChanged', handleFollowStatusChange);
-    return () => window.removeEventListener('followStatusChanged', handleFollowStatusChange);
+    window.addEventListener('userLoggedOut', handleUserLoggedOut);
+    
+    return () => {
+      window.removeEventListener('followStatusChanged', handleFollowStatusChange);
+      window.removeEventListener('userLoggedOut', handleUserLoggedOut);
+    };
   }, [isAuthenticated, user]);
 
   // Update selectedPlaylist when playlists data changes
@@ -99,10 +125,12 @@ const Library = () => {
 
   // Load followed artists from user data
   useEffect(() => {
-    if (isAuthenticated && user?.followedArtists) {
+    if (isAuthenticated && user) {
       loadFollowedArtists();
+    } else {
+      setFollowedArtists([]);
     }
-  }, [isAuthenticated, user?.followedArtists]);
+  }, [isAuthenticated, user?._id]); // Use user._id to detect user changes
 
   const loadLibraryData = async () => {
     setIsLoading(true);
@@ -129,29 +157,33 @@ const Library = () => {
   };
 
   const loadFollowedArtists = async () => {
-    if (!user?.followedArtists || user.followedArtists.length === 0) {
+    if (!isAuthenticated || !user?.token) {
       setFollowedArtists([]);
       return;
     }
 
+    setIsLoadingArtists(true);
     try {
       const token = user?.token;
       const headers = { 'Authorization': `Bearer ${token}` };
       
-      // Load artist details for followed artists
-      const artistPromises = user.followedArtists.map(artistId => 
-        fetch(`http://localhost:5000/api/artists/${artistId}`, { headers })
-          .then(res => res.json())
-          .catch(() => null)
-      );
+      // Load all followed artists in one request
+      const response = await fetch('http://localhost:5000/api/artists/followed', { headers });
       
-      const artists = await Promise.all(artistPromises);
-      const validArtists = artists.filter(artist => artist !== null);
-      setFollowedArtists(validArtists);
+      if (response.ok) {
+        const artists = await response.json();
+        setFollowedArtists(artists || []);
+      } else {
+        console.error('Failed to load followed artists:', response.status);
+        setFollowedArtists([]);
+      }
       
     } catch (error) {
       console.error('Error loading followed artists:', error);
       showError('Lỗi khi tải danh sách nghệ sĩ đã theo dõi');
+      setFollowedArtists([]);
+    } finally {
+      setIsLoadingArtists(false);
     }
   };
 
@@ -667,7 +699,24 @@ const Library = () => {
                   Nghệ sĩ đã theo dõi
                 </h2>
 
-                {followedArtists.length === 0 ? (
+                {isLoadingArtists ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '4rem',
+                    color: '#b3b3b3'
+                  }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      border: '3px solid rgba(29, 185, 84, 0.3)',
+                      borderTop: '3px solid #1db954',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite',
+                      margin: '0 auto 1rem'
+                    }} />
+                    <h3>Đang tải danh sách nghệ sĩ...</h3>
+                  </div>
+                ) : followedArtists.length === 0 ? (
                   <div style={{
                     textAlign: 'center',
                     padding: '4rem',
@@ -687,18 +736,23 @@ const Library = () => {
                       <div
                         key={artist._id}
                         style={{
-                          background: 'rgba(255, 255, 255, 0.05)',
+                          background: 'transparent',
                           borderRadius: '12px',
                           padding: '1rem',
-                          transition: 'background 0.3s ease',
+                          transition: 'all 0.3s ease',
                           position: 'relative',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          border: '1px solid rgba(255, 255, 255, 0.1)'
                         }}
                         onMouseEnter={(e) => {
-                          e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                          e.target.style.borderColor = 'rgba(29, 185, 84, 0.5)';
+                          e.target.style.transform = 'translateY(-2px)';
+                          e.target.style.boxShadow = '0 4px 12px rgba(29, 185, 84, 0.2)';
                         }}
                         onMouseLeave={(e) => {
-                          e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                          e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                          e.target.style.transform = 'translateY(0)';
+                          e.target.style.boxShadow = 'none';
                         }}
                         onClick={() => {
                           window.location.hash = `#/artist/${encodeURIComponent(artist._id)}`;
@@ -708,9 +762,29 @@ const Library = () => {
                           width: '100%',
                           aspectRatio: '1',
                           borderRadius: '50%',
-                          background: `url(${withMediaBase(artist.avatar) || '/default-avatar.png'}) center/cover`,
-                          marginBottom: '1rem'
-                        }} />
+                          marginBottom: '1rem',
+                          overflow: 'hidden',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'rgba(255, 255, 255, 0.1)'
+                        }}>
+                          <img
+                            src={withMediaBase(artist.avatar) || '/default-avatar.png'}
+                            alt={artist.name}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                              borderRadius: '50%'
+                            }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.style.background = 'linear-gradient(135deg, #1db954, #1ed760)';
+                              e.target.parentElement.innerHTML = `<div style="color: white; font-size: 2rem; font-weight: bold;">${artist.name.charAt(0).toUpperCase()}</div>`;
+                            }}
+                          />
+                        </div>
                         
                         <div>
                           <h3 style={{
@@ -733,6 +807,7 @@ const Library = () => {
                           <div style={{ display: 'flex', justifyContent: 'center' }}>
                             <FollowButton 
                               artist={artist}
+                              isFollowing={true}
                               onFollowChange={(artistId, isFollowing) => {
                                 if (!isFollowing) {
                                   // Remove from local state when unfollowed
