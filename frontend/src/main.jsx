@@ -10,6 +10,7 @@ import RegionsAdmin from './RegionsAdmin.jsx'
 import UsersAdmin from './UsersAdmin.jsx'
 import Profile from './Profile.jsx'
 import Favorites from './Favorites.jsx'
+import Library from './Library.jsx'
 import AlbumDetail from './AlbumDetail.jsx'
 import ArtistDetail from './ArtistDetail.jsx'
 import ProtectedRoute from './ProtectedRoute.jsx'
@@ -75,6 +76,13 @@ function Router() {
     return (
       <ProtectedRoute requireAdmin={false}>
         <Favorites />
+      </ProtectedRoute>
+    )
+  }
+  if (hash.startsWith('#/library')) {
+    return (
+      <ProtectedRoute requireAdmin={false}>
+        <Library />
       </ProtectedRoute>
     )
   }

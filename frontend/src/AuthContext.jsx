@@ -128,6 +128,26 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Update user's followed artists
+  const updateUserFollowedArtists = (artistId, isFollowing) => {
+    if (!user) return;
+    
+    const updatedUser = { ...user };
+    if (isFollowing) {
+      if (!updatedUser.followedArtists) {
+        updatedUser.followedArtists = [];
+      }
+      if (!updatedUser.followedArtists.includes(artistId)) {
+        updatedUser.followedArtists.push(artistId);
+      }
+    } else {
+      updatedUser.followedArtists = updatedUser.followedArtists?.filter(id => id !== artistId) || [];
+    }
+    
+    setUser(updatedUser);
+    localStorage.setItem('cs_user', JSON.stringify(updatedUser));
+  };
+
   const value = {
     user,
     isAuthenticated,
@@ -136,6 +156,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     refreshUser,
+    updateUserFollowedArtists,
     isAdmin: isAdmin(),
     canAccessAdmin: canAccessAdmin(),
   };

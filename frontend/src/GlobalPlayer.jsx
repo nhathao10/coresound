@@ -38,6 +38,28 @@ export default function GlobalPlayer() {
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const scrollContainerRef = useRef(null);
 
+  // Add song to listening history
+  const addToListeningHistory = async (songId) => {
+    if (!isAuthenticated || !user?.token) return;
+    
+    try {
+      await fetch('http://localhost:5000/api/history', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`
+        },
+        body: JSON.stringify({
+          songId: songId,
+          duration: 0,
+          completed: false
+        })
+      });
+    } catch (error) {
+      console.error('Error adding to listening history:', error);
+    }
+  };
+
   // Check if we're on an admin page
   const isOnAdminPage = () => {
     const hash = window.location.hash || '#/';
@@ -127,10 +149,15 @@ export default function GlobalPlayer() {
       audioRef.current.play().catch(error => {
         console.error('Audio play error:', error);
       });
+      
+      // Add to listening history when starting to play
+      if (current && isAuthenticated) {
+        addToListeningHistory(current._id);
+      }
     } else {
       audioRef.current.pause();
     }
-  }, [isPlaying, currentIdx, current]);
+  }, [isPlaying, currentIdx, current, isAuthenticated]);
 
   // Ensure progress updates continuously when component is visible
   useEffect(() => {

@@ -360,6 +360,32 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                     <span>Yêu thích</span>
                   </div>
 
+                  {/* Library Link */}
+                  <div
+                    onClick={() => {
+                      window.location.hash = "#/library";
+                      setShowUserDropdown(false);
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.75rem",
+                      padding: "0.75rem 1rem",
+                      color: "#fff",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s ease",
+                      fontSize: "0.9rem"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "rgba(29, 185, 84, 0.1)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                  >
+                    <span>Thư viện</span>
+                  </div>
+
                   {/* Admin Panel Link */}
                   {isAdmin && (
                     <div

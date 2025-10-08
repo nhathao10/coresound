@@ -50,7 +50,11 @@ const userSchema = new mongoose.Schema({
   lastLogin: {
     type: Date,
     default: null
-  }
+  },
+  followedArtists: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Artist'
+  }]
 }, {
   timestamps: true
 });

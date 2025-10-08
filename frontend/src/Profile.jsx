@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
+import Header from './Header';
 
 const Profile = () => {
   const { user, isAuthenticated, refreshUser } = useAuth();
@@ -146,6 +147,7 @@ const Profile = () => {
 
   return (
     <div className="music-app dark-theme">
+      <Header />
       <div style={{
         maxWidth: '800px',
         margin: '0 auto',
@@ -153,7 +155,8 @@ const Profile = () => {
         background: 'rgba(255, 255, 255, 0.02)',
         borderRadius: '16px',
         border: '1px solid rgba(255, 255, 255, 0.1)',
-        marginTop: '2rem'
+        marginTop: '6rem', // Thêm margin-top để tránh bị header che
+        marginBottom: '120px' // Thêm margin-bottom để tránh bị music player che
       }}>
         {/* Header */}
         <div style={{

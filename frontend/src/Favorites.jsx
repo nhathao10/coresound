@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { FaPlay, FaPause, FaMusic, FaCompactDisc, FaTimes } from 'react-icons/fa';
 import { usePlayer } from './PlayerContext';
+import Header from './Header';
 
 const Favorites = () => {
   const { user, isAuthenticated } = useAuth();
@@ -53,6 +54,7 @@ const Favorites = () => {
 
   return (
     <div className="music-app dark-theme">
+      <Header />
       <div style={{
         maxWidth: '1200px',
         margin: '0 auto',
@@ -60,7 +62,7 @@ const Favorites = () => {
         background: 'rgba(255, 255, 255, 0.02)',
         borderRadius: '16px',
         border: '1px solid rgba(255, 255, 255, 0.1)',
-        marginTop: '2rem',
+        marginTop: '6rem', // Thêm margin-top để tránh bị header che
         marginBottom: '120px' // Space for music bar
       }}>
         {/* Header */}

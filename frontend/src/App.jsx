@@ -5,6 +5,9 @@ import { usePlayer } from "./PlayerContext.jsx";
 import { useSearch } from "./SearchContext.jsx";
 import Header from "./Header.jsx";
 import HeartIcon from "./HeartIcon.jsx";
+import AddToPlaylistIcon from "./AddToPlaylistIcon.jsx";
+import FollowButton from "./FollowButton.jsx";
+import AddToPlaylistModal from "./AddToPlaylistModal.jsx";
 
 function App() {
   const [songs, setSongs] = useState([]);
@@ -31,6 +34,9 @@ function App() {
   const [artists, setArtists] = useState([]);
   const [followedArtists, setFollowedArtists] = useState(new Set());
   const [dropdownPosition, setDropdownPosition] = useState({ left: 0, top: 0, width: 0 });
+  const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
+  const [selectedSongForPlaylist, setSelectedSongForPlaylist] = useState(null);
+  const [hoveredSongId, setHoveredSongId] = useState(null);
   const { searchHistory, addToSearchHistory, removeFromSearchHistory } = useSearch();
 
 
@@ -325,7 +331,7 @@ function App() {
       }, 100);
     } else {
       setCurrentIdx(idx);
-      setIsPlaying(true);
+    setIsPlaying(true);
     }
     
     // Set queue context and current queue
@@ -511,7 +517,7 @@ function App() {
           maxHeight: 360, 
           overflowY: "auto" 
         }}>
-          {searchQuery.trim() ? (
+              {searchQuery.trim() ? (
             <div>
               {/* Search Results Only - No History when searching */}
               {searchResults.length > 0 ? (
@@ -563,10 +569,10 @@ function App() {
                 <div style={{ padding: "16px 12px", color: "#b3b3b3", textAlign: "center" }}>
                   Không tìm thấy kết quả cho "{searchQuery}"
                 </div>
-              )}
-            </div>
-          ) : (
-            <div>
+                  )}
+                </div>
+              ) : (
+                <div>
               {searchHistory.length > 0 ? (
                 <div>
                   {searchHistory.slice(0, 8).map((song) => (
@@ -608,8 +614,8 @@ function App() {
                         style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1, cursor: "pointer" }}
                       >
                         <span style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "#fff" }}>{song.title}</span>
-                        <span style={{ color: "#b3b3b3", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.artist}</span>
-                      </div>
+                          <span style={{ color: "#b3b3b3", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{song.artist}</span>
+                        </div>
                       <button 
                         onClick={(e) => { e.stopPropagation(); removeFromSearchHistory(song._id); }} 
                         title="Xóa khỏi lịch sử" 
@@ -635,18 +641,18 @@ function App() {
                       >
                         ×
                       </button>
-                    </div>
+                      </div>
                   ))}
                 </div>
-              ) : (
+                  ) : (
                 <div style={{ padding: "16px 12px", color: "#b3b3b3", textAlign: "center" }}>
                   <div style={{ marginBottom: "8px" }}>Chưa có lịch sử tìm kiếm</div>
                   <div style={{ fontSize: "11px", opacity: 0.8 }}>Tìm kiếm bài hát để xem lịch sử</div>
                 </div>
               )}
             </div>
-          )}
-        </div>
+            )}
+          </div>
       )}
       <main className="main-content">
         {searchQuery.trim() && (
@@ -667,8 +673,18 @@ function App() {
                     current && current._id === song._id ? " active" : ""
                   }`}
                   style={{ position: 'relative' }}
+                  onMouseEnter={() => setHoveredSongId(song._id)}
+                  onMouseLeave={() => setHoveredSongId(null)}
                 >
-                  <HeartIcon type="song" itemId={song._id} />
+                  <HeartIcon type="song" itemId={song._id} style={{ opacity: hoveredSongId === song._id ? 1 : 0 }} />
+                  <AddToPlaylistIcon 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedSongForPlaylist(song);
+                      setShowAddToPlaylistModal(true);
+                    }}
+                    style={{ opacity: hoveredSongId === song._id ? 1 : 0 }}
+                  />
                   <img
                     className="recommend-horizontal-art"
                     src={withMediaBase(song.cover) || "/default-cover.png"}
@@ -685,16 +701,16 @@ function App() {
                   )}
                   <button
                     className="recommend-horizontal-play"
-                      onClick={() => {
-                        const realIdx = songs.findIndex((s) => s._id === song._id);
-                        if (realIdx === -1) return;
-                        const isCurrent = current && current._id === song._id;
-                        if (isCurrent) {
-                          setIsPlaying((prev) => !prev);
-                        } else {
+                    onClick={() => {
+                      const realIdx = songs.findIndex((s) => s._id === song._id);
+                      if (realIdx === -1) return;
+                      const isCurrent = current && current._id === song._id;
+                      if (isCurrent) {
+                        setIsPlaying((prev) => !prev);
+                      } else {
                           playSong(realIdx, "suggestions");
-                        }
-                      }}
+                      }
+                    }}
                   >
                     {current && current._id === song._id && isPlaying ? <FaPause /> : <FaPlay />}
                   </button>
@@ -725,8 +741,18 @@ function App() {
                   current && current._id === song._id ? " active" : ""
                 }`}
                 style={{ position: 'relative' }}
+                onMouseEnter={() => setHoveredSongId(song._id)}
+                onMouseLeave={() => setHoveredSongId(null)}
               >
-                <HeartIcon type="song" itemId={song._id} />
+                <HeartIcon type="song" itemId={song._id} style={{ opacity: hoveredSongId === song._id ? 1 : 0 }} />
+                <AddToPlaylistIcon 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedSongForPlaylist(song);
+                    setShowAddToPlaylistModal(true);
+                  }}
+                  style={{ opacity: hoveredSongId === song._id ? 1 : 0 }}
+                />
                 <img
                   className="recommend-horizontal-art"
                   src={withMediaBase(song.cover) || "/default-cover.png"}
@@ -1099,7 +1125,7 @@ function App() {
             justifyContent: "center",
             maxWidth: "100%"
           }}>
-            {artists.slice(0, 6).map((artist) => (
+            {(artists || []).slice(0, 6).map((artist) => (
               <div
                 key={artist._id}
                 style={{
@@ -1189,49 +1215,9 @@ function App() {
                 </p>
                 
                 {/* Follow Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFollowArtist(artist._id);
-                  }}
-                  style={{
-                    background: followedArtists.has(artist._id) ? "rgba(29, 185, 84, 0.2)" : "transparent",
-                    border: `2px solid ${followedArtists.has(artist._id) ? "rgba(29, 185, 84, 0.6)" : "rgba(255, 255, 255, 0.3)"}`,
-                    borderRadius: "25px",
-                    color: followedArtists.has(artist._id) ? "#1db954" : "#fff",
-                    padding: "0.6rem 1.8rem",
-                    fontSize: "0.9rem",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    minWidth: "120px",
-                    boxShadow: followedArtists.has(artist._id) ? "0 2px 8px rgba(29, 185, 84, 0.15)" : "none"
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!followedArtists.has(artist._id)) {
-                      e.target.style.borderColor = "#1db954";
-                      e.target.style.color = "#1db954";
-                      e.target.style.background = "rgba(29, 185, 84, 0.05)";
-                    } else {
-                      e.target.style.transform = "scale(1.05)";
-                      e.target.style.background = "rgba(29, 185, 84, 0.3)";
-                      e.target.style.borderColor = "rgba(29, 185, 84, 0.8)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!followedArtists.has(artist._id)) {
-                      e.target.style.borderColor = "rgba(255, 255, 255, 0.3)";
-                      e.target.style.color = "#fff";
-                      e.target.style.background = "transparent";
-                    } else {
-                      e.target.style.transform = "scale(1)";
-                      e.target.style.background = "rgba(29, 185, 84, 0.2)";
-                      e.target.style.borderColor = "rgba(29, 185, 84, 0.6)";
-                    }
-                  }}
-                >
-                  {followedArtists.has(artist._id) ? "Đang theo dõi" : "Theo dõi"}
-                </button>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <FollowButton artist={artist} />
+                </div>
               </div>
             ))}
           </div>
@@ -1239,6 +1225,21 @@ function App() {
         
         {/* Các thành phần khác sẽ thêm vào đây sau này */}
       </main>
+      
+      {/* Add to Playlist Modal */}
+      <AddToPlaylistModal
+        isOpen={showAddToPlaylistModal}
+        onClose={() => {
+          setShowAddToPlaylistModal(false);
+          setSelectedSongForPlaylist(null);
+        }}
+        song={selectedSongForPlaylist}
+        onSuccess={() => {
+          // Trigger playlist refresh by dispatching custom event
+          window.dispatchEvent(new CustomEvent('playlistUpdated'));
+        }}
+      />
+      
       {/* GlobalPlayer renders persistently in main.jsx */}
     </div>
   );
