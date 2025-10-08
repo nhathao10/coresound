@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import { FaPause, FaPlay, FaRandom, FaRedo, FaStepBackward, FaStepForward, FaVolumeUp, FaList, FaGripVertical } from "react-icons/fa";
+import { FaPause, FaPlay, FaRandom, FaRedo, FaStepBackward, FaStepForward, FaVolumeUp, FaList, FaGripVertical, FaPlus } from "react-icons/fa";
 import { usePlayer } from "./PlayerContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
+import HeartIcon from "./HeartIcon.jsx";
+import AddToPlaylistIcon from "./AddToPlaylistIcon.jsx";
 
 const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
 
@@ -181,7 +183,6 @@ export default function GlobalPlayer() {
 
   // Stop music when user logs out (but allow guest users to play music)
   useEffect(() => {
-    console.log("GlobalPlayer: Auth check - isAuthenticated:", isAuthenticated, "queue.length:", queue.length, "wasAuthenticated:", wasAuthenticated);
     // Only stop music if user was previously authenticated and now is not (logout scenario)
     // Guest users (never authenticated) should be able to play music
     if (!isAuthenticated && queue.length > 0 && wasAuthenticated) {
@@ -385,8 +386,69 @@ export default function GlobalPlayer() {
     <div className="music-bar spotify-bar">
       <div className="spotify-bar-left">
         <img className="spotify-album-art" src={withMediaBase(current.cover) || "/default-cover.png"} alt="Album Art" />
-        <div className="spotify-song-info">
+        <div className="spotify-song-info" style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span className="spotify-song-title">{current.title}</span>
+            {isAuthenticated && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <HeartIcon 
+                  type="song"
+                  itemId={current._id}
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    minWidth: '24px',
+                    minHeight: '24px',
+                    borderRadius: '50%',
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backdropFilter: 'blur(4px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    boxSizing: 'border-box',
+                    flexShrink: 0,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    position: 'static',
+                    top: 'auto',
+                    right: 'auto',
+                    zIndex: 'auto',
+                    opacity: 1
+                  }}
+                />
+                <AddToPlaylistIcon 
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('openAddToPlaylist', { 
+                      detail: { song: current } 
+                    }));
+                  }}
+                  style={{
+                    position: 'static !important',
+                    top: 'auto !important',
+                    right: 'auto !important',
+                    width: '24px',
+                    height: '24px',
+                    minWidth: '24px',
+                    minHeight: '24px',
+                    borderRadius: '50%',
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backdropFilter: 'blur(4px)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    boxSizing: 'border-box',
+                    flexShrink: 0,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    zIndex: 'auto',
+                    opacity: '1 !important'
+                  }}
+                />
+              </div>
+            )}
+          </div>
           <span className="spotify-song-artist">{current.artist}</span>
         </div>
       </div>

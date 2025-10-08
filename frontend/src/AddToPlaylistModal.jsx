@@ -7,6 +7,15 @@ const AddToPlaylistModal = ({ isOpen, onClose, song, onSuccess }) => {
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
   
+  // Debug song object
+  useEffect(() => {
+    if (song) {
+      console.log('AddToPlaylistModal - song object:', song);
+      console.log('AddToPlaylistModal - song.cover:', song.cover);
+      console.log('AddToPlaylistModal - full image URL:', song.cover ? `http://localhost:5000${song.cover}` : 'No cover');
+    }
+  }, [song]);
+  
   const [playlists, setPlaylists] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState('');
@@ -157,8 +166,26 @@ const AddToPlaylistModal = ({ isOpen, onClose, song, onSuccess }) => {
             width: '50px',
             height: '50px',
             borderRadius: '8px',
-            background: `url(${song?.cover ? `http://localhost:5000${song.cover}` : '/default-cover.png'}) center/cover`
-          }} />
+            background: song?.cover 
+              ? `url(http://localhost:5000${song.cover}) center/cover, linear-gradient(135deg, #1db954 0%, #1ed760 100%)`
+              : 'linear-gradient(135deg, #1db954 0%, #1ed760 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            backgroundSize: 'cover, cover',
+            backgroundPosition: 'center, center',
+            backgroundRepeat: 'no-repeat, no-repeat'
+          }}
+          onError={(e) => {
+            console.log('Image failed to load:', song?.cover);
+            e.target.style.background = 'linear-gradient(135deg, #1db954 0%, #1ed760 100%)';
+          }}
+          >
+            {!song?.cover && (
+              <FaMusic size="1.2rem" color="white" style={{ opacity: 0.8 }} />
+            )}
+          </div>
           <div>
             <h3 style={{
               color: 'white',

@@ -830,24 +830,27 @@ const Library = () => {
           <div style={{
             background: '#1a1a1a',
             borderRadius: '12px',
-            padding: '2rem',
-            maxWidth: '600px',
-            width: '90%',
-            maxHeight: '80vh',
-            overflow: 'auto'
+            padding: '1.5rem',
+            maxWidth: '700px',
+            width: '95%',
+            maxHeight: '85vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
           }}>
             {/* Header with playlist info */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '1.5rem',
-              marginBottom: '1.5rem'
+              gap: '1rem',
+              marginBottom: '1rem',
+              flexShrink: 0
             }}>
               {/* Playlist cover */}
               <div style={{
-                width: '120px',
-                height: '120px',
-                borderRadius: '12px',
+                width: '80px',
+                height: '80px',
+                borderRadius: '8px',
                 background: selectedPlaylist.cover 
                   ? `url(${withMediaBase(selectedPlaylist.cover)}) center/cover`
                   : 'linear-gradient(135deg, #1db954 0%, #1ed760 100%)',
@@ -857,7 +860,7 @@ const Library = () => {
                 flexShrink: 0
               }}>
                 {!selectedPlaylist.cover && (
-                  <FaMusic size="2.5rem" color="white" style={{ opacity: 0.8 }} />
+                  <FaMusic size="1.8rem" color="white" style={{ opacity: 0.8 }} />
                 )}
               </div>
               
@@ -870,10 +873,10 @@ const Library = () => {
                   marginBottom: '0.5rem'
                 }}>
                   <h2 style={{ 
-                    fontSize: '1.8rem', 
+                    fontSize: '1.4rem', 
                     fontWeight: 'bold',
                     margin: 0,
-                    marginBottom: '0.5rem'
+                    marginBottom: '0.25rem'
                   }}>
                     {selectedPlaylist.name}
                   </h2>
@@ -904,9 +907,9 @@ const Library = () => {
                 
                 <p style={{ 
                   color: '#b3b3b3', 
-                  fontSize: '1rem',
+                  fontSize: '0.9rem',
                   margin: 0,
-                  marginBottom: '0.5rem'
+                  marginBottom: '0.25rem'
                 }}>
                   {selectedPlaylist.songs?.length || 0} bài hát
                 </p>
@@ -914,7 +917,7 @@ const Library = () => {
                 {selectedPlaylist.description && (
                   <p style={{ 
                     color: '#b3b3b3', 
-                    fontSize: '0.9rem',
+                    fontSize: '0.8rem',
                     margin: 0,
                     fontStyle: 'italic'
                   }}>
@@ -925,7 +928,7 @@ const Library = () => {
             </div>
 
             {/* Play all button */}
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1rem', flexShrink: 0 }}>
               <button
                 onClick={() => {
                   handlePlayPlaylist(selectedPlaylist);
@@ -955,11 +958,12 @@ const Library = () => {
             </div>
 
             {/* Songs list */}
-            <div>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <h3 style={{ 
-                marginBottom: '1rem',
-                fontSize: '1.2rem',
-                fontWeight: 'bold'
+                marginBottom: '0.5rem',
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                flexShrink: 0
               }}>
                 Danh sách bài hát
               </h3>
@@ -969,11 +973,12 @@ const Library = () => {
                   display: 'flex', 
                   flexDirection: 'column', 
                   gap: '0.25rem',
-                  maxHeight: '500px',
+                  flex: 1,
                   overflowY: 'auto',
                   paddingRight: '0.5rem',
                   scrollbarWidth: 'thin',
-                  scrollbarColor: 'rgba(255, 255, 255, 0.3) transparent'
+                  scrollbarColor: 'rgba(255, 255, 255, 0.3) transparent',
+                  minHeight: 0
                 }}>
                   {selectedPlaylist.songs.map((song, index) => (
                     <div

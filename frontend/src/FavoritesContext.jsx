@@ -114,10 +114,7 @@ export const FavoritesProvider = ({ children }) => {
       // Remove from local state
       setFavorites(prev => prev.filter(fav => !(fav.type === type && fav.item._id === itemId)));
       
-      // Show success toast
-      showSuccess(data.message || 'Đã xóa khỏi danh sách yêu thích');
-      
-      return { success: true, message: data.message };
+      return { success: true, message: data.message || 'Đã xóa khỏi danh sách yêu thích' };
     } catch (error) {
       console.error('Error removing from favorites:', error);
       showError(error.message || 'Lỗi khi xóa khỏi danh sách yêu thích');

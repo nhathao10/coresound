@@ -485,6 +485,17 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, [showDropdown]);
 
+  // Listen for openAddToPlaylist event from music bar
+  useEffect(() => {
+    const handleOpenAddToPlaylist = (event) => {
+      setSelectedSongForPlaylist(event.detail.song);
+      setShowAddToPlaylistModal(true);
+    };
+
+    window.addEventListener('openAddToPlaylist', handleOpenAddToPlaylist);
+    return () => window.removeEventListener('openAddToPlaylist', handleOpenAddToPlaylist);
+  }, []);
+
   return (
     <div className="music-app dark-theme">
       <Header 
