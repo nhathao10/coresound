@@ -192,7 +192,6 @@ export default function GlobalPlayer() {
     // Guest users (never authenticated) should be able to play music
     if (!isAuthenticated && queue.length > 0 && wasAuthenticated) {
       // This is a logout, stop music
-      console.log("GlobalPlayer: Stopping music due to logout");
       stopPlayer();
       setWasAuthenticated(false);
     }
@@ -216,7 +215,12 @@ export default function GlobalPlayer() {
           setCurrentIdx(nextSong.queueIndex);
         } else {
           // Fallback to original logic
-          setCurrentIdx((i) => (i === null || i === queue.length - 1 ? 0 : i + 1));
+          if (queueContext === "genre-filter") {
+            // For genre-filter, loop back to start when reaching end
+            setCurrentIdx((i) => (i === null || i === queue.length - 1 ? 0 : i + 1));
+          } else {
+            setCurrentIdx((i) => (i === null || i === queue.length - 1 ? 0 : i + 1));
+          }
         }
       } else {
         // Fallback to original logic
@@ -300,17 +304,13 @@ export default function GlobalPlayer() {
       allSongs.push({ ...queue[i], queueIndex: i, isCurrent: false });
     }
     
-    // If context is "suggestions", limit to 20 songs total (including current)
-    if (queueContext === "suggestions" && allSongs.length > 20) {
-      // Keep current song and randomly select 19 more from the rest
+    // If context is "suggestions" or "genre-filter", limit to 20 songs total (including current)
+    if ((queueContext === "suggestions" || queueContext === "genre-filter") && allSongs.length > 20) {
+      // Keep current song and take next 19 songs in order (no shuffle)
       const currentSong = allSongs[0]; // Current song is always first
-      const otherSongs = allSongs.slice(1); // All other songs
+      const nextSongs = allSongs.slice(1, 20); // Take next 19 songs in order
       
-      // Randomly shuffle and take first 19
-      const shuffledOthers = [...otherSongs].sort(() => Math.random() - 0.5);
-      const selectedOthers = shuffledOthers.slice(0, 19);
-      
-      return [currentSong, ...selectedOthers];
+      return [currentSong, ...nextSongs];
     }
     return allSongs;
   }, [queue, currentIdx, queueContext]);

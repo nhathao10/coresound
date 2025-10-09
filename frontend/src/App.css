@@ -2149,6 +2149,18 @@ body {
   min-width: 0;
 }
 
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 2rem;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #1db954 !important;
+}
+
 .header-user-section {
   display: flex;
   align-items: center;

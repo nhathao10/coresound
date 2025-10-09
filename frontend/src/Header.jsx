@@ -155,6 +155,40 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
           CoreSound
         </span>
         
+        {/* Navigation Menu */}
+        <nav className="header-nav">
+          <a 
+            href="#/" 
+            className="nav-link"
+            style={{ 
+              color: window.location.hash === "#/" || window.location.hash === "" ? "#1db954" : "#b3b3b3",
+              textDecoration: "none",
+              padding: "8px 16px",
+              borderRadius: "6px",
+              transition: "all 0.2s ease",
+              fontSize: "14px",
+              fontWeight: "500"
+            }}
+          >
+            Trang chủ
+          </a>
+          <a 
+            href="#/genres" 
+            className="nav-link"
+            style={{ 
+              color: window.location.hash.startsWith("#/genres") ? "#1db954" : "#b3b3b3",
+              textDecoration: "none",
+              padding: "8px 16px",
+              borderRadius: "6px",
+              transition: "all 0.2s ease",
+              fontSize: "14px",
+              fontWeight: "500"
+            }}
+          >
+            Thể loại
+          </a>
+        </nav>
+        
         {showSearch && (
           <div 
             ref={searchWrapRef} 

@@ -11,15 +11,11 @@ export function PlayerProvider({ children }) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
-  const [queueContext, setQueueContext] = useState("suggestions"); // "suggestions" hoặc "album"
+  const [queueContext, setQueueContext] = useState("suggestions"); // "suggestions", "album", hoặc "genre-filter"
   const [pendingPlay, setPendingPlay] = useState(null); // {songs, startIndex}
 
   const current = currentIdx !== null && queue[currentIdx] ? queue[currentIdx] : null;
 
-  // Debug effect to track state changes
-  useEffect(() => {
-    console.log("PlayerContext: State changed - currentIdx:", currentIdx, "queue.length:", queue.length, "current:", current?.name || "null");
-  }, [currentIdx, queue.length, current]);
 
   // Handle pending play when queue is ready
   useEffect(() => {
@@ -55,7 +51,6 @@ export function PlayerProvider({ children }) {
   };
 
   const stopPlayer = () => {
-    console.log("PlayerContext: stopPlayer called - clearing all state");
     setQueue([]);
     setCurrentIdx(null);
     setIsPlaying(false);

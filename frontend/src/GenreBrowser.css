@@ -1,0 +1,92 @@
+.genre-browser {
+  background: #18181b;
+  padding: 20px;
+}
+
+.genre-browser-header {
+  text-align: center;
+  margin-bottom: 32px;
+  color: white;
+}
+
+.genre-browser-header h1 {
+  font-size: 36px;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+  color: #f3f3f3;
+}
+
+.genre-browser-header p {
+  font-size: 18px;
+  margin: 0;
+  color: #b3b3b3;
+}
+
+.genre-browser-content {
+  display: flex;
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.filter-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.songs-main {
+  flex: 1;
+  background: #1e1e24;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  border: 1px solid #2e2e37;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .genre-browser-content {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .filter-sidebar {
+    width: 100%;
+  }
+  
+  .songs-main {
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .genre-browser {
+    padding: 16px;
+  }
+  
+  .genre-browser-header h1 {
+    font-size: 28px;
+  }
+  
+  .genre-browser-header p {
+    font-size: 16px;
+  }
+  
+  .genre-browser-content {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .genre-browser {
+    padding: 12px;
+  }
+  
+  .genre-browser-header h1 {
+    font-size: 24px;
+  }
+  
+  .genre-browser-header p {
+    font-size: 14px;
+  }
+}

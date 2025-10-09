@@ -14,6 +14,7 @@ import Favorites from './Favorites.jsx'
 import Library from './Library.jsx'
 import AlbumDetail from './AlbumDetail.jsx'
 import ArtistDetail from './ArtistDetail.jsx'
+import GenreBrowser from './GenreBrowser.jsx'
 import ProtectedRoute from './ProtectedRoute.jsx'
 import { PlayerProvider } from './PlayerContext.jsx'
 import { SearchProvider } from './SearchContext.jsx'
@@ -99,6 +100,9 @@ function Router() {
   }
   if (hash.startsWith('#/artist/')) {
     return <ArtistDetail />
+  }
+  if (hash.startsWith('#/genres')) {
+    return <GenreBrowser />
   }
   return <App />
 }

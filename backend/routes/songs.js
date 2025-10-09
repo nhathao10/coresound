@@ -360,6 +360,82 @@ router.get("/trending/genre/:genre", async (req, res) => {
   }
 });
 
+// Test endpoint để kiểm tra kết nối
+router.get("/test", async (req, res) => {
+  try {
+    res.json({ message: "Songs API is working", timestamp: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Lấy bài hát theo thể loại (hỗ trợ lọc theo 1 hoặc nhiều thể loại)
+router.get("/filter/by-genres", async (req, res) => {
+  try {
+    const { genres, limit = 50, page = 1, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+    
+    let query = {};
+    
+    // Xử lý filter theo thể loại
+    if (genres) {
+      let genreIds = [];
+      
+      // Nếu genres là string, split thành array
+      if (typeof genres === 'string') {
+        genreIds = genres.split(',').map(id => id.trim());
+      } else if (Array.isArray(genres)) {
+        genreIds = genres;
+      }
+      
+      // Tìm bài hát có ít nhất 1 trong các thể loại được chọn
+      if (genreIds.length > 0) {
+        query.genres = { $in: genreIds };
+      }
+    }
+    
+    // Xử lý sorting
+    let sortOptions = {};
+    if (sortBy === 'plays') {
+      sortOptions.plays = sortOrder === 'desc' ? -1 : 1;
+    } else if (sortBy === 'weeklyPlays') {
+      sortOptions.weeklyPlays = sortOrder === 'desc' ? -1 : 1;
+    } else if (sortBy === 'title') {
+      sortOptions.title = sortOrder === 'desc' ? -1 : 1;
+    } else {
+      sortOptions.createdAt = sortOrder === 'desc' ? -1 : 1;
+    }
+    
+    // Tính toán pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const songs = await Song.find(query)
+      .populate("album")
+      .populate("genres")
+      .populate("region")
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    // Đếm tổng số bài hát để pagination
+    const totalSongs = await Song.countDocuments(query);
+    const totalPages = Math.ceil(totalSongs / parseInt(limit));
+    
+    
+    res.json({
+      songs,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        totalSongs,
+        hasNextPage: parseInt(page) < totalPages,
+        hasPrevPage: parseInt(page) > 1
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ========== LYRICS ROUTES ==========
 
 // Lấy lyrics của bài hát
