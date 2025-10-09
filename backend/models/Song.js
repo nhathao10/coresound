@@ -11,7 +11,19 @@ const SongSchema = new mongoose.Schema({
   premium: { type: Boolean, default: false },
   album: { type: mongoose.Schema.Types.ObjectId, ref: "Album" },
   genres: [{ type: mongoose.Schema.Types.ObjectId, ref: "Genre" }],
-  region: { type: mongoose.Schema.Types.ObjectId, ref: "Region" }
+  region: { type: mongoose.Schema.Types.ObjectId, ref: "Region" },
+  // Lyrics với timestamps
+  lyrics: {
+    text: { type: String, default: "" },           // Nội dung lyrics đầy đủ
+    language: { type: String, default: "vi" },     // Ngôn ngữ
+    hasTimestamps: { type: Boolean, default: false }, // Có timestamp hay không
+    timestamps: [{
+      time: { type: Number, required: true },      // Thời gian (giây)
+      text: { type: String, required: true }       // Lời tại thời điểm đó
+    }],
+    isOfficial: { type: Boolean, default: false }, // Lyrics chính thức hay user đóng góp
+    contributor: { type: mongoose.Schema.Types.ObjectId, ref: "User" } // Người đóng góp
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Song", SongSchema);

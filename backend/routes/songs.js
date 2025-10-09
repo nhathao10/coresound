@@ -360,4 +360,107 @@ router.get("/trending/genre/:genre", async (req, res) => {
   }
 });
 
+// ========== LYRICS ROUTES ==========
+
+// Lấy lyrics của bài hát
+router.get("/:id/lyrics", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const song = await Song.findById(id).select("lyrics title artist");
+    if (!song) return res.status(404).json({ error: "Song not found" });
+    
+    res.json({
+      songId: song._id,
+      title: song.title,
+      artist: song.artist,
+      lyrics: song.lyrics
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Thêm/cập nhật lyrics cho bài hát
+router.post("/:id/lyrics", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text, language, hasTimestamps, timestamps, isOfficial } = req.body;
+    
+    if (!text && (!timestamps || timestamps.length === 0)) {
+      return res.status(400).json({ error: "Lyrics text or timestamps are required" });
+    }
+    
+    // Validate timestamps format
+    if (hasTimestamps && timestamps) {
+      for (const timestamp of timestamps) {
+        if (typeof timestamp.time !== 'number' || timestamp.time < 0) {
+          return res.status(400).json({ error: "Invalid timestamp format" });
+        }
+        if (!timestamp.text || typeof timestamp.text !== 'string') {
+          return res.status(400).json({ error: "Timestamp text is required" });
+        }
+      }
+      
+      // Sort timestamps by time
+      timestamps.sort((a, b) => a.time - b.time);
+    }
+    
+    const updateData = {
+      "lyrics.text": text || "",
+      "lyrics.language": language || "vi",
+      "lyrics.hasTimestamps": hasTimestamps || false,
+      "lyrics.timestamps": timestamps || [],
+      "lyrics.isOfficial": isOfficial || false
+    };
+    
+    // Add contributor if user is authenticated
+    if (req.user) {
+      updateData["lyrics.contributor"] = req.user.id;
+    }
+    
+    const updatedSong = await Song.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true }
+    ).populate("album").populate("genres").populate("region");
+    
+    if (!updatedSong) return res.status(404).json({ error: "Song not found" });
+    
+    res.json({
+      success: true,
+      song: updatedSong,
+      lyrics: updatedSong.lyrics
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Xóa lyrics của bài hát
+router.delete("/:id/lyrics", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const updatedSong = await Song.findByIdAndUpdate(
+      id,
+      { 
+        $set: { 
+          "lyrics.text": "",
+          "lyrics.hasTimestamps": false,
+          "lyrics.timestamps": [],
+          "lyrics.isOfficial": false,
+          "lyrics.contributor": null
+        }
+      },
+      { new: true }
+    );
+    
+    if (!updatedSong) return res.status(404).json({ error: "Song not found" });
+    
+    res.json({ success: true, message: "Lyrics deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

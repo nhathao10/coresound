@@ -77,6 +77,7 @@ function App() {
         // Clear the URL parameter after setting the search
         window.location.hash = '#/';
       }
+      
     });
   }, []);
 
@@ -270,6 +271,7 @@ function App() {
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
+
 
   // Hàm lấy 7 bài hát ngẫu nhiên (tránh trùng với danh sách hiện tại)
   const getRandomSongs = (allSongs, count, excludeIds = []) => {

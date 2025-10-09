@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import { FaPause, FaPlay, FaRandom, FaRedo, FaStepBackward, FaStepForward, FaVolumeUp, FaList, FaGripVertical, FaPlus } from "react-icons/fa";
+import { FaPause, FaPlay, FaRandom, FaRedo, FaStepBackward, FaStepForward, FaVolumeUp, FaVolumeMute, FaList, FaGripVertical, FaPlus, FaMusic } from "react-icons/fa";
 import { usePlayer } from "./PlayerContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
 import HeartIcon from "./HeartIcon.jsx";
 import AddToPlaylistIcon from "./AddToPlaylistIcon.jsx";
+import LyricsPanel from "./LyricsPanel.jsx";
 
 const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
 
@@ -39,6 +40,9 @@ export default function GlobalPlayer() {
   const [wasAuthenticated, setWasAuthenticated] = useState(false);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const scrollContainerRef = useRef(null);
+  const [showLyrics, setShowLyrics] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [previousVolume, setPreviousVolume] = useState(1);
 
   // Add song to listening history
   const addToListeningHistory = async (songId) => {
@@ -70,7 +74,8 @@ export default function GlobalPlayer() {
            hash.startsWith('#/artists-admin') || 
            hash.startsWith('#/genres-admin') || 
            hash.startsWith('#/regions-admin') || 
-           hash.startsWith('#/users-admin');
+           hash.startsWith('#/users-admin') ||
+           hash.startsWith('#/lyrics-admin');
   };
 
   useEffect(() => {
@@ -261,6 +266,19 @@ export default function GlobalPlayer() {
     const m = Math.floor(sec / 60);
     const s = Math.floor(sec % 60);
     return `${m}:${s < 10 ? "0" : ""}${s}`;
+  };
+
+  const handleMuteToggle = () => {
+    if (isMuted) {
+      // Unmute: restore previous volume
+      setVolume(previousVolume);
+      setIsMuted(false);
+    } else {
+      // Mute: save current volume and set to 0
+      setPreviousVolume(volume);
+      setVolume(0);
+      setIsMuted(true);
+    }
   };
 
   // Get all songs in queue with current song at top - memoized to prevent random reshuffling
@@ -497,8 +515,22 @@ export default function GlobalPlayer() {
         </div>
       </div>
       <div className="spotify-bar-right">
-        <span className="spotify-volume-icon">
-          <FaVolumeUp />
+        <button 
+          className={`spotify-btn lyrics${showLyrics ? " active" : ""}`} 
+          onClick={() => setShowLyrics(!showLyrics)} 
+          title="Hiển thị lyrics"
+        >
+          <FaMusic />
+        </button>
+        <button 
+          className="spotify-btn volume-mute" 
+          onClick={handleMuteToggle}
+          title={isMuted ? "Bật tiếng" : "Tắt tiếng"}
+        >
+          {isMuted ? <FaVolumeMute /> : <FaVolumeUp />}
+        </button>
+        <span className="spotify-volume-percentage">
+          {Math.round(volume * 100)}%
         </span>
         <input
           type="range"
@@ -506,7 +538,11 @@ export default function GlobalPlayer() {
           max={1}
           step={0.01}
           value={volume}
-          onChange={(e) => setVolume(Number(e.target.value))}
+          onChange={(e) => {
+            const newVolume = Number(e.target.value);
+            setVolume(newVolume);
+            setIsMuted(newVolume === 0);
+          }}
           className="spotify-volume-slider"
           title="Âm lượng"
         />
@@ -706,6 +742,21 @@ export default function GlobalPlayer() {
           </div>
         </div>
       )}
+      
+      {/* Lyrics Panel */}
+      <LyricsPanel
+        isOpen={showLyrics}
+        onClose={() => setShowLyrics(false)}
+        currentSong={current}
+        currentTime={progress}
+        isPlaying={isPlaying}
+        onSeek={(time) => {
+          setProgress(time);
+          if (audioRef.current) {
+            audioRef.current.currentTime = time;
+          }
+        }}
+      />
     </div>
   );
 }
