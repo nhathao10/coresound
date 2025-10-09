@@ -21,7 +21,7 @@ function ArtistDetail() {
   const artistId = useMemo(() => {
     const hash = window.location.hash || "#/";
     const match = hash.match(/^#\/artist\/([^/?#]+)/);
-    return match ? decodeURIComponent(match[1]) : "";
+    return match ? decodeURIComponent(match[1]).trim() : "";
   }, []);
 
   const {
@@ -40,25 +40,57 @@ function ArtistDetail() {
     setIsLoading(true);
     setError("");
     
-    Promise.all([
-      fetch(`http://localhost:5000/api/artists/${artistId}`).then((r) => r.json()),
-      fetch("http://localhost:5000/api/songs").then((r) => r.json()),
-      fetch("http://localhost:5000/api/albums").then((r) => r.json()),
-    ])
-      .then(([artistData, songsData, albumsData]) => {
+    const loadArtistData = async () => {
+      try {
+        // First try to fetch by ID
+        let artistData;
+        try {
+          const response = await fetch(`http://localhost:5000/api/artists/${artistId}`);
+          artistData = await response.json();
+          
+          // If not found by ID, try to search by name
+          if (artistData?.error && artistData.error.includes('Không tìm thấy')) {
+            const searchResponse = await fetch(`http://localhost:5000/api/artists/search?name=${encodeURIComponent(artistId)}`);
+            if (searchResponse.ok) {
+              const searchResults = await searchResponse.json();
+              if (searchResults.length > 0) {
+                artistData = searchResults[0];
+              }
+            }
+          }
+        } catch (idError) {
+          // If ID fetch fails, try search by name
+          const searchResponse = await fetch(`http://localhost:5000/api/artists/search?name=${encodeURIComponent(artistId)}`);
+          if (searchResponse.ok) {
+            const searchResults = await searchResponse.json();
+            if (searchResults.length > 0) {
+              artistData = searchResults[0];
+            }
+          }
+        }
+        
         if (!mounted) return;
         if (artistData?.error) throw new Error(artistData.error);
+        
+        // Load other data
+        const [songsData, albumsData] = await Promise.all([
+          fetch("http://localhost:5000/api/songs").then((r) => r.json()),
+          fetch("http://localhost:5000/api/albums").then((r) => r.json()),
+        ]);
         
         setArtist(artistData);
         setAllSongs(songsData || []);
         setAllAlbums(albumsData || []);
         document.title = `${artistData.name} • CoreSound`;
-      })
-      .catch((e) => {
+      } catch (e) {
         if (!mounted) return;
         setError(e.message || String(e));
-      })
-      .finally(() => mounted && setIsLoading(false));
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+    
+    loadArtistData();
       
     return () => {
       mounted = false;
@@ -161,13 +193,16 @@ function ArtistDetail() {
     const action = isCurrentlyFollowed ? 'unfollow' : 'follow';
     
     try {
-      const response = await fetch(`http://localhost:5000/api/artists/${artistId}/follow`, {
+      const endpoint = isCurrentlyFollowed 
+        ? `http://localhost:5000/api/artists/${artistId}/unfollow`
+        : `http://localhost:5000/api/artists/${artistId}/follow`;
+        
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${user?.token}`
         },
-        body: JSON.stringify({ action }),
       });
       
       const data = await response.json();

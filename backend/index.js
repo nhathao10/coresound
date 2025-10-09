@@ -34,6 +34,8 @@ const favoritesRoute = require('./routes/favorites');
 const playlistsRoute = require('./routes/playlists');
 const historyRoute = require('./routes/history');
 const notificationsRoute = require('./routes/notifications');
+const commentsRoute = require('./routes/comments');
+const ratingsRoute = require('./routes/ratings');
 
 app.get('/', (req, res) => {
   res.send('CoreSound backend is running!');
@@ -74,6 +76,10 @@ app.use('/api/history', historyRoute);
 
 // API notifications
 app.use('/api/notifications', notificationsRoute);
+
+// API comments and ratings
+app.use('/api/albums', commentsRoute);
+app.use('/api/albums', ratingsRoute);
 
 // API upload (cover & song)
 app.use('/api', uploadRoute);

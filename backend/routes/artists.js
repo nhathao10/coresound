@@ -31,6 +31,27 @@ router.get('/followed', protect, async (req, res) => {
   }
 });
 
+// @route   GET /api/artists/search
+// @desc    Search artists by name
+// @access  Public
+router.get('/search', async (req, res) => {
+  try {
+    const { name } = req.query;
+    if (!name) {
+      return res.status(400).json({ error: 'Tên nghệ sĩ là bắt buộc' });
+    }
+    
+    const artists = await Artist.find({
+      name: { $regex: name, $options: 'i' }
+    }).sort({ name: 1 });
+    
+    res.json(artists);
+  } catch (error) {
+    console.error('Search artists error:', error);
+    res.status(500).json({ error: 'Lỗi server nội bộ' });
+  }
+});
+
 // @route   GET /api/artists/:id
 // @desc    Get artist by ID
 // @access  Public
@@ -63,9 +84,16 @@ router.post('/:id/follow', protect, async (req, res) => {
     if (!user.followedArtists.includes(req.params.id)) {
       user.followedArtists.push(req.params.id);
       await user.save();
+      
+      // Update artist followers count
+      artist.followers += 1;
+      await artist.save();
     }
 
-    res.json({ message: 'Đã theo dõi nghệ sĩ' });
+    res.json({ 
+      message: 'Đã theo dõi nghệ sĩ',
+      followers: artist.followers
+    });
   } catch (error) {
     console.error('Follow artist error:', error);
     res.status(500).json({ error: 'Lỗi server nội bộ' });
@@ -77,6 +105,11 @@ router.post('/:id/follow', protect, async (req, res) => {
 // @access  Private
 router.post('/:id/unfollow', protect, async (req, res) => {
   try {
+    const artist = await Artist.findById(req.params.id);
+    if (!artist) {
+      return res.status(404).json({ error: 'Không tìm thấy nghệ sĩ' });
+    }
+
     const user = await User.findById(req.user._id);
     
     user.followedArtists = user.followedArtists.filter(
@@ -84,7 +117,14 @@ router.post('/:id/unfollow', protect, async (req, res) => {
     );
     await user.save();
 
-    res.json({ message: 'Đã bỏ theo dõi nghệ sĩ' });
+    // Update artist followers count
+    artist.followers = Math.max(0, artist.followers - 1);
+    await artist.save();
+
+    res.json({ 
+      message: 'Đã bỏ theo dõi nghệ sĩ',
+      followers: artist.followers
+    });
   } catch (error) {
     console.error('Unfollow artist error:', error);
     res.status(500).json({ error: 'Lỗi server nội bộ' });
