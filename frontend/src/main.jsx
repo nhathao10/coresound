@@ -9,6 +9,8 @@ import GenresAdmin from './GenresAdmin.jsx'
 import RegionsAdmin from './RegionsAdmin.jsx'
 import UsersAdmin from './UsersAdmin.jsx'
 import LyricsAdmin from './LyricsAdmin.jsx'
+import PlaylistsAdmin from './PlaylistsAdmin.jsx'
+import PlaylistDetail from './PlaylistDetail.jsx'
 import Profile from './Profile.jsx'
 import Favorites from './Favorites.jsx'
 import Library from './Library.jsx'
@@ -74,6 +76,13 @@ function Router() {
       </ProtectedRoute>
     )
   }
+  if (hash.startsWith('#/playlists-admin')) {
+    return (
+      <ProtectedRoute requireAdmin={true}>
+        <PlaylistsAdmin />
+      </ProtectedRoute>
+    )
+  }
   if (hash.startsWith('#/profile')) {
     return (
       <ProtectedRoute requireAdmin={false}>
@@ -103,6 +112,9 @@ function Router() {
   }
   if (hash.startsWith('#/genres')) {
     return <GenreBrowser />
+  }
+  if (hash.startsWith('#/playlist/')) {
+    return <PlaylistDetail />
   }
   return <App />
 }

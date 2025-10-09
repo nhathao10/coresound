@@ -19,7 +19,13 @@ const playlistSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: function() {
+      return !this.isCurated;
+    }
+  },
+  isCurated: {
+    type: Boolean,
+    default: false
   },
   songs: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -53,6 +59,7 @@ playlistSchema.pre('save', function(next) {
 // Index for better performance
 playlistSchema.index({ user: 1, createdAt: -1 });
 playlistSchema.index({ isPublic: 1, createdAt: -1 });
+playlistSchema.index({ isCurated: 1, isPublic: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Playlist', playlistSchema);
 

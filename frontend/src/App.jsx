@@ -18,6 +18,7 @@ function App() {
   const { user, isAuthenticated } = useAuth();
   const [displayedSongs, setDisplayedSongs] = useState([]); // 7 bài hát hiển thị
   const [displayedAlbums, setDisplayedAlbums] = useState([]); // 7 album hiển thị
+  const [curatedPlaylists, setCuratedPlaylists] = useState([]); // Curated playlists
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [recentSongs, setRecentSongs] = useState([]);
@@ -61,11 +62,14 @@ function App() {
       fetch("http://localhost:5000/api/albums").then((r) => r.json()),
       fetch("http://localhost:5000/api/genres").then((r) => r.json()),
       fetch("http://localhost:5000/api/artists").then((r) => r.json()),
-    ]).then(([songsData, albumsData, genresData, artistsData]) => {
+      fetch("http://localhost:5000/api/playlists/curated").then((r) => r.json()),
+    ]).then(([songsData, albumsData, genresData, artistsData, playlistsData]) => {
+      console.log('Fetched curated playlists:', playlistsData);
       setSongs(songsData);
       setAlbums(albumsData);
       setGenres(genresData);
       setArtists(artistsData);
+      setCuratedPlaylists(playlistsData);
       setDisplayedSongs(getRandomSongs(songsData, 7));
       setDisplayedAlbums(getRandomAlbums(albumsData, 7));
 
@@ -907,6 +911,51 @@ function App() {
                 )}
               </a>
             ))}
+          </div>
+        </section>
+        
+        {/* Curated Playlists */}
+        <section className="recommend-section recommend-section-horizontal">
+          <div className="recommend-header">
+            <div className="recommend-title">Playlist Đặc Biệt</div>
+          </div>
+          <div className="recommend-horizontal-list">
+            {curatedPlaylists.length > 0 ? (
+              curatedPlaylists.slice(0, 7).map((playlist) => (
+                <a 
+                  key={playlist._id} 
+                  href={`#/playlist/${encodeURIComponent(playlist._id)}`} 
+                  className="recommend-horizontal-card" 
+                  style={{ textDecoration: "none", color: "inherit", position: "relative" }}
+                >
+                  <img
+                    className="recommend-horizontal-art"
+                    src={withMediaBase(playlist.cover) || "/default-cover.png"}
+                    alt={playlist.name}
+                  />
+                  <div className="recommend-horizontal-info">
+                    <div className="recommend-horizontal-title">{playlist.name}</div>
+                    <div className="recommend-horizontal-artist">{playlist.description || "Playlist đặc biệt"}</div>
+                  </div>
+                  <span className="recommend-horizontal-plays" title={`${playlist.songs?.length || 0} bài hát`}>
+                    {playlist.songs?.length || 0} bài
+                  </span>
+                </a>
+              ))
+            ) : (
+              <div style={{ 
+                padding: "40px 20px", 
+                textAlign: "center", 
+                color: "#b3b3b3",
+                fontSize: 16,
+                gridColumn: "1 / -1"
+              }}>
+                <div style={{ marginBottom: 8 }}>Chưa có playlist đặc biệt nào</div>
+                <div style={{ fontSize: 14, opacity: 0.8 }}>
+                  Admin sẽ tạo các playlist đặc biệt để bạn thưởng thức
+                </div>
+              </div>
+            )}
           </div>
         </section>
         

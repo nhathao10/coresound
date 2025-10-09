@@ -299,18 +299,22 @@ const LyricsAdmin = () => {
                         </>
                       )}
                     </div>
-                    <div className="lyrics-preview">
-                      {getLyricsPreview(song)}
-                    </div>
-                    {hasLyrics(song) && song.lyrics.language && (
-                      <div className="lyrics-language">
-                        {song.lyrics.language === 'vi' ? 'Tiếng Việt' : 
-                         song.lyrics.language === 'en' ? 'English' : 
-                         song.lyrics.language?.toUpperCase()}
-                        {song.lyrics.isOfficial && (
-                          <span className="official-badge">Chính thức</span>
+                    {hasLyrics(song) && (
+                      <>
+                        <div className="lyrics-preview">
+                          {getLyricsPreview(song)}
+                        </div>
+                        {song.lyrics.language && (
+                          <div className="lyrics-language">
+                            {song.lyrics.language === 'vi' ? 'Tiếng Việt' : 
+                             song.lyrics.language === 'en' ? 'English' : 
+                             song.lyrics.language?.toUpperCase()}
+                            {song.lyrics.isOfficial && (
+                              <span className="official-badge">Chính thức</span>
+                            )}
+                          </div>
                         )}
-                      </div>
+                      </>
                     )}
                   </div>
                   

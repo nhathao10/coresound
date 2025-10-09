@@ -68,7 +68,13 @@ app.use('/api/profile', profileRoute);
 // API favorites
 app.use('/api/favorites', favoritesRoute);
 
-// API playlists
+// API admin playlists (mount first to avoid conflicts)
+const adminPlaylistsRoute = require('./routes/admin/playlists');
+app.use('/api/admin/playlists', adminPlaylistsRoute);
+// Also serve curated playlists from the same route
+app.use('/api/playlists', adminPlaylistsRoute);
+
+// API playlists (user playlists - requires authentication)
 app.use('/api/playlists', playlistsRoute);
 
 // API listening history
