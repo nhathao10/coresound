@@ -62,13 +62,14 @@ function App() {
       fetch("http://localhost:5000/api/albums").then((r) => r.json()),
       fetch("http://localhost:5000/api/genres").then((r) => r.json()),
       fetch("http://localhost:5000/api/artists").then((r) => r.json()),
-      fetch("http://localhost:5000/api/playlists/curated").then((r) => r.json()),
+      fetch("http://localhost:5000/api/curated-playlists").then((r) => r.json()),
     ]).then(([songsData, albumsData, genresData, artistsData, playlistsData]) => {
       console.log('Fetched curated playlists:', playlistsData);
       setSongs(songsData);
       setAlbums(albumsData);
       setGenres(genresData);
       setArtists(artistsData);
+      
       setCuratedPlaylists(playlistsData);
       setDisplayedSongs(getRandomSongs(songsData, 7));
       setDisplayedAlbums(getRandomAlbums(albumsData, 7));

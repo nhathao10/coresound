@@ -90,8 +90,8 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
       }
 
       const url = editingPlaylist 
-        ? `http://localhost:5000/api/playlists/${editingPlaylist._id}`
-        : 'http://localhost:5000/api/playlists';
+        ? `http://localhost:5000/api/user-playlists/${editingPlaylist._id}`
+        : 'http://localhost:5000/api/user-playlists';
       
       const method = editingPlaylist ? 'PUT' : 'POST';
       
@@ -110,7 +110,7 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
       }
 
       showSuccess(editingPlaylist ? 'Cập nhật playlist thành công' : 'Tạo playlist thành công');
-      onSuccess && onSuccess(data.playlist);
+      onSuccess && onSuccess(data.playlist || data);
       handleClose();
       
     } catch (error) {

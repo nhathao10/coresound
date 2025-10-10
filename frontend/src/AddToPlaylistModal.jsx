@@ -30,7 +30,7 @@ const AddToPlaylistModal = ({ isOpen, onClose, song, onSuccess }) => {
   const loadPlaylists = async () => {
     try {
       const token = user?.token;
-      const response = await fetch('http://localhost:5000/api/playlists', {
+      const response = await fetch('http://localhost:5000/api/user-playlists', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -51,13 +51,11 @@ const AddToPlaylistModal = ({ isOpen, onClose, song, onSuccess }) => {
     
     try {
       const token = user?.token;
-      const response = await fetch(`http://localhost:5000/api/playlists/${selectedPlaylistId}/songs`, {
+      const response = await fetch(`http://localhost:5000/api/user-playlists/${selectedPlaylistId}/songs/${song._id}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ songId: song._id })
+        }
       });
 
       const data = await response.json();

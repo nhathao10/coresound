@@ -138,8 +138,8 @@ const Library = () => {
       const token = user?.token;
       const headers = { 'Authorization': `Bearer ${token}` };
 
-      // Load playlists
-      const playlistsRes = await fetch('http://localhost:5000/api/playlists', { headers });
+      // Load user playlists
+      const playlistsRes = await fetch('http://localhost:5000/api/user-playlists', { headers });
       const playlistsData = await playlistsRes.json();
       setPlaylists(playlistsData);
 
@@ -190,7 +190,7 @@ const Library = () => {
   const handlePlayPlaylist = async (playlist) => {
     try {
       const token = user?.token;
-      const response = await fetch(`http://localhost:5000/api/playlists/${playlist._id}/songs`, {
+      const response = await fetch(`http://localhost:5000/api/user-playlists/${playlist._id}/songs`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const playlistData = await response.json();
@@ -238,7 +238,7 @@ const Library = () => {
 
   const handleDeletePlaylist = async (playlistId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/playlists/${playlistId}`, {
+      const response = await fetch(`http://localhost:5000/api/user-playlists/${playlistId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${user?.token}`
@@ -258,7 +258,7 @@ const Library = () => {
 
   const handleViewPlaylist = async (playlist) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/playlists/${playlist._id}/songs`, {
+      const response = await fetch(`http://localhost:5000/api/user-playlists/${playlist._id}/songs`, {
         headers: {
           'Authorization': `Bearer ${user?.token}`
         }
@@ -278,7 +278,7 @@ const Library = () => {
 
   const handleRemoveSongFromPlaylist = async (playlistId, songId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/playlists/${playlistId}/songs/${songId}`, {
+      const response = await fetch(`http://localhost:5000/api/user-playlists/${playlistId}/songs/${songId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${user?.token}`
@@ -330,19 +330,14 @@ const Library = () => {
 
 
   const handleCreatePlaylistSuccess = (newPlaylist) => {
+    // Reload data to ensure consistency
+    loadLibraryData();
+    
     if (editingPlaylist) {
-      // Update existing playlist
-      setPlaylists(prev => prev.map(p => 
-        p._id === editingPlaylist._id ? newPlaylist : p
-      ));
-      
       // Update selectedPlaylist if it's the same playlist being edited
       if (selectedPlaylist && selectedPlaylist._id === editingPlaylist._id) {
         setSelectedPlaylist(newPlaylist);
       }
-    } else {
-      // Add new playlist
-      setPlaylists(prev => [newPlaylist, ...prev]);
     }
   };
 
@@ -488,7 +483,7 @@ const Library = () => {
                     gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                     gap: '1.5rem'
                   }}>
-                    {playlists.map(playlist => (
+                    {playlists.filter(playlist => playlist && playlist._id).map(playlist => (
                       <div
                         key={playlist._id}
                         style={{
@@ -666,24 +661,37 @@ const Library = () => {
                         }}>
                           {playlist.name}
                         </h3>
-                        <p style={{
-                          color: '#b3b3b3',
-                          fontSize: '0.9rem',
-                          marginBottom: '0.5rem'
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          marginBottom: '0.5rem',
+                          minHeight: '1.2rem'
                         }}>
-                          {playlist.songs?.length || 0} bài hát
-                        </p>
-                        {playlist.description && (
+                          {playlist.description && (
+                            <p style={{
+                              color: '#b3b3b3',
+                              fontSize: '0.8rem',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              margin: 0,
+                              maxWidth: 'calc(100% - 3rem)' // Reserve space for song count
+                            }}>
+                              {playlist.description}
+                            </p>
+                          )}
                           <p style={{
                             color: '#b3b3b3',
                             fontSize: '0.8rem',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
+                            margin: 0,
+                            flexShrink: 0,
+                            minWidth: '2.5rem',
+                            textAlign: 'right'
                           }}>
-                            {playlist.description}
+                            {playlist.songs?.length || 0} bài
                           </p>
-                        )}
+                        </div>
                       </div>
                     </div>
                     ))}
@@ -1135,7 +1143,7 @@ const Library = () => {
                   scrollbarColor: 'rgba(255, 255, 255, 0.3) transparent',
                   minHeight: 0
                 }}>
-                  {selectedPlaylist.songs.map((song, index) => (
+                  {(selectedPlaylist.songs || []).filter(song => song && song._id).map((song, index) => (
                     <div
                       key={song._id}
                       style={{

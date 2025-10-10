@@ -36,6 +36,7 @@ const historyRoute = require('./routes/history');
 const notificationsRoute = require('./routes/notifications');
 const commentsRoute = require('./routes/comments');
 const ratingsRoute = require('./routes/ratings');
+const statisticsRoute = require('./routes/statistics');
 
 app.get('/', (req, res) => {
   res.send('CoreSound backend is running!');
@@ -68,14 +69,17 @@ app.use('/api/profile', profileRoute);
 // API favorites
 app.use('/api/favorites', favoritesRoute);
 
-// API admin playlists (mount first to avoid conflicts)
-const adminPlaylistsRoute = require('./routes/admin/playlists');
-app.use('/api/admin/playlists', adminPlaylistsRoute);
-// Also serve curated playlists from the same route
-app.use('/api/playlists', adminPlaylistsRoute);
+// API user playlists (user playlists - requires authentication)
+const userPlaylistsRoute = require('./routes/userPlaylists');
+app.use('/api/user-playlists', userPlaylistsRoute);
 
-// API playlists (user playlists - requires authentication)
-app.use('/api/playlists', playlistsRoute);
+// API curated playlists (public curated playlists)
+const curatedPlaylistsRoute = require('./routes/curatedPlaylists');
+app.use('/api/curated-playlists', curatedPlaylistsRoute);
+
+// API admin curated playlists (admin management)
+const adminCuratedPlaylistsRoute = require('./routes/admin/curatedPlaylists');
+app.use('/api/admin/curated-playlists', adminCuratedPlaylistsRoute);
 
 // API listening history
 app.use('/api/history', historyRoute);
@@ -86,6 +90,9 @@ app.use('/api/notifications', notificationsRoute);
 // API comments and ratings
 app.use('/api/albums', commentsRoute);
 app.use('/api/albums', ratingsRoute);
+
+// API statistics (admin only)
+app.use('/api/statistics', statisticsRoute);
 
 // API upload (cover & song)
 app.use('/api', uploadRoute);

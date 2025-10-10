@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import AdminSidebar from "./AdminSidebar.jsx";
+import { useAuth } from "./AuthContext";
 
 // Helper function for media URLs
 const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
 
 function PlaylistsAdmin() {
+  const { user } = useAuth();
   const [playlists, setPlaylists] = useState([]);
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,8 +26,12 @@ function PlaylistsAdmin() {
 
   useEffect(() => {
     document.title = "CoreSound - Quản Lý Playlist";
+    const headers = {
+      'Authorization': `Bearer ${user?.token}`
+    };
+    
     Promise.all([
-      fetch("http://localhost:5000/api/admin/playlists").then(r=>r.json()),
+      fetch("http://localhost:5000/api/admin/curated-playlists", { headers }).then(r=>r.json()),
       fetch("http://localhost:5000/api/songs").then(r=>r.json()),
     ]).then(([p, s]) => {
       console.log('PlaylistsAdmin: Loaded data', { playlists: p, songs: s });
@@ -73,8 +79,11 @@ function PlaylistsAdmin() {
       if (form.cover) fd.append("cover", form.cover);
       
       console.log('Sending request to API...');
-      const res = await fetch("http://localhost:5000/api/admin/playlists", { 
+      const res = await fetch("http://localhost:5000/api/admin/curated-playlists", { 
         method: "POST", 
+        headers: {
+          'Authorization': `Bearer ${user?.token}`
+        },
         body: fd 
       });
       console.log('API response:', res.status, res.statusText);
@@ -102,9 +111,12 @@ function PlaylistsAdmin() {
   };
 
   const savePlaylist = async (playlistId, patch) => {
-    const res = await fetch(`http://localhost:5000/api/admin/playlists/${playlistId}`, {
+    const res = await fetch(`http://localhost:5000/api/admin/curated-playlists/${playlistId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        'Authorization': `Bearer ${user?.token}`
+      },
       body: JSON.stringify(patch),
     });
     const data = await res.json();
@@ -124,7 +136,12 @@ function PlaylistsAdmin() {
 
   const deletePlaylist = async (playlistId) => {
     if (!confirm("Xoá playlist này?")) return;
-    const res = await fetch(`http://localhost:5000/api/admin/playlists/${playlistId}`, { method: "DELETE" });
+    const res = await fetch(`http://localhost:5000/api/admin/curated-playlists/${playlistId}`, { 
+      method: "DELETE",
+      headers: {
+        'Authorization': `Bearer ${user?.token}`
+      }
+    });
     const data = await res.json();
     if (!res.ok) return alert(data?.error || "Xoá thất bại");
     setPlaylists((prev)=> prev.filter((p)=> p._id !== playlistId));
@@ -132,10 +149,30 @@ function PlaylistsAdmin() {
   };
 
   const changeCover = async (playlistId, file) => {
+    console.log('changeCover called:', { playlistId, file });
+    
+    if (!file) {
+      console.log('No file selected');
+      return;
+    }
+    
     const fd = new FormData();
     fd.append("cover", file);
-    const res = await fetch(`http://localhost:5000/api/admin/playlists/${playlistId}`, { method: "PUT", body: fd });
+    
+    console.log('Sending FormData with cover file:', file.name);
+    
+    const res = await fetch(`http://localhost:5000/api/admin/curated-playlists/${playlistId}`, { 
+      method: "PUT", 
+      headers: {
+        'Authorization': `Bearer ${user?.token}`
+      },
+      body: fd 
+    });
+    
+    console.log('API response status:', res.status);
     const data = await res.json();
+    console.log('API response data:', data);
+    
     if (!res.ok) throw new Error(data?.error || "Cập nhật cover thất bại");
     setPlaylists((prev)=> prev.map((p)=> p._id === data._id ? data : p));
   };
@@ -143,10 +180,15 @@ function PlaylistsAdmin() {
   const attachSongToPlaylist = async (playlistId, songId) => {
     console.log('attachSongToPlaylist called', { playlistId, songId });
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/playlists/${playlistId}/songs`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ songId }),
+      const res = await fetch(`http://localhost:5000/api/admin/curated-playlists/${playlistId}`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({ 
+          songs: [...playlists.find(p => p._id === playlistId)?.songs || [], songId]
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Thêm bài hát thất bại");
@@ -177,8 +219,15 @@ function PlaylistsAdmin() {
   const removeSongFromPlaylist = async (playlistId, songId) => {
     console.log('removeSongFromPlaylist called', { playlistId, songId });
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/playlists/${playlistId}/songs/${songId}`, {
-        method: "DELETE",
+      const res = await fetch(`http://localhost:5000/api/admin/curated-playlists/${playlistId}`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${user?.token}`
+        },
+        body: JSON.stringify({ 
+          songs: playlists.find(p => p._id === playlistId)?.songs?.filter(s => s._id !== songId) || []
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Xoá bài hát thất bại");

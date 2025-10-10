@@ -10,6 +10,7 @@ import RegionsAdmin from './RegionsAdmin.jsx'
 import UsersAdmin from './UsersAdmin.jsx'
 import LyricsAdmin from './LyricsAdmin.jsx'
 import PlaylistsAdmin from './PlaylistsAdmin.jsx'
+import StatisticsAdmin from './StatisticsAdmin.jsx'
 import PlaylistDetail from './PlaylistDetail.jsx'
 import Profile from './Profile.jsx'
 import Favorites from './Favorites.jsx'
@@ -80,6 +81,13 @@ function Router() {
     return (
       <ProtectedRoute requireAdmin={true}>
         <PlaylistsAdmin />
+      </ProtectedRoute>
+    )
+  }
+  if (hash.startsWith('#/statistics-admin')) {
+    return (
+      <ProtectedRoute requireAdmin={true}>
+        <StatisticsAdmin />
       </ProtectedRoute>
     )
   }
