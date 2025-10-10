@@ -31,7 +31,6 @@ const authRoute = require('./routes/auth');
 const usersRoute = require('./routes/users');
 const profileRoute = require('./routes/profile');
 const favoritesRoute = require('./routes/favorites');
-const playlistsRoute = require('./routes/playlists');
 const historyRoute = require('./routes/history');
 const notificationsRoute = require('./routes/notifications');
 const commentsRoute = require('./routes/comments');

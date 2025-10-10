@@ -4,7 +4,8 @@ const User = require('../models/User');
 const Song = require('../models/Song');
 const Album = require('../models/Album');
 const Artist = require('../models/Artist');
-const Playlist = require('../models/Playlist');
+const CuratedPlaylist = require('../models/CuratedPlaylist');
+const UserPlaylist = require('../models/UserPlaylist');
 const ListeningHistory = require('../models/ListeningHistory');
 const Favorite = require('../models/Favorite');
 const Comment = require('../models/Comment');
@@ -27,7 +28,8 @@ router.get('/overview', protect, requireAdmin, async (req, res) => {
       totalSongs,
       totalAlbums,
       totalArtists,
-      totalPlaylists,
+      totalCuratedPlaylists,
+      totalUserPlaylists,
       totalComments,
       totalRatings,
       totalFavorites
@@ -36,11 +38,15 @@ router.get('/overview', protect, requireAdmin, async (req, res) => {
       Song.countDocuments(),
       Album.countDocuments(),
       Artist.countDocuments(),
-      Playlist.countDocuments(),
+      CuratedPlaylist.countDocuments(),
+      UserPlaylist.countDocuments(),
       Comment.countDocuments(),
       Rating.countDocuments(),
       Favorite.countDocuments()
     ]);
+
+    const totalPlaylists = totalCuratedPlaylists + totalUserPlaylists;
+
 
     // Thống kê người dùng mới trong 30 ngày qua
     const thirtyDaysAgo = new Date();
@@ -49,29 +55,20 @@ router.get('/overview', protect, requireAdmin, async (req, res) => {
       createdAt: { $gte: thirtyDaysAgo }
     });
 
-    // Thống kê bài hát được nghe nhiều nhất
-    const topSongs = await ListeningHistory.aggregate([
-      { $group: { _id: '$songId', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 5 },
-      {
-        $lookup: {
-          from: 'songs',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'song'
-        }
-      },
-      { $unwind: '$song' },
-      {
-        $project: {
-          _id: 1,
-          title: '$song.title',
-          artist: '$song.artist',
-          playCount: '$count'
-        }
-      }
-    ]);
+    // Thống kê bài hát được nghe nhiều nhất - sử dụng Song.plays thay vì ListeningHistory
+    const topSongsData = await Song.find({ plays: { $gt: 0 } })
+      .sort({ plays: -1 })
+      .limit(5)
+      .select('_id title artist plays')
+      .lean();
+
+    // Format để match với frontend
+    const topSongs = topSongsData.map(song => ({
+      _id: song._id,
+      title: song.title,
+      artist: song.artist,
+      playCount: song.plays || 0
+    }));
 
     res.json({
       overview: {
@@ -208,41 +205,6 @@ router.get('/by-artist', protect, requireAdmin, async (req, res) => {
   }
 });
 
-// Thống kê bài hát được nghe nhiều nhất
-router.get('/top-songs', protect, requireAdmin, async (req, res) => {
-  try {
-    const { limit = 10 } = req.query;
-
-    const topSongs = await ListeningHistory.aggregate([
-      { $group: { _id: '$song', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: parseInt(limit) },
-      {
-        $lookup: {
-          from: 'songs',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'song'
-        }
-      },
-      { $unwind: '$song' },
-      {
-        $project: {
-          _id: '$song._id',
-          title: '$song.title',
-          artist: '$song.artist',
-          album: '$song.album',
-          playCount: '$count'
-        }
-      }
-    ]);
-
-    res.json(topSongs);
-  } catch (error) {
-    console.error('Lỗi khi lấy thống kê bài hát:', error);
-    res.status(500).json({ message: 'Lỗi server' });
-  }
-});
 
 // Thống kê theo thời gian
 router.get('/time-based', protect, requireAdmin, async (req, res) => {
@@ -258,7 +220,9 @@ router.get('/time-based', protect, requireAdmin, async (req, res) => {
       default: days = 7;
     }
     
+    // Sử dụng khoảng thời gian hợp lý
     const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const endDate = new Date(); // Chỉ lấy dữ liệu đến hiện tại
 
     // Đăng ký người dùng theo thời gian
     const userRegistrations = await User.aggregate([
@@ -276,25 +240,9 @@ router.get('/time-based', protect, requireAdmin, async (req, res) => {
       { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
     ]);
 
-    // Lượt nghe theo thời gian
-    const listeningStats = await ListeningHistory.aggregate([
-      { $match: { playedAt: { $gte: startDate } } },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$playedAt' },
-            month: { $month: '$playedAt' },
-            day: { $dayOfMonth: '$playedAt' }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
-    ]);
-
     res.json({
       userRegistrations,
-      listeningStats
+      listeningStats: [] // Không sử dụng listening stats nữa
     });
   } catch (error) {
     console.error('Lỗi khi lấy thống kê theo thời gian:', error);
@@ -324,6 +272,7 @@ router.get('/user-activity', protect, requireAdmin, async (req, res) => {
       {
         $project: {
           _id: 1,
+          name: '$user.name',
           username: '$user.username',
           email: '$user.email',
           listenCount: '$count'
@@ -331,8 +280,8 @@ router.get('/user-activity', protect, requireAdmin, async (req, res) => {
       }
     ]);
 
-    // Người dùng có nhiều playlist nhất
-    const topPlaylistCreators = await Playlist.aggregate([
+    // Người dùng có nhiều playlist nhất (chỉ tính UserPlaylist)
+    const topPlaylistCreators = await UserPlaylist.aggregate([
       { $group: { _id: '$user', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: parseInt(limit) },
@@ -348,6 +297,7 @@ router.get('/user-activity', protect, requireAdmin, async (req, res) => {
       {
         $project: {
           _id: 1,
+          name: '$user.name',
           username: '$user.username',
           email: '$user.email',
           playlistCount: '$count'

@@ -15,6 +15,20 @@ function StatisticsAdmin() {
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Format số lượt phát cho dễ đọc
+  const formatPlayCount = (num) => {
+    if (num == null || num === 0) return "0";
+    const abs = Math.abs(num);
+    const compact = (value) => {
+      const fixed = value.toFixed(1);
+      return fixed.endsWith(".0") ? String(Math.round(value)) : fixed;
+    };
+    if (abs >= 1_000_000_000) return `${compact(num / 1_000_000_000)}B`;
+    if (abs >= 1_000_000) return `${compact(num / 1_000_000)}M`;
+    if (abs >= 1_000) return `${compact(num / 1_000)}K`;
+    return String(num);
+  };
+
   const fetchOverviewStats = useCallback(async () => {
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
@@ -109,29 +123,14 @@ function StatisticsAdmin() {
       if (response.ok) {
         const data = await response.json();
         setTimeBasedStats(data);
+      } else {
+        console.error('Time-based stats API error:', response.status);
       }
     } catch (error) {
       console.error('Lỗi khi lấy thống kê theo thời gian:', error);
     }
   }, [user]);
 
-  const fetchTopSongs = useCallback(async () => {
-    try {
-      const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch('http://localhost:5000/api/statistics/top-songs', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTopSongs(data);
-      }
-    } catch (error) {
-      console.error('Error fetching top songs:', error);
-    }
-  }, [user]);
 
   useEffect(() => {
     if (user && user.role === 'admin') {
@@ -140,9 +139,8 @@ function StatisticsAdmin() {
       fetchArtistStats();
       fetchUserActivity();
       fetchTimeBasedStats(selectedPeriod);
-      fetchTopSongs();
     }
-  }, [user, selectedPeriod, fetchOverviewStats, fetchGenreStats, fetchArtistStats, fetchUserActivity, fetchTimeBasedStats, fetchTopSongs]);
+  }, [user, selectedPeriod, fetchOverviewStats, fetchGenreStats, fetchArtistStats, fetchUserActivity, fetchTimeBasedStats]);
 
   useEffect(() => {
     if (overview) {
@@ -496,7 +494,7 @@ function StatisticsAdmin() {
             {genreStats && genreStats.length > 0 ? (
               <div>
                 {genreStats.slice(0, 5).map((genre, index) => (
-                  <div key={genre._id} style={{
+                  <div key={genre._id || index} style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -563,7 +561,7 @@ function StatisticsAdmin() {
             {artistStats && artistStats.length > 0 ? (
               <div>
                 {artistStats.slice(0, 5).map((artist, index) => (
-                  <div key={artist._id} style={{
+                  <div key={artist._id || index} style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -618,7 +616,7 @@ function StatisticsAdmin() {
           }}>
             <h3 style={{ 
               color: '#e5e5e5', 
-              marginBottom: 20,
+              marginBottom: 8,
               fontSize: 18,
               fontWeight: 600,
               display: 'flex',
@@ -627,6 +625,14 @@ function StatisticsAdmin() {
             }}>
               💡 Insights quan trọng
             </h3>
+            <p style={{ 
+              color: '#b3b3b3', 
+              fontSize: 14, 
+              marginBottom: 20,
+              lineHeight: 1.4
+            }}>
+              Các chỉ số quan trọng giúp hiểu rõ hiệu suất và xu hướng của hệ thống
+            </p>
             {overview ? (
               <div>
                 <div style={{
@@ -637,12 +643,15 @@ function StatisticsAdmin() {
                   borderBottom: '1px solid #2e2e37'
                 }}>
                   <div>
-                    <div style={{ color: '#e5e5e5', fontSize: 14, fontWeight: 500 }}>Trung bình bài hát/album</div>
-                    <div style={{ color: '#b3b3b3', fontSize: 12 }}>Hiệu quả sản xuất album</div>
+                    <div style={{ color: '#e5e5e5', fontSize: 14, fontWeight: 500 }}>📀 Trung bình bài hát/album</div>
+                    <div style={{ color: '#b3b3b3', fontSize: 12 }}>Số bài hát trung bình trong mỗi album</div>
                   </div>
-                  <span style={{ color: '#1db954', fontWeight: 600, fontSize: 16 }}>
-                    {overview.totalAlbums > 0 ? Math.round(overview.totalSongs / overview.totalAlbums) : 0}
-                  </span>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ color: '#1db954', fontWeight: 600, fontSize: 16 }}>
+                      {overview.totalAlbums > 0 ? Math.round(overview.totalSongs / overview.totalAlbums) : 0}
+                    </span>
+                    <div style={{ color: '#b3b3b3', fontSize: 11 }}>bài/album</div>
+                  </div>
                 </div>
                 <div style={{
                   display: 'flex',
@@ -667,12 +676,15 @@ function StatisticsAdmin() {
                   borderBottom: '1px solid #2e2e37'
                 }}>
                   <div>
-                    <div style={{ color: '#e5e5e5', fontSize: 14, fontWeight: 500 }}>Trung bình playlist/người dùng</div>
-                    <div style={{ color: '#b3b3b3', fontSize: 12 }}>Mức độ tương tác người dùng</div>
+                    <div style={{ color: '#e5e5e5', fontSize: 14, fontWeight: 500 }}>📋 Trung bình playlist/người dùng</div>
+                    <div style={{ color: '#b3b3b3', fontSize: 12 }}>Số playlist trung bình mỗi người dùng tạo</div>
                   </div>
-                  <span style={{ color: '#1db954', fontWeight: 600, fontSize: 16 }}>
-                    {overview.totalUsers > 0 ? Math.round(overview.totalPlaylists / overview.totalUsers) : 0}
-                  </span>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ color: '#1db954', fontWeight: 600, fontSize: 16 }}>
+                      {overview.totalUsers > 0 ? Math.round(overview.totalPlaylists / overview.totalUsers) : 0}
+                    </span>
+                    <div style={{ color: '#b3b3b3', fontSize: 11 }}>playlist/user</div>
+                  </div>
                 </div>
                 <div style={{
                   display: 'flex',
@@ -681,12 +693,15 @@ function StatisticsAdmin() {
                   padding: '12px 0'
                 }}>
                   <div>
-                    <div style={{ color: '#e5e5e5', fontSize: 14, fontWeight: 500 }}>Trung bình yêu thích/người dùng</div>
-                    <div style={{ color: '#b3b3b3', fontSize: 12 }}>Mức độ engagement</div>
+                    <div style={{ color: '#e5e5e5', fontSize: 14, fontWeight: 500 }}>❤️ Trung bình yêu thích/người dùng</div>
+                    <div style={{ color: '#b3b3b3', fontSize: 12 }}>Số bài hát yêu thích trung bình mỗi người dùng</div>
                   </div>
-                  <span style={{ color: '#1db954', fontWeight: 600, fontSize: 16 }}>
-                    {overview.totalUsers > 0 ? Math.round(overview.totalFavorites / overview.totalUsers) : 0}
-                  </span>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ color: '#1db954', fontWeight: 600, fontSize: 16 }}>
+                      {overview.totalUsers > 0 ? Math.round(overview.totalFavorites / overview.totalUsers) : 0}
+                    </span>
+                    <div style={{ color: '#b3b3b3', fontSize: 11 }}>favorites/user</div>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -788,7 +803,7 @@ function StatisticsAdmin() {
                     </thead>
                     <tbody>
                       {timeBasedStats.userRegistrations.map((stat, index) => (
-                        <tr key={stat._id} style={{ 
+                        <tr key={JSON.stringify(stat._id) || index} style={{ 
                           borderBottom: '1px solid #2e2e37'
                         }}>
                           <td style={{ 
@@ -837,62 +852,70 @@ function StatisticsAdmin() {
                 alignItems: 'center',
                 gap: 8
               }}>
-                🎵 Lượt nghe
+                📚 Thống kê nội dung
               </h3>
-              {timeBasedStats.listeningStats && timeBasedStats.listeningStats.length > 0 ? (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '2px solid #2e2e37' }}>
-                        <th style={{ 
-                          color: '#b3b3b3', 
-                          textAlign: 'left', 
-                          padding: '12px 8px',
-                          fontSize: 14,
-                          fontWeight: 600
-                        }}>Ngày</th>
-                        <th style={{ 
-                          color: '#b3b3b3', 
-                          textAlign: 'right', 
-                          padding: '12px 8px',
-                          fontSize: 14,
-                          fontWeight: 600
-                        }}>Lượt nghe</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {timeBasedStats.listeningStats.map((stat, index) => (
-                        <tr key={stat._id} style={{ 
-                          borderBottom: '1px solid #2e2e37'
-                        }}>
-                          <td style={{ 
-                            color: '#e5e5e5', 
-                            padding: '12px 8px',
-                            fontSize: 14
-                          }}>
-                            {formatDate(stat._id)}
-                          </td>
-                          <td style={{ 
-                            color: '#1ed760', 
-                            textAlign: 'right',
-                            padding: '12px 8px',
-                            fontSize: 14,
-                            fontWeight: 600
-                          }}>
-                            {stat.count}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', 
+                gap: 16 
+              }}>
+                <div style={{ 
+                  textAlign: 'center',
+                  background: '#23232b',
+                  borderRadius: 12,
+                  padding: 20,
+                  border: '1px solid #2e2e37'
+                }}>
+                  <div style={{ color: '#1db954', fontSize: 32, fontWeight: 'bold', marginBottom: 8 }}>
+                    {overview?.totalSongs || 0}
+                  </div>
+                  <div style={{ color: '#b3b3b3', fontSize: 14, fontWeight: 500 }}>
+                    Tổng bài hát
+                  </div>
                 </div>
-              ) : (
-                <EmptyState
-                  icon="🎵"
-                  title="Chưa có dữ liệu nghe"
-                  description="Chưa có dữ liệu lượt nghe trong khoảng thời gian này."
-                />
-              )}
+                <div style={{ 
+                  textAlign: 'center',
+                  background: '#23232b',
+                  borderRadius: 12,
+                  padding: 20,
+                  border: '1px solid #2e2e37'
+                }}>
+                  <div style={{ color: '#1db954', fontSize: 32, fontWeight: 'bold', marginBottom: 8 }}>
+                    {overview?.totalAlbums || 0}
+                  </div>
+                  <div style={{ color: '#b3b3b3', fontSize: 14, fontWeight: 500 }}>
+                    Tổng album
+                  </div>
+                </div>
+                <div style={{ 
+                  textAlign: 'center',
+                  background: '#23232b',
+                  borderRadius: 12,
+                  padding: 20,
+                  border: '1px solid #2e2e37'
+                }}>
+                  <div style={{ color: '#1db954', fontSize: 32, fontWeight: 'bold', marginBottom: 8 }}>
+                    {overview?.totalArtists || 0}
+                  </div>
+                  <div style={{ color: '#b3b3b3', fontSize: 14, fontWeight: 500 }}>
+                    Tổng nghệ sĩ
+                  </div>
+                </div>
+                <div style={{ 
+                  textAlign: 'center',
+                  background: '#23232b',
+                  borderRadius: 12,
+                  padding: 20,
+                  border: '1px solid #2e2e37'
+                }}>
+                  <div style={{ color: '#1db954', fontSize: 32, fontWeight: 'bold', marginBottom: 8 }}>
+                    {overview?.totalPlaylists || 0}
+                  </div>
+                  <div style={{ color: '#b3b3b3', fontSize: 14, fontWeight: 500 }}>
+                    Tổng playlist
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
@@ -914,7 +937,136 @@ function StatisticsAdmin() {
           position: 'relative',
           paddingBottom: 12
         }}>
-          🎵 Bài hát được nghe nhiều nhất
+          📅 Thống kê theo thời gian
+          <div style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            width: 60,
+            height: 3,
+            background: 'linear-gradient(45deg, #1db954, #1ed760)',
+            borderRadius: 2
+          }} />
+        </h2>
+        <div style={{
+          background: '#23232b',
+          borderRadius: 12,
+          padding: 20,
+          border: '1px solid #2e2e37'
+        }}>
+          {timeBasedStats && timeBasedStats.userRegistrations && timeBasedStats.userRegistrations.length > 0 ? (
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+              gap: 20 
+            }}>
+              <div style={{ 
+                textAlign: 'center',
+                background: '#1a1a1d',
+                borderRadius: 12,
+                padding: 24,
+                border: '1px solid #2e2e37'
+              }}>
+                <div style={{ color: '#1db954', fontSize: 36, fontWeight: 'bold', marginBottom: 12 }}>
+                  {timeBasedStats.userRegistrations.reduce((sum, reg) => sum + reg.count, 0)}
+                </div>
+                <div style={{ color: '#b3b3b3', fontSize: 16, fontWeight: 500 }}>
+                  Đăng ký trong {selectedPeriod === '7d' ? '7 ngày' : selectedPeriod === '30d' ? '30 ngày' : selectedPeriod === '90d' ? '90 ngày' : '1 năm'}
+                </div>
+              </div>
+              <div style={{ 
+                textAlign: 'center',
+                background: '#1a1a1d',
+                borderRadius: 12,
+                padding: 24,
+                border: '1px solid #2e2e37'
+              }}>
+                <div style={{ color: '#1db954', fontSize: 36, fontWeight: 'bold', marginBottom: 12 }}>
+                  {timeBasedStats.userRegistrations.length}
+                </div>
+                <div style={{ color: '#b3b3b3', fontSize: 16, fontWeight: 500 }}>
+                  Ngày có đăng ký
+                </div>
+              </div>
+              <div style={{ 
+                textAlign: 'center',
+                background: '#1a1a1d',
+                borderRadius: 12,
+                padding: 24,
+                border: '1px solid #2e2e37'
+              }}>
+                <div style={{ color: '#1db954', fontSize: 36, fontWeight: 'bold', marginBottom: 12 }}>
+                  {timeBasedStats.userRegistrations.length > 0 ? Math.round(timeBasedStats.userRegistrations.reduce((sum, reg) => sum + reg.count, 0) / timeBasedStats.userRegistrations.length * 10) / 10 : 0}
+                </div>
+                <div style={{ color: '#b3b3b3', fontSize: 16, fontWeight: 500 }}>
+                  Trung bình/ngày
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+              gap: 20 
+            }}>
+              <div style={{ 
+                textAlign: 'center',
+                background: '#1a1a1d',
+                borderRadius: 12,
+                padding: 24,
+                border: '1px solid #2e2e37'
+              }}>
+                <div style={{ color: '#1db954', fontSize: 36, fontWeight: 'bold', marginBottom: 12 }}>
+                  {overview?.totalUsers || 0}
+                </div>
+                <div style={{ color: '#b3b3b3', fontSize: 16, fontWeight: 500 }}>
+                  Tổng người dùng
+                </div>
+              </div>
+              <div style={{ 
+                textAlign: 'center',
+                background: '#1a1a1d',
+                borderRadius: 12,
+                padding: 24,
+                border: '1px solid #2e2e37'
+              }}>
+                <div style={{ color: '#1db954', fontSize: 36, fontWeight: 'bold', marginBottom: 12 }}>
+                  {overview?.totalComments || 0}
+                </div>
+                <div style={{ color: '#b3b3b3', fontSize: 16, fontWeight: 500 }}>
+                  Tổng bình luận
+                </div>
+              </div>
+              <div style={{ 
+                textAlign: 'center',
+                background: '#1a1a1d',
+                borderRadius: 12,
+                padding: 24,
+                border: '1px solid #2e2e37'
+              }}>
+                <div style={{ color: '#1db954', fontSize: 36, fontWeight: 'bold', marginBottom: 12 }}>
+                  {overview?.totalFavorites || 0}
+                </div>
+                <div style={{ color: '#b3b3b3', fontSize: 16, fontWeight: 500 }}>
+                  Tổng yêu thích
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bài hát được phát nhiều nhất */}
+      <div style={{ marginBottom: 50 }}>
+        <h2 style={{ 
+          color: '#e5e5e5', 
+          marginBottom: 24,
+          fontSize: 28,
+          fontWeight: 700,
+          position: 'relative',
+          paddingBottom: 12
+        }}>
+          🎵 Bài hát được phát nhiều nhất
           <div style={{
             position: 'absolute',
             bottom: 0,
@@ -933,8 +1085,8 @@ function StatisticsAdmin() {
         }}>
           {topSongs && topSongs.length > 0 ? (
             <div style={{ display: 'grid', gap: 12 }}>
-              {topSongs.map((song, index) => (
-                <div key={song._id} style={{ 
+              {topSongs.slice(0, 5).map((song, index) => (
+                <div key={song._id || index} style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
                   padding: '12px',
@@ -954,8 +1106,15 @@ function StatisticsAdmin() {
                     <div style={{ color: '#e5e5e5', fontWeight: 'bold' }}>{song.title}</div>
                     <div style={{ color: '#b3b3b3', fontSize: 14 }}>{song.artist}</div>
                   </div>
-                  <div style={{ color: '#1db954', fontWeight: 'bold' }}>
-                    {song.playCount} lượt nghe
+                  <div 
+                    style={{ 
+                      color: '#1db954', 
+                      fontWeight: 'bold',
+                      cursor: 'help'
+                    }}
+                    title={`${song.playCount.toLocaleString('vi-VN')} lượt phát`}
+                  >
+                    {formatPlayCount(song.playCount)} lượt phát
                   </div>
                 </div>
               ))}
@@ -963,8 +1122,8 @@ function StatisticsAdmin() {
           ) : (
             <EmptyState
               icon="🎵"
-              title="Chưa có bài hát nào"
-              description="Hệ thống chưa có dữ liệu về bài hát được nghe nhiều nhất. Hãy thêm bài hát và để người dùng nghe để xem thống kê."
+              title="Chưa có dữ liệu phát nhạc"
+              description="Hệ thống chưa có dữ liệu về bài hát được phát nhiều nhất. Hãy để người dùng phát nhạc để xem thống kê."
             />
           )}
         </div>
@@ -986,7 +1145,7 @@ function StatisticsAdmin() {
         }}>
           <h3 style={{ 
             color: '#e5e5e5', 
-            marginBottom: 20,
+            marginBottom: 8,
             fontSize: 20,
             fontWeight: 600,
             display: 'flex',
@@ -995,6 +1154,14 @@ function StatisticsAdmin() {
           }}>
             🎭 Thống kê theo thể loại
           </h3>
+          <p style={{ 
+            color: '#b3b3b3', 
+            fontSize: 12, 
+            marginBottom: 20,
+            lineHeight: 1.4
+          }}>
+            Tỷ lệ % = (Số bài hát của thể loại / Tổng số bài hát) × 100
+          </p>
           {genreStats && genreStats.length > 0 ? (
             <div style={{ overflowX: 'auto', maxHeight: 400 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 500 }}>
@@ -1023,7 +1190,7 @@ function StatisticsAdmin() {
                       fontSize: 14,
                       fontWeight: 600,
                       width: '20%'
-                    }}>Tỷ lệ</th>
+                    }}>Tỷ lệ (%)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1031,7 +1198,7 @@ function StatisticsAdmin() {
                     const totalSongs = genreStats.reduce((sum, g) => sum + g.songCount, 0);
                     const percentage = totalSongs > 0 ? Math.round((genre.songCount / totalSongs) * 100) : 0;
                     return (
-                      <tr key={genre._id} style={{ 
+                      <tr key={genre._id || index} style={{ 
                         borderBottom: '1px solid #2e2e37'
                       }}>
                         <td style={{ 
@@ -1061,7 +1228,28 @@ function StatisticsAdmin() {
                           padding: '12px 8px',
                           fontSize: 14
                         }}>
-                          {percentage}%
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            gap: 8
+                          }}>
+                            <span>{percentage}%</span>
+                            <div style={{
+                              width: 40,
+                              height: 4,
+                              background: '#2e2e37',
+                              borderRadius: 2,
+                              overflow: 'hidden'
+                            }}>
+                              <div style={{
+                                width: `${percentage}%`,
+                                height: '100%',
+                                background: percentage > 50 ? '#1db954' : percentage > 25 ? '#ffa500' : '#ff6b6b',
+                                borderRadius: 2
+                              }} />
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1087,7 +1275,7 @@ function StatisticsAdmin() {
         }}>
           <h3 style={{ 
             color: '#e5e5e5', 
-            marginBottom: 20,
+            marginBottom: 8,
             fontSize: 20,
             fontWeight: 600,
             display: 'flex',
@@ -1107,7 +1295,7 @@ function StatisticsAdmin() {
                       padding: '12px 8px',
                       fontSize: 14,
                       fontWeight: 600,
-                      width: '60%'
+                      width: '70%'
                     }}>Nghệ sĩ</th>
                     <th style={{ 
                       color: '#b3b3b3', 
@@ -1115,24 +1303,14 @@ function StatisticsAdmin() {
                       padding: '12px 8px',
                       fontSize: 14,
                       fontWeight: 600,
-                      width: '20%'
+                      width: '30%'
                     }}>Số bài hát</th>
-                    <th style={{ 
-                      color: '#b3b3b3', 
-                      textAlign: 'center', 
-                      padding: '12px 8px',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      width: '20%'
-                    }}>Tỷ lệ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {artistStats.map((artist, index) => {
-                    const totalSongs = artistStats.reduce((sum, a) => sum + a.songCount, 0);
-                    const percentage = totalSongs > 0 ? Math.round((artist.songCount / totalSongs) * 100) : 0;
                     return (
-                      <tr key={artist._id} style={{ 
+                      <tr key={artist._id || index} style={{ 
                         borderBottom: '1px solid #2e2e37'
                       }}>
                         <td style={{ 
@@ -1155,14 +1333,6 @@ function StatisticsAdmin() {
                           fontWeight: 600
                         }}>
                           {artist.songCount}
-                        </td>
-                        <td style={{ 
-                          color: '#b3b3b3', 
-                          textAlign: 'center',
-                          padding: '12px 8px',
-                          fontSize: 14
-                        }}>
-                          {percentage}%
                         </td>
                       </tr>
                     );
@@ -1207,7 +1377,7 @@ function StatisticsAdmin() {
           {userActivity.topListeners && userActivity.topListeners.length > 0 ? (
             <div style={{ maxHeight: 300, overflowY: 'auto' }}>
               {userActivity.topListeners.map((user, index) => (
-                <div key={user._id} style={{ 
+                <div key={user._id || index} style={{ 
                   display: 'flex', 
                   justifyContent: 'space-between', 
                   alignItems: 'center',
@@ -1215,8 +1385,12 @@ function StatisticsAdmin() {
                   borderBottom: index < userActivity.topListeners.length - 1 ? '1px solid #2e2e37' : 'none'
                 }}>
                   <div>
-                    <div style={{ color: '#e5e5e5', fontWeight: 'bold' }}>{user.username}</div>
-                    <div style={{ color: '#b3b3b3', fontSize: 12 }}>{user.email}</div>
+                    <div style={{ color: '#e5e5e5', fontWeight: 'bold', fontSize: 16 }}>
+                      {user.name || user.username || 'Người dùng không tên'}
+                    </div>
+                    <div style={{ color: '#b3b3b3', fontSize: 12 }}>
+                      {user.email || `ID: ${user._id}`}
+                    </div>
                   </div>
                   <div style={{ color: '#1db954', fontWeight: 'bold' }}>
                     {user.listenCount} lượt nghe
@@ -1233,52 +1407,6 @@ function StatisticsAdmin() {
           )}
         </div>
 
-        <div style={{
-          background: 'linear-gradient(145deg, #23232b 0%, #1e1e24 100%)',
-          borderRadius: 16,
-          padding: 24,
-          border: '1px solid #2e2e37',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
-        }}>
-          <h3 style={{ 
-            color: '#e5e5e5', 
-            marginBottom: 20,
-            fontSize: 20,
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8
-          }}>
-            📋 Người dùng tạo playlist nhiều nhất
-          </h3>
-          {userActivity.topPlaylistCreators && userActivity.topPlaylistCreators.length > 0 ? (
-            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-              {userActivity.topPlaylistCreators.map((user, index) => (
-                <div key={user._id} style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  padding: '8px 0',
-                  borderBottom: index < userActivity.topPlaylistCreators.length - 1 ? '1px solid #2e2e37' : 'none'
-                }}>
-                  <div>
-                    <div style={{ color: '#e5e5e5', fontWeight: 'bold' }}>{user.username}</div>
-                    <div style={{ color: '#b3b3b3', fontSize: 12 }}>{user.email}</div>
-                  </div>
-                  <div style={{ color: '#1db954', fontWeight: 'bold' }}>
-                    {user.playlistCount} playlist
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              icon="📋"
-              title="Chưa có playlist nào"
-              description="Hệ thống chưa có dữ liệu về playlist của người dùng. Hãy để người dùng tạo playlist để xem thống kê."
-            />
-          )}
-        </div>
       </div>
       </div>
     </div>

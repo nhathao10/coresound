@@ -43,6 +43,7 @@ router.post('/', protect, async (req, res) => {
   try {
     const { songId, duration, completed } = req.body;
     
+    
     if (!songId) {
       return res.status(400).json({ error: 'Song ID không được để trống' });
     }
@@ -53,27 +54,17 @@ router.post('/', protect, async (req, res) => {
       return res.status(404).json({ error: 'Không tìm thấy bài hát' });
     }
 
-    // Create or update listening history entry
-    const historyEntry = await ListeningHistory.findOneAndUpdate(
-      { 
-        user: req.user._id, 
-        song: songId,
-        playedAt: { 
-          $gte: new Date(Date.now() - 5 * 60 * 1000) // Within last 5 minutes
-        }
-      },
-      {
-        user: req.user._id,
-        song: songId,
-        playedAt: new Date(),
-        duration: duration || 0,
-        completed: completed || false
-      },
-      { 
-        upsert: true, 
-        new: true 
-      }
-    );
+    // Create new listening history entry (không dùng upsert để tránh duplicate)
+    const historyEntry = new ListeningHistory({
+      user: req.user._id,
+      song: songId,
+      playedAt: new Date(),
+      duration: duration || 0,
+      completed: completed || false
+    });
+    
+    await historyEntry.save();
+
 
     res.json({
       message: 'Đã thêm vào lịch sử nghe nhạc',
