@@ -134,6 +134,19 @@ function Root() {
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
+  
+  // Check if current route should hide the player
+  const hash = window.location.hash || '#/'
+  const hidePlayer = hash.startsWith('#/statistics-admin') || 
+                    hash.startsWith('#/playlists-admin') ||
+                    hash.startsWith('#/albums-admin') ||
+                    hash.startsWith('#/artists-admin') ||
+                    hash.startsWith('#/genres-admin') ||
+                    hash.startsWith('#/regions-admin') ||
+                    hash.startsWith('#/users-admin') ||
+                    hash.startsWith('#/lyrics-admin') ||
+                    hash.startsWith('#/upload')
+  
   return (
     <StrictMode>
       <ToastProvider>
@@ -142,7 +155,7 @@ function Root() {
             <SearchProvider>
               <PlayerProvider>
                 <Router />
-                <GlobalPlayer />
+                {!hidePlayer && <GlobalPlayer />}
               </PlayerProvider>
             </SearchProvider>
           </FavoritesProvider>

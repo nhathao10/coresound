@@ -5,7 +5,7 @@ const ImageWithFallback = ({
   src, 
   alt, 
   className = '', 
-  fallbackSrc = '/default-album.svg',
+  fallbackSrc = null,
   onError = null,
   ...props 
 }) => {
@@ -27,8 +27,41 @@ const ImageWithFallback = ({
 
   const imageSrc = imageError ? fallbackSrc : getImageUrl(src);
 
+  // Custom fallback component
+  const FallbackComponent = () => (
+    <div 
+      style={{
+        width: '100%',
+        height: '100%',
+        background: 'linear-gradient(135deg, #2a2a35 0%, #1a1a20 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#b3b3b3',
+        fontSize: '14px',
+        fontWeight: '500'
+      }}
+    >
+      <div style={{
+        width: '48px',
+        height: '48px',
+        background: 'rgba(29, 185, 84, 0.2)',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '8px',
+        fontSize: '20px'
+      }}>
+        🎵
+      </div>
+      <span style={{ fontSize: '12px', opacity: 0.8 }}>No Image</span>
+    </div>
+  );
+
   return (
-    <div className={`image-container ${className}`} style={{ position: 'relative' }}>
+    <div className={`image-container ${className}`} style={{ position: 'relative', width: '100%', height: '100%' }}>
       {isLoading && !imageError && (
         <div 
           style={{
@@ -37,28 +70,44 @@ const ImageWithFallback = ({
             left: 0,
             right: 0,
             bottom: 0,
-            background: '#2a2a35',
+            background: 'linear-gradient(135deg, #2a2a35 0%, #1a1a20 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#b3b3b3',
-            fontSize: '12px'
+            fontSize: '12px',
+            zIndex: 1
           }}
         >
-          Loading...
+          <div style={{
+            width: '24px',
+            height: '24px',
+            border: '2px solid #2e2e37',
+            borderTop: '2px solid #1db954',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} />
         </div>
       )}
-      <img
-        src={imageSrc}
-        alt={alt}
-        onError={handleError}
-        onLoad={handleLoad}
-        style={{
-          opacity: isLoading ? 0 : 1,
-          transition: 'opacity 0.3s ease'
-        }}
-        {...props}
-      />
+      
+      {imageError && !fallbackSrc ? (
+        <FallbackComponent />
+      ) : (
+        <img
+          src={imageSrc}
+          alt={alt}
+          onError={handleError}
+          onLoad={handleLoad}
+          style={{
+            opacity: isLoading ? 0 : 1,
+            transition: 'opacity 0.3s ease',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          }}
+          {...props}
+        />
+      )}
     </div>
   );
 };
