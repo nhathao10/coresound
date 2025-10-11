@@ -435,35 +435,37 @@ export default function GlobalPlayer() {
                     opacity: 1
                   }}
                 />
-                <AddToPlaylistIcon 
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('openAddToPlaylist', { 
-                      detail: { song: current } 
-                    }));
-                  }}
-                  style={{
-                    position: 'static !important',
-                    top: 'auto !important',
-                    right: 'auto !important',
-                    width: '24px',
-                    height: '24px',
-                    minWidth: '24px',
-                    minHeight: '24px',
-                    borderRadius: '50%',
-                    background: 'rgba(0, 0, 0, 0.6)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(4px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    boxSizing: 'border-box',
-                    flexShrink: 0,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    zIndex: 'auto',
-                    opacity: '1 !important'
-                  }}
-                />
+                {current?.type !== 'podcast' && (
+                  <AddToPlaylistIcon 
+                    onClick={() => {
+                      window.dispatchEvent(new CustomEvent('openAddToPlaylist', { 
+                        detail: { song: current } 
+                      }));
+                    }}
+                    style={{
+                      position: 'static !important',
+                      top: 'auto !important',
+                      right: 'auto !important',
+                      width: '24px',
+                      height: '24px',
+                      minWidth: '24px',
+                      minHeight: '24px',
+                      borderRadius: '50%',
+                      background: 'rgba(0, 0, 0, 0.6)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backdropFilter: 'blur(4px)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      boxSizing: 'border-box',
+                      flexShrink: 0,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      zIndex: 'auto',
+                      opacity: '1 !important'
+                    }}
+                  />
+                )}
               </div>
             )}
           </div>
@@ -515,13 +517,15 @@ export default function GlobalPlayer() {
         </div>
       </div>
       <div className="spotify-bar-right">
-        <button 
-          className={`spotify-btn lyrics${showLyrics ? " active" : ""}`} 
-          onClick={() => setShowLyrics(!showLyrics)} 
-          title="Hiển thị lyrics"
-        >
-          <FaMusic />
-        </button>
+        {current?.type !== 'podcast' && (
+          <button 
+            className={`spotify-btn lyrics${showLyrics ? " active" : ""}`} 
+            onClick={() => setShowLyrics(!showLyrics)} 
+            title="Hiển thị lyrics"
+          >
+            <FaMusic />
+          </button>
+        )}
         <button 
           className="spotify-btn volume-mute" 
           onClick={handleMuteToggle}
@@ -743,20 +747,22 @@ export default function GlobalPlayer() {
         </div>
       )}
       
-      {/* Lyrics Panel */}
-      <LyricsPanel
-        isOpen={showLyrics}
-        onClose={() => setShowLyrics(false)}
-        currentSong={current}
-        currentTime={progress}
-        isPlaying={isPlaying}
+      {/* Lyrics Panel - Only show for songs, not podcasts */}
+      {current?.type !== 'podcast' && (
+        <LyricsPanel
+          isOpen={showLyrics}
+          onClose={() => setShowLyrics(false)}
+          currentSong={current}
+          currentTime={progress}
+          isPlaying={isPlaying}
         onSeek={(time) => {
           setProgress(time);
           if (audioRef.current) {
             audioRef.current.currentTime = time;
           }
         }}
-      />
+        />
+      )}
     </div>
   );
 }

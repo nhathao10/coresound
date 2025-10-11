@@ -16,9 +16,14 @@ const favoriteSchema = new mongoose.Schema({
     ref: 'Album',
     required: false
   },
+  podcast: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Podcast',
+    required: false
+  },
   type: {
     type: String,
-    enum: ['song', 'album'],
+    enum: ['song', 'album', 'podcast'],
     required: true
   }
 }, {
@@ -33,6 +38,10 @@ favoriteSchema.index({ user: 1, song: 1 }, {
 favoriteSchema.index({ user: 1, album: 1 }, { 
   unique: true, 
   partialFilterExpression: { album: { $exists: true } }
+});
+favoriteSchema.index({ user: 1, podcast: 1 }, { 
+  unique: true, 
+  partialFilterExpression: { podcast: { $exists: true } }
 });
 
 // Index để tối ưu query

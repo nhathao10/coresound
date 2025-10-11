@@ -75,6 +75,7 @@ function AdminSidebar({ open, onToggle }) {
         <a href="#/regions-admin" style={linkStyle(hash.startsWith("#/regions-admin"))}>Khu vực</a>
         <a href="#/users-admin" style={linkStyle(hash.startsWith("#/users-admin"))}>Người dùng</a>
         <a href="#/playlists-admin" style={linkStyle(hash.startsWith("#/playlists-admin"))}>Playlist</a>
+        <a href="#/podcasts-admin" style={linkStyle(hash.startsWith("#/podcasts-admin"))}>Podcast</a>
         <a href="#/lyrics-admin" style={linkStyle(hash.startsWith("#/lyrics-admin"))}>Lyrics</a>
         <a href="#/statistics-admin" style={linkStyle(hash.startsWith("#/statistics-admin"))}>Thống kê</a>
         </nav>

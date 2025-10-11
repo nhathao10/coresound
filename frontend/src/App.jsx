@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
-import { FaPlay, FaPause, FaCheckCircle } from "react-icons/fa";
+import { FaPlay, FaPause, FaCheckCircle, FaPodcast } from "react-icons/fa";
 import { usePlayer } from "./PlayerContext.jsx";
 import { useSearch } from "./SearchContext.jsx";
 import { useAuth } from "./AuthContext.jsx";
+import { useToast } from "./ToastContext.jsx";
 import Header from "./Header.jsx";
 import HeartIcon from "./HeartIcon.jsx";
 import AddToPlaylistIcon from "./AddToPlaylistIcon.jsx";
@@ -16,9 +17,14 @@ function App() {
   const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
   const { setQueueAndPlay, currentIdx, isPlaying, setIsPlaying, queue, setCurrentIdx, current, setQueueContext, setQueue } = usePlayer();
   const { user, isAuthenticated } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [displayedSongs, setDisplayedSongs] = useState([]); // 7 bài hát hiển thị
   const [displayedAlbums, setDisplayedAlbums] = useState([]); // 7 album hiển thị
   const [curatedPlaylists, setCuratedPlaylists] = useState([]); // Curated playlists
+  const [displayedPlaylists, setDisplayedPlaylists] = useState([]); // 7 playlist hiển thị
+  const [podcasts, setPodcasts] = useState([]); // Podcasts
+  const [displayedPodcasts, setDisplayedPodcasts] = useState([]); // 7 podcast hiển thị
+ // Danh sách ID podcast yêu thích
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [recentSongs, setRecentSongs] = useState([]);
@@ -63,7 +69,8 @@ function App() {
       fetch("http://localhost:5000/api/genres").then((r) => r.json()),
       fetch("http://localhost:5000/api/artists").then((r) => r.json()),
       fetch("http://localhost:5000/api/curated-playlists").then((r) => r.json()),
-    ]).then(([songsData, albumsData, genresData, artistsData, playlistsData]) => {
+      fetch("http://localhost:5000/api/podcasts").then((r) => r.json()),
+    ]).then(([songsData, albumsData, genresData, artistsData, playlistsData, podcastsData]) => {
       console.log('Fetched curated playlists:', playlistsData);
       setSongs(songsData);
       setAlbums(albumsData);
@@ -71,8 +78,11 @@ function App() {
       setArtists(artistsData);
       
       setCuratedPlaylists(playlistsData);
+      setPodcasts(podcastsData?.podcasts || podcastsData || []);
       setDisplayedSongs(getRandomSongs(songsData, 7));
       setDisplayedAlbums(getRandomAlbums(albumsData, 7));
+      setDisplayedPlaylists(getRandomPlaylists(playlistsData, 7));
+      setDisplayedPodcasts(getRandomPodcasts((podcastsData?.podcasts || podcastsData || []), 7));
 
       // Check for search query in URL
       const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
@@ -85,6 +95,7 @@ function App() {
       
     });
   }, []);
+
 
   // Load trending songs by region or genre
   useEffect(() => {
@@ -314,6 +325,24 @@ function App() {
     return shuffled.slice(0, count);
   };
 
+  // Hàm lấy 7 playlist ngẫu nhiên (tránh trùng với danh sách hiện tại)
+  const getRandomPlaylists = (allPlaylists, count, excludeIds = []) => {
+    if (allPlaylists.length <= count) return allPlaylists;
+    
+    // Lọc ra những playlist không có trong danh sách hiện tại
+    const availablePlaylists = allPlaylists.filter(playlist => !excludeIds.includes(playlist._id));
+    
+    // Nếu không đủ playlist khác, thì lấy tất cả
+    if (availablePlaylists.length < count) {
+      const shuffled = [...allPlaylists].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count);
+    }
+    
+    // Lấy ngẫu nhiên từ những playlist còn lại
+    const shuffled = [...availablePlaylists].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  };
+
   // Hàm làm mới danh sách gợi ý
   const refreshRecommendations = () => {
     const currentSongIds = displayedSongs.map(song => song._id);
@@ -325,6 +354,35 @@ function App() {
     const currentAlbumIds = displayedAlbums.map(album => album._id);
     setDisplayedAlbums(getRandomAlbums(albums, 7, currentAlbumIds));
   };
+
+  const getRandomPodcasts = (allPodcasts, count, excludeIds = []) => {
+    if (allPodcasts.length <= count) return allPodcasts;
+    
+    // Lọc ra những podcast không có trong danh sách hiện tại
+    const availablePodcasts = allPodcasts.filter(podcast => !excludeIds.includes(podcast._id));
+    
+    // Nếu không đủ podcast khác, thì lấy tất cả
+    if (availablePodcasts.length < count) {
+      const shuffled = [...allPodcasts].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count);
+    }
+    
+    // Lấy ngẫu nhiên từ danh sách available
+    const shuffled = [...availablePodcasts].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  };
+
+  // Hàm làm mới danh sách playlist
+  const refreshPlaylists = () => {
+    const currentPlaylistIds = displayedPlaylists.map(playlist => playlist._id);
+    setDisplayedPlaylists(getRandomPlaylists(curatedPlaylists, 7, currentPlaylistIds));
+  };
+
+  const refreshPodcasts = () => {
+    const currentPodcastIds = displayedPodcasts.map(podcast => podcast._id);
+    setDisplayedPodcasts(getRandomPodcasts(podcasts, 7, currentPodcastIds));
+  };
+
 
   const playSong = (idx, context = "suggestions") => {
     // ensure the global queue contains the full songs list in the same order
@@ -919,10 +977,17 @@ function App() {
         <section className="recommend-section recommend-section-horizontal">
           <div className="recommend-header">
             <div className="recommend-title">Playlist Đặc Biệt</div>
+            <button
+              className="refresh-btn"
+              onClick={refreshPlaylists}
+              title="Làm mới playlist"
+            >
+              ↻
+            </button>
           </div>
           <div className="recommend-horizontal-list">
             {curatedPlaylists.length > 0 ? (
-              curatedPlaylists.slice(0, 7).map((playlist) => (
+              displayedPlaylists.map((playlist) => (
                 <a 
                   key={playlist._id} 
                   href={`#/playlist/${encodeURIComponent(playlist._id)}`} 
@@ -954,6 +1019,189 @@ function App() {
                 <div style={{ marginBottom: 8 }}>Chưa có playlist đặc biệt nào</div>
                 <div style={{ fontSize: 14, opacity: 0.8 }}>
                   Admin sẽ tạo các playlist đặc biệt để bạn thưởng thức
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+        
+        {/* Podcasts */}
+        <section className="recommend-section recommend-section-horizontal">
+          <div className="recommend-header">
+            <div className="recommend-title">Podcasts</div>
+            <button
+              className="refresh-btn"
+              onClick={refreshPodcasts}
+              title="Làm mới podcast"
+            >
+              ↻
+            </button>
+          </div>
+          <div style={{ gap: '1.5rem', display: 'flex', overflowX: 'auto', paddingBottom: '0.5rem', width: '100%' }}>
+            {podcasts.length > 0 ? (
+              displayedPodcasts.map((podcast) => (
+                <div
+                  key={podcast._id}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    background: "#1a1a1a",
+                    borderRadius: "12px",
+                    padding: "0",
+                    marginRight: "0px",
+                    width: "280px",
+                    flexShrink: 0,
+                    cursor: "pointer",
+                    textDecoration: "none",
+                    color: "inherit",
+                    boxShadow: "0 6px 12px rgba(0,0,0,0.4)",
+                    border: "1px solid #333",
+                    transition: "all 0.3s ease-in-out",
+                    overflow: "hidden"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-5px)";
+                    e.currentTarget.style.boxShadow = "0 12px 24px rgba(0,0,0,0.6)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 6px 12px rgba(0,0,0,0.4)";
+                  }}
+                  onClick={() => {
+                    console.log('Clicked podcast:', podcast); // Debug log
+                    if (podcast.type === 'single' && podcast.audioUrl) {
+                      setQueueAndPlay([{
+                        _id: podcast._id,
+                        title: podcast.title,
+                        artist: podcast.host,
+                        url: withMediaBase(podcast.audioUrl),
+                        cover: withMediaBase(podcast.cover) || "/default-cover.png",
+                        duration: podcast.duration || 0,
+                        type: 'podcast'
+                      }], 0);
+                    } else if (podcast.type === 'series' && podcast.episodes && podcast.episodes.length > 0) {
+                      // Navigate to podcast detail page for series
+                      window.location.hash = `#/podcast/${encodeURIComponent(podcast._id)}`;
+                    } else {
+                      alert('Podcast này chưa có nội dung để phát.');
+                    }
+                  }}
+                >
+                  {/* Ảnh bìa lớn ở trên */}
+                  <div style={{ position: "relative", width: "100%", height: "140px", overflow: "hidden" }}>
+                    <img
+                      src={withMediaBase(podcast.cover) || "/default-cover.png"}
+                      alt={podcast.title}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        transition: "transform 0.3s ease"
+                      }}
+                      onMouseEnter={(e) => e.target.style.transform = "scale(1.05)"}
+                      onMouseLeave={(e) => e.target.style.transform = "scale(1)"}
+                    />
+                    {/* Overlay gradient */}
+                    <div style={{
+                      position: "absolute",
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: "60px",
+                      background: "linear-gradient(transparent, rgba(0,0,0,0.7))"
+                    }} />
+                    
+                    {/* Favorite button */}
+                    <HeartIcon 
+                      type="podcast" 
+                      itemId={podcast._id}
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "8px"
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Nội dung text ở dưới */}
+                  <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ 
+                      fontSize: "1.1rem", 
+                      fontWeight: "700", 
+                      color: "#ffffff", 
+                      lineHeight: "1.3",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                      overflow: "hidden",
+                      height: "2.6em"
+                    }}>
+                      {podcast.title}
+                    </div>
+                    
+                    <div style={{ 
+                      fontSize: "0.95rem", 
+                      color: "#1db954", 
+                      fontWeight: "600",
+                      transition: "color 0.3s ease"
+                    }}>
+                      {podcast.host}
+                    </div>
+                    
+                    <div 
+                      style={{ 
+                        fontSize: "0.85rem", 
+                        color: "#999", 
+                        lineHeight: "1.4",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 4,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        height: "5.6em",
+                        transition: "all 0.3s ease"
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.WebkitLineClamp = "unset";
+                        e.target.style.height = "auto";
+                        e.target.style.overflow = "visible";
+                        e.target.style.color = "#ccc";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.WebkitLineClamp = "4";
+                        e.target.style.height = "5.6em";
+                        e.target.style.overflow = "hidden";
+                        e.target.style.color = "#999";
+                      }}
+                    >
+                      {podcast.description || "Không có mô tả."}
+                    </div>
+                    
+                    <div style={{ 
+                      fontSize: "0.8rem", 
+                      color: "#666", 
+                      fontWeight: "600",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      marginTop: "auto",
+                      paddingTop: "8px",
+                      borderTop: "1px solid #333"
+                    }}>
+                      {podcast.type === 'single' ? 'Single Episode' : `${podcast.episodes?.length || 0} tập`}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div style={{
+                padding: "40px 20px",
+                textAlign: "center",
+                color: "#b3b3b3",
+                fontSize: 16,
+                gridColumn: "1 / -1"
+              }}>
+                <div style={{ marginBottom: 8 }}>Chưa có podcast nào</div>
+                <div style={{ fontSize: 14, opacity: 0.8 }}>
+                  Admin sẽ tạo các podcast để bạn thưởng thức
                 </div>
               </div>
             )}

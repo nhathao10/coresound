@@ -11,6 +11,7 @@ import UsersAdmin from './UsersAdmin.jsx'
 import LyricsAdmin from './LyricsAdmin.jsx'
 import PlaylistsAdmin from './PlaylistsAdmin.jsx'
 import StatisticsAdmin from './StatisticsAdmin.jsx'
+import PodcastsAdmin from './PodcastsAdmin.jsx'
 import PlaylistDetail from './PlaylistDetail.jsx'
 import Profile from './Profile.jsx'
 import Favorites from './Favorites.jsx'
@@ -91,6 +92,13 @@ function Router() {
       </ProtectedRoute>
     )
   }
+  if (hash.startsWith('#/podcasts-admin')) {
+    return (
+      <ProtectedRoute requireAdmin={true}>
+        <PodcastsAdmin />
+      </ProtectedRoute>
+    )
+  }
   if (hash.startsWith('#/profile')) {
     return (
       <ProtectedRoute requireAdmin={false}>
@@ -139,6 +147,7 @@ function Root() {
   const hash = window.location.hash || '#/'
   const hidePlayer = hash.startsWith('#/statistics-admin') || 
                     hash.startsWith('#/playlists-admin') ||
+                    hash.startsWith('#/podcasts-admin') ||
                     hash.startsWith('#/albums-admin') ||
                     hash.startsWith('#/artists-admin') ||
                     hash.startsWith('#/genres-admin') ||

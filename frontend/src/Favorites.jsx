@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { useFavorites } from './FavoritesContext';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
-import { FaPlay, FaPause, FaMusic, FaCompactDisc, FaTimes } from 'react-icons/fa';
+import { FaPlay, FaPause, FaMusic, FaCompactDisc, FaTimes, FaPodcast } from 'react-icons/fa';
 import { usePlayer } from './PlayerContext';
 import Header from './Header';
 
 const Favorites = () => {
   const { user, isAuthenticated } = useAuth();
-  const { favorites, isLoading, getFavoriteSongs, getFavoriteAlbums, removeFromFavorites } = useFavorites();
+  const { favorites, isLoading, getFavoriteSongs, getFavoriteAlbums, getFavoritePodcasts, removeFromFavorites } = useFavorites();
   const { showError } = useToast();
   const { setQueueAndPlay, current, isPlaying, setIsPlaying } = usePlayer();
   const [activeTab, setActiveTab] = useState('songs');
@@ -17,6 +17,10 @@ const Favorites = () => {
 
   const favoriteSongs = getFavoriteSongs();
   const favoriteAlbums = getFavoriteAlbums();
+  const favoritePodcasts = getFavoritePodcasts();
+
+
+
 
   const handlePlaySong = (song) => {
     try {
@@ -34,6 +38,40 @@ const Favorites = () => {
     } catch (error) {
       console.error('handlePlaySong error:', error);
       showError('Không thể phát nhạc');
+    }
+  };
+
+  const handlePlayPodcast = async (podcast) => {
+    try {
+      if (podcast.type === 'single' && podcast.audioUrl) {
+        const podcastItem = {
+          _id: podcast._id,
+          title: podcast.title,
+          artist: podcast.host,
+          url: withMediaBase(podcast.audioUrl),
+          cover: withMediaBase(podcast.cover) || "/default-cover.png",
+          duration: podcast.duration || 0,
+          type: 'podcast'
+        };
+        setQueueAndPlay([podcastItem], 0);
+      } else if (podcast.type === 'series' && podcast.episodes && podcast.episodes.length > 0) {
+        // Navigate to podcast detail page for series
+        window.location.hash = `#/podcast/${encodeURIComponent(podcast._id)}`;
+      } else {
+        showError('Podcast này chưa có nội dung để phát.');
+      }
+    } catch (error) {
+      console.error('Error playing podcast:', error);
+      showError('Lỗi khi phát podcast');
+    }
+  };
+
+  const handleRemovePodcastFromFavorites = async (podcastId) => {
+    try {
+      await removeFromFavorites('podcast', podcastId);
+    } catch (error) {
+      console.error('Error removing podcast from favorites:', error);
+      showError('Lỗi khi xóa khỏi yêu thích');
     }
   };
 
@@ -145,6 +183,17 @@ const Favorites = () => {
               {favoriteAlbums.length} album
             </span>
           </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            color: '#1db954'
+          }}>
+            <FaPodcast />
+            <span style={{ fontSize: '1.1rem', fontWeight: '600' }}>
+              {favoritePodcasts.length} podcast
+            </span>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -209,6 +258,34 @@ const Favorites = () => {
             }}
           >
             Album ({favoriteAlbums.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('podcasts')}
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: activeTab === 'podcasts' ? '#1db954' : 'transparent',
+              border: 'none',
+              borderRadius: '8px 8px 0 0',
+              color: activeTab === 'podcasts' ? '#fff' : '#b3b3b3',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'podcasts') {
+                e.target.style.color = '#fff';
+                e.target.style.background = 'rgba(29, 185, 84, 0.1)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'podcasts') {
+                e.target.style.color = '#b3b3b3';
+                e.target.style.background = 'transparent';
+              }
+            }}
+          >
+            Podcast ({favoritePodcasts.length})
           </button>
         </div>
 
@@ -515,6 +592,186 @@ const Favorites = () => {
                           </p>
                         </div>
                       </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Podcasts Tab */}
+            {activeTab === 'podcasts' && (
+              <div>
+                {isLoading ? (
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '200px',
+                    color: '#b3b3b3'
+                  }}>
+                    Đang tải danh sách podcast yêu thích...
+                  </div>
+                ) : favoritePodcasts.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '3rem',
+                    color: '#b3b3b3'
+                  }}>
+                    <FaPodcast size="3rem" style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                    <h3>Chưa có podcast yêu thích</h3>
+                    <p>Hãy thêm podcast vào danh sách yêu thích để xem ở đây</p>
+                  </div>
+                ) : (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                    gap: '1.5rem'
+                  }}>
+                    {favoritePodcasts.map(podcast => (
+                      <div
+                        key={podcast._id}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          background: "#1a1a1a",
+                          borderRadius: "12px",
+                          padding: "0",
+                          cursor: "pointer",
+                          textDecoration: "none",
+                          color: "inherit",
+                          boxShadow: "0 6px 12px rgba(0,0,0,0.4)",
+                          border: "1px solid #333",
+                          transition: "all 0.3s ease-in-out",
+                          overflow: "hidden"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = "translateY(-5px)";
+                          e.currentTarget.style.boxShadow = "0 12px 24px rgba(0,0,0,0.6)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                          e.currentTarget.style.boxShadow = "0 6px 12px rgba(0,0,0,0.4)";
+                        }}
+                        onClick={() => handlePlayPodcast(podcast)}
+                      >
+                        {/* Ảnh bìa lớn ở trên */}
+                        <div style={{ position: "relative", width: "100%", height: "140px", overflow: "hidden" }}>
+                          <img
+                            src={withMediaBase(podcast.cover) || "/default-cover.png"}
+                            alt={podcast.title}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                              transition: "transform 0.3s ease"
+                            }}
+                            onMouseEnter={(e) => e.target.style.transform = "scale(1.05)"}
+                            onMouseLeave={(e) => e.target.style.transform = "scale(1)"}
+                          />
+                          {/* Overlay gradient */}
+                          <div style={{
+                            position: "absolute",
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            height: "60px",
+                            background: "linear-gradient(transparent, rgba(0,0,0,0.7))"
+                          }} />
+                          
+                          {/* Remove from favorites button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemovePodcastFromFavorites(podcast._id);
+                            }}
+                            style={{
+                              position: "absolute",
+                              top: "8px",
+                              right: "8px",
+                              background: "rgba(0, 0, 0, 0.6)",
+                              border: "none",
+                              color: "#fff",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              transition: "all 0.3s ease",
+                              zIndex: 10,
+                              opacity: 0,
+                              transform: "scale(0.8)",
+                              padding: "8px",
+                              borderRadius: "50%",
+                              width: "32px",
+                              height: "32px"
+                            }}
+                            onMouseEnter={(e) => {
+                              e.target.style.transform = "scale(1)";
+                              e.target.style.opacity = "1";
+                              e.target.style.background = "rgba(220, 53, 69, 0.8)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.transform = "scale(0.8)";
+                              e.target.style.opacity = "0";
+                              e.target.style.background = "rgba(0, 0, 0, 0.6)";
+                            }}
+                            title="Xóa khỏi yêu thích"
+                          >
+                            <FaTimes size="1rem" />
+                          </button>
+                        </div>
+                        
+                        {/* Nội dung text ở dưới */}
+                        <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                          <div style={{ 
+                            fontSize: "1.1rem", 
+                            fontWeight: "700", 
+                            color: "#ffffff", 
+                            lineHeight: "1.3",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            height: "2.6em"
+                          }}>
+                            {podcast.title}
+                          </div>
+                          
+                          <div style={{ 
+                            fontSize: "0.95rem", 
+                            color: "#1db954", 
+                            fontWeight: "600",
+                            transition: "color 0.3s ease"
+                          }}>
+                            {podcast.host}
+                          </div>
+                          
+                          <div style={{ 
+                            fontSize: "0.85rem", 
+                            color: "#999", 
+                            lineHeight: "1.4",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            height: "4.2em"
+                          }}>
+                            {podcast.description || "Không có mô tả."}
+                          </div>
+                          
+                          <div style={{ 
+                            fontSize: "0.8rem", 
+                            color: "#666", 
+                            fontWeight: "600",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                            marginTop: "auto",
+                            paddingTop: "8px",
+                            borderTop: "1px solid #333"
+                          }}>
+                            {podcast.type === 'single' ? 'Single Episode' : `${podcast.episodes?.length || 0} tập`}
+                          </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}

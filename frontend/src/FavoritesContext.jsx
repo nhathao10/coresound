@@ -33,16 +33,36 @@ export const FavoritesProvider = ({ children }) => {
       setIsLoading(true);
       const token = user?.token;
       
-      const response = await fetch('http://localhost:5000/api/favorites', {
+      // Load regular favorites (songs, albums)
+      const favoritesResponse = await fetch('http://localhost:5000/api/favorites', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setFavorites(data.favorites || []);
+      let allFavorites = [];
+      if (favoritesResponse.ok) {
+        const favoritesData = await favoritesResponse.json();
+        allFavorites = favoritesData.favorites || [];
       }
+
+      // Load podcast favorites
+      const podcastsResponse = await fetch('http://localhost:5000/api/podcasts/favorites', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (podcastsResponse.ok) {
+        const podcastsData = await podcastsResponse.json();
+        const podcastFavorites = (podcastsData.podcasts || []).map(podcast => ({
+          type: 'podcast',
+          item: podcast
+        }));
+        allFavorites = [...allFavorites, ...podcastFavorites];
+      }
+
+      setFavorites(allFavorites);
     } catch (error) {
       console.error('Error loading favorites:', error);
     } finally {
@@ -52,7 +72,7 @@ export const FavoritesProvider = ({ children }) => {
 
   // Check if item is favorited
   const isFavorited = (type, itemId) => {
-    return favorites.some(fav => fav.type === type && fav.item._id === itemId);
+    return favorites.some(fav => fav.type === type && fav.item && fav.item._id === itemId);
   };
 
   // Add item to favorites
@@ -112,7 +132,7 @@ export const FavoritesProvider = ({ children }) => {
       }
 
       // Remove from local state
-      setFavorites(prev => prev.filter(fav => !(fav.type === type && fav.item._id === itemId)));
+      setFavorites(prev => prev.filter(fav => !(fav.type === type && fav.item && fav.item._id === itemId)));
       
       return { success: true, message: data.message || 'Đã xóa khỏi danh sách yêu thích' };
     } catch (error) {
@@ -128,12 +148,49 @@ export const FavoritesProvider = ({ children }) => {
       throw new Error('Bạn cần đăng nhập để sử dụng tính năng yêu thích');
     }
 
+    // Handle podcast separately
+    if (type === 'podcast') {
+      return await togglePodcastFavorite(itemId);
+    }
+
     const isCurrentlyFavorited = isFavorited(type, itemId);
     
     if (isCurrentlyFavorited) {
       return await removeFromFavorites(type, itemId);
     } else {
       return await addToFavorites(type, itemId);
+    }
+  };
+
+  // Toggle podcast favorite using dedicated API
+  const togglePodcastFavorite = async (podcastId) => {
+    try {
+      const token = user?.token;
+      
+      const response = await fetch(`http://localhost:5000/api/podcasts/${podcastId}/favorite`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Không thể cập nhật yêu thích');
+      }
+
+      // Reload favorites to sync with backend
+      await loadFavorites();
+      
+      return { 
+        success: true, 
+        message: data.isFavorite ? 'Đã thêm podcast vào yêu thích!' : 'Đã xóa podcast khỏi yêu thích!' 
+      };
+    } catch (error) {
+      console.error('Error toggling podcast favorite:', error);
+      return { success: false, error: error.message };
     }
   };
 
@@ -144,12 +201,17 @@ export const FavoritesProvider = ({ children }) => {
 
   // Get favorite songs
   const getFavoriteSongs = () => {
-    return getFavoritesByType('song').map(fav => fav.item);
+    return getFavoritesByType('song').map(fav => fav.item).filter(item => item);
   };
 
   // Get favorite albums
   const getFavoriteAlbums = () => {
-    return getFavoritesByType('album').map(fav => fav.item);
+    return getFavoritesByType('album').map(fav => fav.item).filter(item => item);
+  };
+
+  // Get favorite podcasts
+  const getFavoritePodcasts = () => {
+    return getFavoritesByType('podcast').map(fav => fav.item).filter(item => item);
   };
 
   const value = {
@@ -162,6 +224,7 @@ export const FavoritesProvider = ({ children }) => {
     getFavoritesByType,
     getFavoriteSongs,
     getFavoriteAlbums,
+    getFavoritePodcasts,
     loadFavorites
   };
 

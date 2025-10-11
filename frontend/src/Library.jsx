@@ -143,6 +143,7 @@ const Library = () => {
       const playlistsData = await playlistsRes.json();
       setPlaylists(playlistsData);
 
+
       // Load listening history
       const historyRes = await fetch('http://localhost:5000/api/history', { headers });
       const historyData = await historyRes.json();
@@ -235,6 +236,7 @@ const Library = () => {
       showError('Lỗi khi phát bài hát');
     }
   };
+
 
   const handleDeletePlaylist = async (playlistId) => {
     try {
@@ -831,6 +833,7 @@ const Library = () => {
                 )}
               </div>
             )}
+
 
             {/* History Tab */}
             {activeTab === 'history' && (
