@@ -216,20 +216,20 @@ router.get('/', async (req, res) => {
 // GET /api/podcasts/favorites - Lấy danh sách podcast yêu thích của user
 router.get('/favorites', protect, async (req, res) => {
   try {
-    console.log('Fetching favorite podcasts for user:', req.user._id);
+    // console.log('Fetching favorite podcasts for user:', req.user._id);
     
     const favoritePodcasts = await Favorite.find({
       user: req.user._id,
       type: 'podcast'
     }).populate('podcast');
     
-    console.log('Found favorite podcasts:', favoritePodcasts.length);
+    // console.log('Found favorite podcasts:', favoritePodcasts.length);
     
     const podcasts = favoritePodcasts
       .map(fav => fav.podcast)
       .filter(podcast => podcast); // Filter out null podcasts
     
-    console.log('Filtered podcasts:', podcasts.length);
+    // console.log('Filtered podcasts:', podcasts.length);
     res.json({ podcasts });
   } catch (error) {
     console.error('Error fetching favorite podcasts:', error);

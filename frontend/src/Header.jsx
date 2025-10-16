@@ -5,6 +5,7 @@ import { useAuth } from "./AuthContext";
 import LoginModal from "./LoginModal";
 import SignupModal from "./SignupModal";
 import NotificationBell from "./NotificationBell";
+import GameIcon from "./GameIcon";
 
 const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, searchValue = "", showSearchResults = false }, ref) => {
   const [searchQuery, setSearchQuery] = useState(searchValue);
@@ -238,6 +239,9 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
       <div className="header-user-section" style={{ marginRight: "1rem", display: "flex", alignItems: "center" }}>
         {isAuthenticated ? (
           <>
+            {/* Game Icon */}
+            <GameIcon />
+            
             {/* Notification Bell */}
             <NotificationBell />
             

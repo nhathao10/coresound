@@ -15,7 +15,7 @@ const deleteOldAvatar = (avatarPath) => {
     if (fs.existsSync(fullPath)) {
       try {
         fs.unlinkSync(fullPath);
-        console.log('Deleted old avatar:', fullPath);
+        // console.log('Deleted old avatar:', fullPath);
       } catch (error) {
         console.error('Error deleting old avatar:', error);
       }

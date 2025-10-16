@@ -119,9 +119,9 @@ router.post('/', protect, admin, upload.single('cover'), async (req, res) => {
 // @access  Admin
 router.put('/:id', protect, admin, upload.single('cover'), async (req, res) => {
   try {
-    console.log('PUT /api/admin/curated-playlists/:id called');
-    console.log('req.body:', req.body);
-    console.log('req.file:', req.file);
+    // console.log('PUT /api/admin/curated-playlists/:id called');
+    // console.log('req.body:', req.body);
+    // console.log('req.file:', req.file);
     
     const { name, description, isPublic, songs } = req.body;
     
@@ -158,18 +158,18 @@ router.put('/:id', protect, admin, upload.single('cover'), async (req, res) => {
     }
 
     if (req.file) {
-      console.log('File uploaded:', req.file.filename);
+      // console.log('File uploaded:', req.file.filename);
       // Delete old cover if exists
       if (playlist.cover) {
         const fs = require('fs');
         const oldCoverPath = path.join(__dirname, '../../', playlist.cover);
         if (fs.existsSync(oldCoverPath)) {
           fs.unlinkSync(oldCoverPath);
-          console.log('Deleted old cover:', oldCoverPath);
+          // console.log('Deleted old cover:', oldCoverPath);
         }
       }
       playlist.cover = `/uploads/playlist_covers/${req.file.filename}`;
-      console.log('New cover path:', playlist.cover);
+      // console.log('New cover path:', playlist.cover);
     }
 
     await playlist.save();
