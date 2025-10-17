@@ -12,6 +12,12 @@ const dailySongSchema = new mongoose.Schema({
     ref: 'Song', 
     required: true 
   },
+  // Optional order index for multi-song per day (1..N)
+  sequence: {
+    type: Number,
+    default: 1,
+    index: true
+  },
   startTime: { 
     type: Number, 
     required: true 

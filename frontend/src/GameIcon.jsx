@@ -11,6 +11,7 @@ const GameIcon = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [userAnswer, setUserAnswer] = useState('');
   const [lives, setLives] = useState(3);
+  const [roundIndex, setRoundIndex] = useState(1); // 1..3
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
@@ -105,6 +106,39 @@ const GameIcon = () => {
     } catch (error) {
       console.error('Error resetting today game:', error);
       // Silent error - no toast for testing button
+    }
+  };
+
+  // Advance to next round: reset server daily song and fetch again
+  const advanceToNextRound = async () => {
+    try {
+      // silent server reset + new random
+      await fetch('http://localhost:5000/api/reset-today', {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${user?.token}` }
+      });
+      await fetch('http://localhost:5000/api/new-random-song', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${user?.token}` }
+      });
+
+      // local state reset for next round
+      setLives(3);
+      setAttempts(0);
+      setCurrentClipDuration(3);
+      setAudioProgress(0);
+      setUserAnswer('');
+      setGameCompleted(false);
+      setShowResult(false);
+      setIsPlaying(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current.load();
+      }
+      await fetchDailySong();
+    } catch (e) {
+      // keep silent during testing
     }
   };
 
@@ -308,7 +342,15 @@ const GameIcon = () => {
               _id: prev.song?._id
             }
           }));
-          showSuccess(`Chính xác! Bạn được ${result.score} điểm!`);
+          // Move to next round if less than 3
+          if (roundIndex < 3) {
+            setTimeout(async () => {
+              setRoundIndex(r => r + 1);
+              await advanceToNextRound();
+            }, 600);
+          } else {
+            showSuccess(`Chính xác! Bạn được ${result.score} điểm!`);
+          }
         } else {
           // Wrong answer - lose a life
           const newLives = lives - 1;
@@ -332,7 +374,15 @@ const GameIcon = () => {
                 _id: prev.song?._id
               }
             }));
-            showError(`Game Over! Đáp án đúng là: ${result.correctAnswer.title} - ${result.correctAnswer.artist}`);
+            // If still has next round, advance; else show message
+            if (roundIndex < 3) {
+              setTimeout(async () => {
+                setRoundIndex(r => r + 1);
+                await advanceToNextRound();
+              }, 600);
+            } else {
+              showError(`Game Over! Đáp án đúng là: ${result.correctAnswer.title} - ${result.correctAnswer.artist}`);
+            }
           } else {
             showError(`Sai rồi! Còn ${newLives} lần thử.`);
           }
@@ -512,51 +562,74 @@ const GameIcon = () => {
               </div>
             ) : !showResult ? (
               <div>
-                {/* Lives and Score Display */}
+                {/* Status Card - Lives / Score with Round badge */}
                 <div style={{
+                  position: 'relative',
                   display: 'flex',
-                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  marginBottom: '1.5rem',
-                  padding: '1rem',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  borderRadius: '12px'
+                  justifyContent: 'space-between',
+                  gap: 16,
+                  padding: '16px 20px',
+                  marginBottom: 20,
+                  borderRadius: 14,
+                  background: 'linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  boxShadow: '0 6px 24px rgba(0,0,0,0.25)'
                 }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                      fontSize: '1.2rem',
-                      fontWeight: 'bold',
-                      color: lives > 1 ? '#1db954' : '#ff4444',
-                      marginBottom: '0.25rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem'
-                    }}>
-                      ❤️ {lives}
-                    </div>
-                    <div style={{
-                      color: '#b3b3b3',
-                      fontSize: '0.8rem'
-                    }}>
-                      Lives
+                  <div style={{
+                    position: 'absolute',
+                    top: -10,
+                    right: -10,
+                    padding: '6px 10px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: 0.3,
+                    color: '#10b981',
+                    background: 'linear-gradient(135deg, rgba(16,185,129,.18), rgba(16,185,129,.08))',
+                    border: '1px solid rgba(16,185,129,.35)',
+                    backdropFilter: 'blur(6px)'
+                  }}>
+                    Bài {Math.min(roundIndex, 3)}/3
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '10px 12px',
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    minWidth: 140
+                  }}>
+                    <span style={{fontSize: 18}}>❤️</span>
+                    <div style={{display: 'flex', flexDirection: 'column', lineHeight: 1.1}}>
+                      <span style={{color: lives > 1 ? '#10b981' : '#ef4444', fontSize: 20, fontWeight: 800}}>
+                        {lives}
+                      </span>
+                      <span style={{color: '#a8a8a8', fontSize: 12}}>Lives</span>
                     </div>
                   </div>
-                  
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{
-                      fontSize: '1.2rem',
-                      fontWeight: 'bold',
-                      color: '#1db954',
-                      marginBottom: '0.25rem'
-                    }}>
-                      🎯 {score}
-                    </div>
-                    <div style={{
-                      color: '#b3b3b3',
-                      fontSize: '0.8rem'
-                    }}>
-                      Score
+
+                  <div style={{ width: 1, height: 36, background: 'rgba(255,255,255,0.08)' }} />
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '10px 12px',
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    minWidth: 160
+                  }}>
+                    <span style={{fontSize: 18}}>🎯</span>
+                    <div style={{display: 'flex', flexDirection: 'column', lineHeight: 1.1}}>
+                      <span style={{color: '#10b981', fontSize: 20, fontWeight: 800}}>
+                        {score}
+                      </span>
+                      <span style={{color: '#a8a8a8', fontSize: 12}}>Score</span>
                     </div>
                   </div>
                 </div>
@@ -784,30 +857,7 @@ const GameIcon = () => {
                      Skip
                   </button>
 
-                  <button
-                    onClick={resetTodayGame}
-                    style={{
-                      background: 'rgba(255, 107, 107, 0.2)',
-                      border: '1px solid rgba(255, 107, 107, 0.3)',
-                      color: '#ff6b6b',
-                      padding: '0.75rem 1.5rem',
-                      borderRadius: '25px',
-                      fontSize: '0.9rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      flex: '1 1 30%',
-                      minWidth: '120px',
-                      whiteSpace: 'nowrap'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = 'rgba(255, 107, 107, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = 'rgba(255, 107, 107, 0.2)';
-                    }}
-                  >
-                     Reset
-                  </button>
+                  {/* Reset button removed */}
                   
                   <button
                     onClick={handleSubmitAnswer}
@@ -950,30 +1000,7 @@ const GameIcon = () => {
                   gap: '1rem',
                   justifyContent: 'center'
                 }}>
-                  <button
-                    onClick={resetTodayGame}
-                    style={{
-                      background: 'rgba(255, 193, 7, 0.2)',
-                      border: '1px solid rgba(255, 193, 7, 0.3)',
-                      color: '#ffc107',
-                      padding: '0.75rem 1.5rem',
-                      borderRadius: '25px',
-                      fontSize: '0.9rem',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = 'rgba(255, 193, 7, 0.3)';
-                      e.target.style.transform = 'scale(1.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = 'rgba(255, 193, 7, 0.2)';
-                      e.target.style.transform = 'scale(1)';
-                    }}
-                  >
-                    🔄 Reset Hôm Nay
-                  </button>
+                  {/* Reset button removed intentionally for production */}
                   <button
                     onClick={() => {
                       setShowGameModal(false);
