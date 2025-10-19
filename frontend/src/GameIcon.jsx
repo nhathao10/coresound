@@ -109,19 +109,9 @@ const GameIcon = () => {
     }
   };
 
-  // Advance to next round: reset server daily song and fetch again
-  const advanceToNextRound = async () => {
+  // Advance to next round: just move to next sequence
+  const advanceToNextRound = async (nextRound) => {
     try {
-      // silent server reset + new random
-      await fetch('http://localhost:5000/api/reset-today', {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${user?.token}` }
-      });
-      await fetch('http://localhost:5000/api/new-random-song', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${user?.token}` }
-      });
-
       // local state reset for next round
       setLives(3);
       setAttempts(0);
@@ -136,9 +126,20 @@ const GameIcon = () => {
         audioRef.current.currentTime = 0;
         audioRef.current.load();
       }
-      await fetchDailySong();
+      
+      // Fetch next song with the specified round number
+      const response = await fetch(`http://localhost:5000/api/daily-song?sequence=${nextRound}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDailySong(data);
+        setGameStarted(true);
+        setScore(1000);
+      } else {
+        showError('Không thể tải bài hát tiếp theo');
+      }
     } catch (e) {
-      // keep silent during testing
+      console.error('Error advancing to next round:', e);
+      showError('Lỗi khi chuyển sang bài tiếp theo');
     }
   };
 
@@ -168,9 +169,48 @@ const GameIcon = () => {
     }
   }, [userAnswer, songs]);
 
+  const checkGameStatus = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/daily-song/status', {
+        headers: {
+          'Authorization': `Bearer ${user?.token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.hasPlayed && data.completedAllRounds && data.gameResult) {
+          // User has already completed all 3 rounds today
+          setGameCompleted(true);
+          setShowResult(true);
+          setScore(data.gameResult.score);
+          setAttempts(0);
+          setLives(data.gameResult.score > 0 ? 3 : 0);
+          setCurrentClipDuration(3);
+          setRoundIndex(3); // Set to 3 to show badge
+          
+          // Set the daily song with result data
+          setDailySong({
+            song: {
+              title: data.gameResult.song.title,
+              artist: data.gameResult.song.artist,
+              cover: data.gameResult.song.cover
+            }
+          });
+          
+          return true; // Already played
+        }
+      }
+      return false; // Not played yet
+    } catch (error) {
+      console.error('Error checking game status:', error);
+      return false;
+    }
+  };
+
   const fetchDailySong = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/daily-song');
+      const response = await fetch(`http://localhost:5000/api/daily-song?sequence=${roundIndex}`);
       if (response.ok) {
         const data = await response.json();
         
@@ -308,7 +348,8 @@ const GameIcon = () => {
           songId: dailySong.songId,
           userAnswer: userAnswer.trim(),
           timeSpent: 0, // No timer anymore
-          hintsUsed: 0
+          hintsUsed: 0,
+          roundNumber: roundIndex
         })
       });
 
@@ -344,10 +385,11 @@ const GameIcon = () => {
           }));
           // Move to next round if less than 3
           if (roundIndex < 3) {
+            const nextRound = roundIndex + 1;
             setTimeout(async () => {
-              setRoundIndex(r => r + 1);
-              await advanceToNextRound();
-            }, 600);
+              setRoundIndex(nextRound);
+              await advanceToNextRound(nextRound);
+            }, 3000);
           } else {
             showSuccess(`Chính xác! Bạn được ${result.score} điểm!`);
           }
@@ -376,10 +418,11 @@ const GameIcon = () => {
             }));
             // If still has next round, advance; else show message
             if (roundIndex < 3) {
+              const nextRound = roundIndex + 1;
               setTimeout(async () => {
-                setRoundIndex(r => r + 1);
-                await advanceToNextRound();
-              }, 600);
+                setRoundIndex(nextRound);
+                await advanceToNextRound(nextRound);
+              }, 3000);
             } else {
               showError(`Game Over! Đáp án đúng là: ${result.correctAnswer.title} - ${result.correctAnswer.artist}`);
             }
@@ -398,9 +441,16 @@ const GameIcon = () => {
   };
 
 
-  const openGameModal = () => {
+  const openGameModal = async () => {
     setShowGameModal(true);
-    fetchDailySong();
+    
+    // Check if user has already played today
+    const hasPlayed = await checkGameStatus();
+    
+    // If not played yet, fetch the daily song
+    if (!hasPlayed) {
+      fetchDailySong();
+    }
   };
 
   if (!isAuthenticated) return null;
@@ -895,6 +945,31 @@ const GameIcon = () => {
             ) : (
               /* Result Display */
               <div style={{ textAlign: 'center' }}>
+                {/* Completed Today Badge - Only show when completed all 3 rounds */}
+                {roundIndex === 3 && (
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(29, 185, 84, 0.2), rgba(29, 185, 84, 0.1))',
+                    border: '2px solid rgba(29, 185, 84, 0.4)',
+                    borderRadius: '12px',
+                    padding: '0.75rem 1.5rem',
+                    marginBottom: '1.5rem',
+                    display: 'inline-block'
+                  }}>
+                    <p style={{
+                      color: '#1db954',
+                      margin: 0,
+                      fontSize: '0.95rem',
+                      fontWeight: '700',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      <FaTrophy size="1.1rem" />
+                      Bạn đã hoàn thành thử thách hôm nay!
+                    </p>
+                  </div>
+                )}
+                
                 <div style={{
                   fontSize: '3rem',
                   marginBottom: '1rem'
@@ -991,7 +1066,7 @@ const GameIcon = () => {
                       🎯 {score} điểm
                     </p>
                     <p style={{ color: '#b3b3b3', margin: '0', fontSize: '0.9rem' }}>
-                      Số lần thử: {attempts} | Lives còn lại: {lives} | Clip dài nhất: {currentClipDuration}s
+                      Số lần thử: {attempts}  | Thời gian chơi dài nhất: {currentClipDuration}s
                     </p>
                   </div>
                 </div>

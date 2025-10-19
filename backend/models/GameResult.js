@@ -27,6 +27,16 @@ const gameResultSchema = new mongoose.Schema({
     type: Number, 
     default: 0 
   },
+  roundNumber: {
+    type: Number,
+    default: 1,
+    min: 1,
+    max: 3
+  }, // Track which round (1, 2, or 3)
+  completedAllRounds: {
+    type: Boolean,
+    default: false
+  }, // True when user completes all 3 rounds
   submittedAt: { 
     type: Date, 
     default: Date.now 

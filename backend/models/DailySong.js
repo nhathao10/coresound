@@ -3,9 +3,8 @@ const mongoose = require('mongoose');
 const dailySongSchema = new mongoose.Schema({
   date: { 
     type: Date, 
-    required: true, 
-    unique: true,
-    index: true
+    required: true
+    // Removed index: true to avoid single-field unique constraint
   },
   song: { 
     type: mongoose.Schema.Types.ObjectId, 
@@ -15,8 +14,8 @@ const dailySongSchema = new mongoose.Schema({
   // Optional order index for multi-song per day (1..N)
   sequence: {
     type: Number,
-    default: 1,
-    index: true
+    default: 1
+    // Removed index: true, will use compound index instead
   },
   startTime: { 
     type: Number, 
@@ -44,11 +43,12 @@ const dailySongSchema = new mongoose.Schema({
     default: 0
   }
 }, { 
-  timestamps: true 
+  timestamps: true,
+  autoIndex: false // Disable auto index creation to prevent conflicts
 });
 
-// Index for date queries
-dailySongSchema.index({ date: 1 });
+// Compound index for date and sequence to ensure unique combination
+dailySongSchema.index({ date: 1, sequence: 1 }, { unique: true });
 
 module.exports = mongoose.model('DailySong', dailySongSchema);
 

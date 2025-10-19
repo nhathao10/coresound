@@ -6,64 +6,156 @@ const Song = require('../models/Song');
 const Genre = require('../models/Genre');
 const { protect } = require('../middleware/auth');
 
-// Get today's daily song
+// Check if user has completed today's game
+router.get('/daily-song/status', protect, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Find all today's daily songs (should be 3)
+    const dailySongs = await DailySong.find({ 
+      date: { $gte: today, $lt: tomorrow }
+    }).sort({ sequence: 1 }).populate('song');
+
+    if (dailySongs.length === 0) {
+      return res.json({ hasPlayed: false, completedAllRounds: false, gameResult: null });
+    }
+
+    // Check if user has completed all 3 rounds today
+    const gameResult = await GameResult.findOne({
+      user: userId,
+      completedAllRounds: true,
+      createdAt: { $gte: today, $lt: tomorrow }
+    }).populate('dailySong');
+
+    if (gameResult) {
+      await gameResult.populate({
+        path: 'dailySong',
+        populate: { path: 'song' }
+      });
+      
+      return res.json({
+        hasPlayed: true,
+        completedAllRounds: true,
+        gameResult: {
+          isCorrect: gameResult.isCorrect,
+          score: gameResult.score,
+          timeSpent: gameResult.timeSpent,
+          hintsUsed: gameResult.hintsUsed,
+          roundNumber: gameResult.roundNumber,
+          submittedAt: gameResult.submittedAt,
+          song: {
+            title: gameResult.dailySong.song.title,
+            artist: gameResult.dailySong.song.artist,
+            cover: gameResult.dailySong.song.cover
+          }
+        }
+      });
+    }
+
+    res.json({ hasPlayed: false, completedAllRounds: false, gameResult: null });
+  } catch (error) {
+    console.error('Error checking game status:', error);
+    res.status(500).json({ error: 'Lỗi server khi kiểm tra trạng thái game' });
+  }
+});
+
+// Get today's daily song (with sequence support for 3 songs)
 router.get('/daily-song', async (req, res) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+    const sequence = parseInt(req.query.sequence) || 1; // Get sequence from query, default to 1
 
-    // Find today's daily song
-    let dailySong = await DailySong.findOne({ 
+    // Check how many daily songs exist for today
+    const existingSongsCount = await DailySong.countDocuments({ 
       date: { $gte: today, $lt: tomorrow }
-    }).populate('song');
+    });
 
-    // If no daily song exists for today, create one
-    if (!dailySong) {
+    // If less than 3 songs exist for today, create all 3 at once
+    if (existingSongsCount < 3) {
+      // First, delete any existing songs for today to avoid duplicates
+      if (existingSongsCount > 0) {
+        await DailySong.deleteMany({ 
+          date: { $gte: today, $lt: tomorrow }
+        });
+      }
       // Get all songs
       const songs = await Song.find({});
       
-      if (songs.length === 0) {
-        return res.status(404).json({ error: 'Không có bài hát nào trong database' });
+      if (songs.length < 3) {
+        return res.status(404).json({ error: 'Cần ít nhất 3 bài hát trong database' });
       }
 
-      // Get a random song
-      const randomSong = songs[Math.floor(Math.random() * songs.length)];
+      // Create 3 unique random songs for today
+      const selectedSongs = [];
+      const usedIndices = new Set();
       
-      // Start from the beginning of the song
-      const startTime = 0;
-
-      // Get genre info for hints
-      let genreName = 'Unknown';
-      if (randomSong.genres && randomSong.genres.length > 0) {
-        const genre = await Genre.findById(randomSong.genres[0]);
-        if (genre) {
-          genreName = genre.name;
+      while (selectedSongs.length < 3) {
+        const randomIndex = Math.floor(Math.random() * songs.length);
+        if (!usedIndices.has(randomIndex)) {
+          usedIndices.add(randomIndex);
+          selectedSongs.push(songs[randomIndex]);
         }
       }
 
-      // Create new daily song
-      dailySong = new DailySong({
-        date: today,
-        song: randomSong._id,
-        startTime: Math.floor(startTime),
-        duration: 30,
-        hints: {
-          genre: genreName,
-          artist: randomSong.artist || 'Unknown Artist',
-          year: randomSong.createdAt ? randomSong.createdAt.getFullYear() : new Date().getFullYear()
+      // Create 3 daily songs
+      for (let i = 0; i < 3; i++) {
+        try {
+          const randomSong = selectedSongs[i];
+          const startTime = 0;
+
+          // Get genre info for hints
+          let genreName = 'Unknown';
+          if (randomSong.genres && randomSong.genres.length > 0) {
+            const genre = await Genre.findById(randomSong.genres[0]);
+            if (genre) {
+              genreName = genre.name;
+            }
+          }
+
+          const newDailySong = new DailySong({
+            date: today,
+            song: randomSong._id,
+            sequence: i + 1,
+            startTime: Math.floor(startTime),
+            duration: 30,
+            hints: {
+              genre: genreName,
+              artist: randomSong.artist || 'Unknown Artist',
+              year: randomSong.createdAt ? randomSong.createdAt.getFullYear() : new Date().getFullYear()
+            }
+          });
+
+          await newDailySong.save();
+          
+          // Update hints with populated song data if needed
+          if (!newDailySong.hints.artist || newDailySong.hints.artist === 'Unknown Artist') {
+            newDailySong.hints.artist = randomSong.artist || 'Unknown Artist';
+            await newDailySong.save();
+          }
+        } catch (err) {
+          console.error('[Daily Song] Error creating sequence:', err.message);
+          throw err;
         }
+      }
+    }
+
+    // Fetch the requested sequence
+    let dailySong = await DailySong.findOne({ 
+      date: { $gte: today, $lt: tomorrow },
+      sequence: sequence
+    }).populate('song');
+
+    if (!dailySong) {
+      return res.status(404).json({ 
+        error: `Không tìm thấy bài hát sequence ${sequence} cho hôm nay`
       });
-
-      await dailySong.save();
-      await dailySong.populate('song');
-      
-      // Update hints with populated song data if needed
-      if (!dailySong.hints.artist || dailySong.hints.artist === 'Unknown Artist') {
-        dailySong.hints.artist = dailySong.song.artist || 'Unknown Artist';
-        await dailySong.save();
-      }
     }
 
     // Return the daily song data
@@ -86,7 +178,7 @@ router.get('/daily-song', async (req, res) => {
 // Check answer for daily song
 router.post('/daily-song/check-answer', protect, async (req, res) => {
   try {
-    const { songId, userAnswer, timeSpent, hintsUsed } = req.body;
+    const { songId, userAnswer, timeSpent, hintsUsed, roundNumber } = req.body;
     const userId = req.user.id;
 
     // Find today's daily song
@@ -96,21 +188,23 @@ router.post('/daily-song/check-answer', protect, async (req, res) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const dailySong = await DailySong.findOne({ 
-      date: { $gte: today, $lt: tomorrow }
+      date: { $gte: today, $lt: tomorrow },
+      song: songId
     }).populate('song');
 
     if (!dailySong) {
       return res.status(404).json({ error: 'Không tìm thấy bài hát hôm nay' });
     }
 
-    // Check if user already played today (allow replay for practice)
-    const existingResult = await GameResult.findOne({
+    // Check if user already completed all rounds today
+    const completedResult = await GameResult.findOne({
       user: userId,
-      dailySong: dailySong._id
+      completedAllRounds: true,
+      createdAt: { $gte: today, $lt: tomorrow }
     });
 
-    // Allow replay but don't save new results if already played
-    const hasPlayedToday = !!existingResult;
+    // Allow replay but don't save new results if already completed all rounds
+    const hasPlayedToday = !!completedResult;
 
     // Check answer accuracy
     const correctTitle = dailySong.song.title.toLowerCase().trim();
@@ -123,24 +217,29 @@ router.post('/daily-song/check-answer', protect, async (req, res) => {
                      correctTitle.includes(userAnswerLower) ||
                      correctArtist.includes(userAnswerLower);
 
-    // Calculate score
+    // Calculate score (no timer, so no time bonus)
     let score = 0;
     if (isCorrect) {
       const baseScore = 1000;
-      const timeBonus = Math.max(0, (30 - timeSpent) * 10);
+      // No time bonus since the game doesn't have a timer
       const hintPenalty = hintsUsed * 100;
-      score = Math.max(0, baseScore + timeBonus - hintPenalty);
+      score = Math.max(0, baseScore - hintPenalty);
     }
 
-    // Save game result only if not played today
+    // Save game result only if not completed all rounds today
     if (!hasPlayedToday) {
+      const currentRound = roundNumber || 1;
+      const isLastRound = currentRound === 3;
+      
       const gameResult = new GameResult({
         user: userId,
         dailySong: dailySong._id,
         isCorrect,
         timeSpent,
         hintsUsed,
-        score
+        score,
+        roundNumber: currentRound,
+        completedAllRounds: isLastRound
       });
 
       await gameResult.save();
@@ -311,7 +410,7 @@ router.delete('/reset-today', protect, async (req, res) => {
   }
 });
 
-// Generate new random song for testing (DEV ONLY)
+// Generate new random songs for testing (DEV ONLY) - Creates 3 songs
 router.post('/new-random-song', protect, async (req, res) => {
   try {
     const today = new Date();
@@ -319,8 +418,8 @@ router.post('/new-random-song', protect, async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Delete existing daily song for today
-    await DailySong.deleteOne({ 
+    // Delete existing daily songs for today (all 3)
+    await DailySong.deleteMany({ 
       date: { $gte: today, $lt: tomorrow }
     });
 
@@ -331,57 +430,72 @@ router.post('/new-random-song', protect, async (req, res) => {
 
     // Get all songs
     const songs = await Song.find({}).populate('genres');
-    if (songs.length === 0) {
-      return res.status(404).json({ error: 'Không có bài hát nào trong database' });
+    if (songs.length < 3) {
+      return res.status(404).json({ error: 'Cần ít nhất 3 bài hát trong database' });
     }
 
-    // Get a random song
-    const randomSong = songs[Math.floor(Math.random() * songs.length)];
+    // Create 3 unique random songs for today
+    const selectedSongs = [];
+    const usedIndices = new Set();
     
-    // Start from the beginning of the song
-    const startTime = 0;
-
-    // Get genre info for hints
-    let genreName = 'Unknown';
-    if (randomSong.genres && randomSong.genres.length > 0) {
-      const genre = await Genre.findById(randomSong.genres[0]);
-      if (genre) {
-        genreName = genre.name;
+    while (selectedSongs.length < 3) {
+      const randomIndex = Math.floor(Math.random() * songs.length);
+      if (!usedIndices.has(randomIndex)) {
+        usedIndices.add(randomIndex);
+        selectedSongs.push(songs[randomIndex]);
       }
     }
 
-    // Create new daily song
-    const newDailySong = new DailySong({
-      date: today,
-      song: randomSong._id,
-      startTime: Math.floor(startTime),
-      duration: 30,
-      hints: {
-        genre: genreName,
-        artist: randomSong.artist || 'Unknown Artist',
-        year: randomSong.createdAt ? randomSong.createdAt.getFullYear() : new Date().getFullYear()
-      }
-    });
+    // Create 3 daily songs
+    const createdSongs = [];
+    for (let i = 0; i < 3; i++) {
+      const randomSong = selectedSongs[i];
+      const startTime = 0;
 
-    await newDailySong.save();
-    await newDailySong.populate('song');
-    
-    // Update hints with populated song data if needed
-    if (!newDailySong.hints.artist || newDailySong.hints.artist === 'Unknown Artist') {
-      newDailySong.hints.artist = newDailySong.song.artist || 'Unknown Artist';
+      // Get genre info for hints
+      let genreName = 'Unknown';
+      if (randomSong.genres && randomSong.genres.length > 0) {
+        const genre = await Genre.findById(randomSong.genres[0]);
+        if (genre) {
+          genreName = genre.name;
+        }
+      }
+
+      const newDailySong = new DailySong({
+        date: today,
+        song: randomSong._id,
+        sequence: i + 1,
+        startTime: Math.floor(startTime),
+        duration: 30,
+        hints: {
+          genre: genreName,
+          artist: randomSong.artist || 'Unknown Artist',
+          year: randomSong.createdAt ? randomSong.createdAt.getFullYear() : new Date().getFullYear()
+        }
+      });
+
       await newDailySong.save();
+      
+      // Update hints with populated song data if needed
+      if (!newDailySong.hints.artist || newDailySong.hints.artist === 'Unknown Artist') {
+        newDailySong.hints.artist = randomSong.artist || 'Unknown Artist';
+        await newDailySong.save();
+      }
+      
+      createdSongs.push({
+        sequence: i + 1,
+        title: randomSong.title,
+        artist: randomSong.artist,
+        genre: genreName
+      });
     }
 
     res.json({ 
-      message: 'Đã tạo bài hát mới thành công!',
-      song: {
-        title: newDailySong.song.title,
-        artist: newDailySong.song.artist,
-        genre: newDailySong.hints.genre
-      }
+      message: 'Đã tạo 3 bài hát mới thành công!',
+      songs: createdSongs
     });
   } catch (error) {
-    console.error('Error generating new random song:', error);
+    console.error('Error generating new random songs:', error);
     res.status(500).json({ error: 'Lỗi server khi tạo bài hát mới' });
   }
 });

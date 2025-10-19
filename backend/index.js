@@ -10,7 +10,52 @@ mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-  .then(() => console.log('MongoDB connected!'))
+  .then(async () => {
+    console.log('MongoDB connected!');
+    
+    // Fix DailySong indexes on startup (silent in production)
+    try {
+      const db = mongoose.connection.db;
+      const collection = db.collection('dailysongs');
+      
+      // Get current indexes
+      const indexes = await collection.indexes();
+      
+      // Drop problematic date_1 index if it exists
+      const hasDateIndex = indexes.some(idx => idx.name === 'date_1');
+      let needsClear = false;
+      
+      if (hasDateIndex) {
+        await collection.dropIndex('date_1');
+        needsClear = true;
+      }
+      
+      // Ensure compound index exists
+      const hasCompoundIndex = indexes.some(idx => 
+        idx.name === 'date_1_sequence_1' || 
+        idx.name === 'date_sequence_compound'
+      );
+      if (!hasCompoundIndex) {
+        await collection.createIndex(
+          { date: 1, sequence: 1 },
+          { unique: true, name: 'date_sequence_compound' }
+        );
+        needsClear = true;
+      }
+      
+      // Only clear data if we fixed indexes
+      if (needsClear) {
+        await collection.deleteMany({});
+      } else {
+        // Normal startup - clean up old dates
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        await collection.deleteMany({ date: { $lt: today } });
+      }
+    } catch (err) {
+      console.error('[Index Fix] Error:', err.message);
+    }
+  })
   .catch(err => console.error('MongoDB connection error:', err));
 
 const app = express();
