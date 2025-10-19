@@ -4,6 +4,9 @@ const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config();
 
+// Import scheduler
+const { scheduleWeeklyReset, checkAndResetIfNeeded } = require('./scheduler/weeklyReset');
+
 // Kết nối MongoDB
 const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/coresound';
 mongoose.connect(mongoURI, {
@@ -54,6 +57,14 @@ mongoose.connect(mongoURI, {
       }
     } catch (err) {
       console.error('[Index Fix] Error:', err.message);
+    }
+    
+    // Initialize weekly reset scheduler
+    try {
+      await checkAndResetIfNeeded(); // Kiểm tra và reset nếu cần khi khởi động
+      scheduleWeeklyReset(); // Lên lịch reset tự động
+    } catch (err) {
+      console.error('[Weekly Reset] Initialization error:', err.message);
     }
   })
   .catch(err => console.error('MongoDB connection error:', err));

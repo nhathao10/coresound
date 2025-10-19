@@ -218,20 +218,31 @@ router.post("/:id/play", async (req, res) => {
   try {
     const { id } = req.params;
     const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     
-    const updated = await Song.findByIdAndUpdate(
-      id,
-      { 
-        $inc: { 
-          plays: 1,
-          weeklyPlays: 1
-        },
-        $set: { lastPlayed: now }
-      },
-      { new: true }
-    );
-    if (!updated) return res.status(404).json({ error: "Song not found" });
+    // Lấy bài hát hiện tại
+    const song = await Song.findById(id);
+    if (!song) return res.status(404).json({ error: "Song not found" });
+    
+    // Kiểm tra xem đã qua 7 ngày kể từ lần reset cuối chưa
+    const lastReset = song.lastWeeklyReset || new Date(0);
+    const daysSinceReset = (now - lastReset) / (1000 * 60 * 60 * 24);
+    
+    // Nếu đã qua 7 ngày, reset weeklyPlays về 0 trước khi tăng
+    let updateData = {
+      $inc: { plays: 1 },
+      $set: { lastPlayed: now }
+    };
+    
+    if (daysSinceReset >= 7) {
+      // Reset weeklyPlays và cập nhật lastWeeklyReset
+      updateData.$set.weeklyPlays = 1; // Set về 1 (vì đang play)
+      updateData.$set.lastWeeklyReset = now;
+    } else {
+      // Chỉ tăng weeklyPlays
+      updateData.$inc.weeklyPlays = 1;
+    }
+    
+    const updated = await Song.findByIdAndUpdate(id, updateData, { new: true });
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -309,13 +320,20 @@ router.get("/trending/:region", async (req, res) => {
 // Reset weekly plays (chạy mỗi tuần)
 router.post("/reset-weekly-plays", async (req, res) => {
   try {
+    const now = new Date();
     const result = await Song.updateMany(
       {},
-      { $set: { weeklyPlays: 0 } }
+      { 
+        $set: { 
+          weeklyPlays: 0,
+          lastWeeklyReset: now
+        } 
+      }
     );
     res.json({ 
       message: "Weekly plays reset successfully", 
-      modifiedCount: result.modifiedCount 
+      modifiedCount: result.modifiedCount,
+      resetTime: now
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
