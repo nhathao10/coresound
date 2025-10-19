@@ -1,4 +1,4 @@
-import React, { StrictMode } from 'react'
+import React, { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
@@ -26,6 +26,7 @@ import { AuthProvider } from './AuthContext.jsx'
 import { ToastProvider } from './ToastContext.jsx'
 import { FavoritesProvider } from './FavoritesContext.jsx'
 import GlobalPlayer from './GlobalPlayer.jsx'
+import AddToPlaylistModal from './AddToPlaylistModal.jsx'
 
 function Router() {
   const hash = window.location.hash || '#/'
@@ -137,10 +138,38 @@ function Router() {
 
 function Root() {
   const [_, force] = React.useReducer((x) => x + 1, 0)
+  const [showAddToPlaylistModal, setShowAddToPlaylistModal] = React.useState(false)
+  const [selectedSongForPlaylist, setSelectedSongForPlaylist] = React.useState(null)
+  const [hideGlobalPlayer, setHideGlobalPlayer] = React.useState(false)
+  
   React.useEffect(() => {
     const onHash = () => force()
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+  
+  // Listen for openAddToPlaylist event from GlobalPlayer
+  React.useEffect(() => {
+    const handleOpenAddToPlaylist = (event) => {
+      setSelectedSongForPlaylist(event.detail.song)
+      setShowAddToPlaylistModal(true)
+    }
+
+    window.addEventListener('openAddToPlaylist', handleOpenAddToPlaylist)
+    return () => window.removeEventListener('openAddToPlaylist', handleOpenAddToPlaylist)
+  }, [])
+  
+  // Listen for game modal open/close events
+  React.useEffect(() => {
+    const handleGameModalOpen = () => setHideGlobalPlayer(true)
+    const handleGameModalClose = () => setHideGlobalPlayer(false)
+
+    window.addEventListener('gameModalOpen', handleGameModalOpen)
+    window.addEventListener('gameModalClose', handleGameModalClose)
+    return () => {
+      window.removeEventListener('gameModalOpen', handleGameModalOpen)
+      window.removeEventListener('gameModalClose', handleGameModalClose)
+    }
   }, [])
   
   // Check if current route should hide the player
@@ -164,7 +193,15 @@ function Root() {
             <SearchProvider>
               <PlayerProvider>
                 <Router />
-                {!hidePlayer && <GlobalPlayer />}
+                {!hidePlayer && !hideGlobalPlayer && <GlobalPlayer />}
+                <AddToPlaylistModal
+                  isOpen={showAddToPlaylistModal}
+                  onClose={() => {
+                    setShowAddToPlaylistModal(false)
+                    setSelectedSongForPlaylist(null)
+                  }}
+                  song={selectedSongForPlaylist}
+                />
               </PlayerProvider>
             </SearchProvider>
           </FavoritesProvider>

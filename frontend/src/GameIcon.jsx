@@ -72,6 +72,8 @@ const GameIcon = () => {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
+    // Dispatch event to show GlobalPlayer
+    window.dispatchEvent(new CustomEvent('gameModalClose'));
   };
 
   const resetTodayGame = async () => {
@@ -443,6 +445,8 @@ const GameIcon = () => {
 
   const openGameModal = async () => {
     setShowGameModal(true);
+    // Dispatch event to hide GlobalPlayer
+    window.dispatchEvent(new CustomEvent('gameModalOpen'));
     
     // Check if user has already played today
     const hasPlayed = await checkGameStatus();

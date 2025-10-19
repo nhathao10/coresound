@@ -3,7 +3,6 @@ import { usePlayer } from "./PlayerContext.jsx";
 import { FaPlay, FaPause } from "react-icons/fa";
 import HeartIcon from "./HeartIcon.jsx";
 import AddToPlaylistIcon from "./AddToPlaylistIcon.jsx";
-import AddToPlaylistModal from "./AddToPlaylistModal.jsx";
 import Header from "./Header.jsx";
 
 function PlaylistDetail() {
@@ -11,8 +10,6 @@ function PlaylistDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [hoveredSongId, setHoveredSongId] = useState(null);
-  const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
-  const [selectedSongForPlaylist, setSelectedSongForPlaylist] = useState(null);
   
   const { setQueueAndPlay, currentIdx, isPlaying, setIsPlaying, current } = usePlayer();
   
@@ -368,8 +365,9 @@ function PlaylistDetail() {
                 <AddToPlaylistIcon 
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedSongForPlaylist(song);
-                    setShowAddToPlaylistModal(true);
+                    window.dispatchEvent(new CustomEvent('openAddToPlaylist', { 
+                      detail: { song: song } 
+                    }));
                   }}
                   style={{ opacity: hoveredSongId === song._id ? 1 : 0 }}
                 />
@@ -387,20 +385,6 @@ function PlaylistDetail() {
           </div>
         )}
       </div>
-
-      {/* Add to Playlist Modal */}
-      <AddToPlaylistModal
-        isOpen={showAddToPlaylistModal}
-        onClose={() => {
-          setShowAddToPlaylistModal(false);
-          setSelectedSongForPlaylist(null);
-        }}
-        song={selectedSongForPlaylist}
-        onSuccess={() => {
-          // Trigger playlist refresh by dispatching custom event
-          window.dispatchEvent(new CustomEvent('playlistUpdated'));
-        }}
-      />
       </div>
     </div>
   );

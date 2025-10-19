@@ -9,7 +9,6 @@ import Header from "./Header.jsx";
 import HeartIcon from "./HeartIcon.jsx";
 import AddToPlaylistIcon from "./AddToPlaylistIcon.jsx";
 import FollowButton from "./FollowButton.jsx";
-import AddToPlaylistModal from "./AddToPlaylistModal.jsx";
 
 function App() {
   const [songs, setSongs] = useState([]);
@@ -43,8 +42,6 @@ function App() {
   const [artists, setArtists] = useState([]);
   const [followedArtists, setFollowedArtists] = useState(new Set());
   const [dropdownPosition, setDropdownPosition] = useState({ left: 0, top: 0, width: 0 });
-  const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
-  const [selectedSongForPlaylist, setSelectedSongForPlaylist] = useState(null);
   const [hoveredSongId, setHoveredSongId] = useState(null);
   const { searchHistory, addToSearchHistory, removeFromSearchHistory } = useSearch();
 
@@ -552,16 +549,6 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, [showDropdown]);
 
-  // Listen for openAddToPlaylist event from music bar
-  useEffect(() => {
-    const handleOpenAddToPlaylist = (event) => {
-      setSelectedSongForPlaylist(event.detail.song);
-      setShowAddToPlaylistModal(true);
-    };
-
-    window.addEventListener('openAddToPlaylist', handleOpenAddToPlaylist);
-    return () => window.removeEventListener('openAddToPlaylist', handleOpenAddToPlaylist);
-  }, []);
 
   // Load followed artists when user changes
   useEffect(() => {
@@ -820,8 +807,9 @@ function App() {
                   <AddToPlaylistIcon 
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedSongForPlaylist(song);
-                      setShowAddToPlaylistModal(true);
+                      window.dispatchEvent(new CustomEvent('openAddToPlaylist', { 
+                        detail: { song: song } 
+                      }));
                     }}
                     style={{ opacity: hoveredSongId === song._id ? 1 : 0 }}
                   />
@@ -888,8 +876,9 @@ function App() {
                 <AddToPlaylistIcon 
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedSongForPlaylist(song);
-                    setShowAddToPlaylistModal(true);
+                    window.dispatchEvent(new CustomEvent('openAddToPlaylist', { 
+                      detail: { song: song } 
+                    }));
                   }}
                   style={{ opacity: hoveredSongId === song._id ? 1 : 0 }}
                 />
@@ -1601,19 +1590,6 @@ function App() {
         {/* Các thành phần khác sẽ thêm vào đây sau này */}
       </main>
       
-      {/* Add to Playlist Modal */}
-      <AddToPlaylistModal
-        isOpen={showAddToPlaylistModal}
-        onClose={() => {
-          setShowAddToPlaylistModal(false);
-          setSelectedSongForPlaylist(null);
-        }}
-        song={selectedSongForPlaylist}
-        onSuccess={() => {
-          // Trigger playlist refresh by dispatching custom event
-          window.dispatchEvent(new CustomEvent('playlistUpdated'));
-        }}
-      />
       
       {/* GlobalPlayer renders persistently in main.jsx */}
     </div>
