@@ -59,7 +59,7 @@ function ArtistsAdmin() {
       (artist.bio && artist.bio.toLowerCase().includes(query)) ||
       (artist.country && artist.country.toLowerCase().includes(query)) ||
       (artist.genres && artist.genres.some(genre => 
-        genre.name && genre.name.toLowerCase().includes(query)))
+        genre && genre.name && genre.name.toLowerCase().includes(query)))
     );
   });
 
@@ -532,7 +532,7 @@ function ArtistRow({ artist, onEdit, onDelete }) {
       </div>
       <div style={{ color: "#cfd3da" }}>
         {artist.genres && artist.genres.length > 0 
-          ? artist.genres.map(g => g.name).join(", ") 
+          ? artist.genres.filter(g => g && g.name).map(g => g.name).join(", ") 
           : "N/A"}
       </div>
       <div style={{ color: "#cfd3da" }}>

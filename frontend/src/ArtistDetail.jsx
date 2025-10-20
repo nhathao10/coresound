@@ -162,9 +162,15 @@ function ArtistDetail() {
   // Filter songs and albums by artist
   const artistSongs = useMemo(() => {
     if (!artist) return [];
-    return allSongs.filter(song => 
-      song.artist && song.artist.toLowerCase().includes(artist.name.toLowerCase())
-    );
+    const artistNameNormalized = artist.name.toLowerCase().trim();
+    return allSongs.filter(song => {
+      if (!song.artist) return false;
+      const songArtistNormalized = song.artist.toLowerCase().trim();
+      // Exact match or contains match
+      return songArtistNormalized === artistNameNormalized || 
+             songArtistNormalized.includes(artistNameNormalized) ||
+             artistNameNormalized.includes(songArtistNormalized);
+    });
   }, [allSongs, artist]);
 
   const artistAlbums = useMemo(() => {
