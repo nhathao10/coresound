@@ -93,7 +93,7 @@ router.get('/overview', protect, requireAdmin, async (req, res) => {
 // Thống kê theo thời gian
 router.get('/time-based', protect, requireAdmin, async (req, res) => {
   try {
-    const { period = '7d' } = req.query; // 7d, 30d, 90d, 1y
+    const { period = '7d' } = req.query;
     
     let days;
     switch (period) {
@@ -103,11 +103,10 @@ router.get('/time-based', protect, requireAdmin, async (req, res) => {
       case '1y': days = 365; break;
       default: days = 7;
     }
+    
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    // Thống kê người dùng đăng ký theo thời gian
+    // Đăng ký người dùng theo thời gian
     const userRegistrations = await User.aggregate([
       { $match: { createdAt: { $gte: startDate } } },
       {
@@ -123,7 +122,7 @@ router.get('/time-based', protect, requireAdmin, async (req, res) => {
       { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
     ]);
 
-    // Thống kê lượt nghe theo thời gian
+    // Thống kê lượt nghe theo thời gian (từ listening history)
     const listeningStats = await ListeningHistory.aggregate([
       { $match: { createdAt: { $gte: startDate } } },
       {
@@ -169,7 +168,7 @@ router.get('/by-genre', protect, requireAdmin, async (req, res) => {
           _id: '$genres',
           genreName: { $first: '$genreInfo.name' },
           songCount: { $sum: 1 },
-          totalPlays: { $sum: '$playCount' }
+          totalPlays: { $sum: '$plays' }
         }
       },
       { $sort: { songCount: -1 } },
@@ -191,10 +190,10 @@ router.get('/by-artist', protect, requireAdmin, async (req, res) => {
         $group: {
           _id: '$artist',
           songCount: { $sum: 1 },
-          totalPlays: { $sum: '$playCount' }
+          totalPlays: { $sum: '$plays' }
         }
       },
-      { $sort: { totalPlays: -1 } },
+      { $sort: { songCount: -1 } },
       { $limit: 10 }
     ]);
 
@@ -205,50 +204,6 @@ router.get('/by-artist', protect, requireAdmin, async (req, res) => {
   }
 });
 
-
-// Thống kê theo thời gian
-router.get('/time-based', protect, requireAdmin, async (req, res) => {
-  try {
-    const { period = '7d' } = req.query;
-    
-    let days;
-    switch (period) {
-      case '7d': days = 7; break;
-      case '30d': days = 30; break;
-      case '90d': days = 90; break;
-      case '1y': days = 365; break;
-      default: days = 7;
-    }
-    
-    // Sử dụng khoảng thời gian hợp lý
-    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const endDate = new Date(); // Chỉ lấy dữ liệu đến hiện tại
-
-    // Đăng ký người dùng theo thời gian
-    const userRegistrations = await User.aggregate([
-      { $match: { createdAt: { $gte: startDate } } },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' },
-            day: { $dayOfMonth: '$createdAt' }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1, '_id.day': 1 } }
-    ]);
-
-    res.json({
-      userRegistrations,
-      listeningStats: [] // Không sử dụng listening stats nữa
-    });
-  } catch (error) {
-    console.error('Lỗi khi lấy thống kê theo thời gian:', error);
-    res.status(500).json({ message: 'Lỗi server' });
-  }
-});
 
 // Thống kê người dùng hoạt động
 router.get('/user-activity', protect, requireAdmin, async (req, res) => {
@@ -311,6 +266,174 @@ router.get('/user-activity', protect, requireAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Lỗi khi lấy thống kê người dùng:', error);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
+// Thống kê album
+router.get('/albums-stats', protect, requireAdmin, async (req, res) => {
+  try {
+    // Top albums theo lượt phát
+    const topAlbums = await Song.aggregate([
+      { $match: { album: { $exists: true, $ne: null } } },
+      {
+        $group: {
+          _id: '$album',
+          totalPlays: { $sum: '$plays' },
+          songCount: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: 'albums',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'albumInfo'
+        }
+      },
+      { $unwind: '$albumInfo' },
+      {
+        $project: {
+          _id: 1,
+          name: '$albumInfo.name',
+          artist: '$albumInfo.artist',
+          cover: '$albumInfo.cover',
+          totalPlays: 1,
+          songCount: 1
+        }
+      },
+      { $sort: { totalPlays: -1 } },
+      { $limit: 10 }
+    ]);
+
+    // Albums có nhiều bình luận nhất
+    const topCommentedAlbums = await Comment.aggregate([
+      { $group: { _id: '$album', commentCount: { $sum: 1 } } },
+      { $sort: { commentCount: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: 'albums',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'albumInfo'
+        }
+      },
+      { $unwind: '$albumInfo' },
+      {
+        $project: {
+          _id: 1,
+          name: '$albumInfo.name',
+          artist: '$albumInfo.artist',
+          commentCount: 1
+        }
+      }
+    ]);
+
+    // Albums có rating cao nhất
+    const topRatedAlbums = await Rating.aggregate([
+      {
+        $group: {
+          _id: '$album',
+          avgRating: { $avg: '$rating' },
+          ratingCount: { $sum: 1 }
+        }
+      },
+      { $match: { ratingCount: { $gte: 3 } } }, // Ít nhất 3 ratings
+      { $sort: { avgRating: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: 'albums',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'albumInfo'
+        }
+      },
+      { $unwind: '$albumInfo' },
+      {
+        $project: {
+          _id: 1,
+          name: '$albumInfo.name',
+          artist: '$albumInfo.artist',
+          avgRating: { $round: ['$avgRating', 1] },
+          ratingCount: 1
+        }
+      }
+    ]);
+
+    res.json({
+      topAlbums,
+      topCommentedAlbums,
+      topRatedAlbums
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy thống kê album:', error);
+    res.status(500).json({ message: 'Lỗi server' });
+  }
+});
+
+// Growth metrics - So sánh với tuần trước
+router.get('/growth-metrics', protect, requireAdmin, async (req, res) => {
+  try {
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    // Người dùng mới tuần này vs tuần trước
+    const [usersThisWeek, usersLastWeek] = await Promise.all([
+      User.countDocuments({ createdAt: { $gte: oneWeekAgo } }),
+      User.countDocuments({ createdAt: { $gte: twoWeeksAgo, $lt: oneWeekAgo } })
+    ]);
+
+    // Bài hát mới tuần này vs tuần trước
+    const [songsThisWeek, songsLastWeek] = await Promise.all([
+      Song.countDocuments({ createdAt: { $gte: oneWeekAgo } }),
+      Song.countDocuments({ createdAt: { $gte: twoWeeksAgo, $lt: oneWeekAgo } })
+    ]);
+
+    // Lượt nghe tuần này vs tuần trước
+    const [playsThisWeek, playsLastWeek] = await Promise.all([
+      ListeningHistory.countDocuments({ createdAt: { $gte: oneWeekAgo } }),
+      ListeningHistory.countDocuments({ createdAt: { $gte: twoWeeksAgo, $lt: oneWeekAgo } })
+    ]);
+
+    // Bình luận tuần này vs tuần trước
+    const [commentsThisWeek, commentsLastWeek] = await Promise.all([
+      Comment.countDocuments({ createdAt: { $gte: oneWeekAgo } }),
+      Comment.countDocuments({ createdAt: { $gte: twoWeeksAgo, $lt: oneWeekAgo } })
+    ]);
+
+    // Tính % thay đổi
+    const calculateGrowth = (current, previous) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return Math.round(((current - previous) / previous) * 100);
+    };
+
+    res.json({
+      users: {
+        thisWeek: usersThisWeek,
+        lastWeek: usersLastWeek,
+        growth: calculateGrowth(usersThisWeek, usersLastWeek)
+      },
+      songs: {
+        thisWeek: songsThisWeek,
+        lastWeek: songsLastWeek,
+        growth: calculateGrowth(songsThisWeek, songsLastWeek)
+      },
+      plays: {
+        thisWeek: playsThisWeek,
+        lastWeek: playsLastWeek,
+        growth: calculateGrowth(playsThisWeek, playsLastWeek)
+      },
+      comments: {
+        thisWeek: commentsThisWeek,
+        lastWeek: commentsLastWeek,
+        growth: calculateGrowth(commentsThisWeek, commentsLastWeek)
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy growth metrics:', error);
     res.status(500).json({ message: 'Lỗi server' });
   }
 });

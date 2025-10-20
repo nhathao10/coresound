@@ -14,6 +14,8 @@ function StatisticsAdmin() {
   const [timeBasedStats, setTimeBasedStats] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [albumStats, setAlbumStats] = useState(null);
+  const [growthMetrics, setGrowthMetrics] = useState(null);
 
   // Format số lượt phát cho dễ đọc
   const formatPlayCount = (num) => {
@@ -131,6 +133,44 @@ function StatisticsAdmin() {
     }
   }, [user]);
 
+  const fetchAlbumStats = useCallback(async () => {
+    try {
+      const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
+      const response = await fetch('http://localhost:5000/api/statistics/albums-stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAlbumStats(data);
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy thống kê album:', error);
+    }
+  }, [user]);
+
+  const fetchGrowthMetrics = useCallback(async () => {
+    try {
+      const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
+      const response = await fetch('http://localhost:5000/api/statistics/growth-metrics', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setGrowthMetrics(data);
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy growth metrics:', error);
+    }
+  }, [user]);
+
 
   useEffect(() => {
     if (user && user.role === 'admin') {
@@ -139,8 +179,10 @@ function StatisticsAdmin() {
       fetchArtistStats();
       fetchUserActivity();
       fetchTimeBasedStats(selectedPeriod);
+      fetchAlbumStats();
+      fetchGrowthMetrics();
     }
-  }, [user, selectedPeriod, fetchOverviewStats, fetchGenreStats, fetchArtistStats, fetchUserActivity, fetchTimeBasedStats]);
+  }, [user, selectedPeriod, fetchOverviewStats, fetchGenreStats, fetchArtistStats, fetchUserActivity, fetchTimeBasedStats, fetchAlbumStats, fetchGrowthMetrics]);
 
   useEffect(() => {
     if (overview) {
@@ -444,6 +486,160 @@ function StatisticsAdmin() {
           />
         </div>
       </div>
+
+      {/* Growth Metrics */}
+      {growthMetrics && (
+        <div style={{ marginBottom: 50 }}>
+          <h2 style={{ 
+            color: '#e5e5e5', 
+            marginBottom: 24,
+            fontSize: 28,
+            fontWeight: 700,
+            position: 'relative',
+            paddingBottom: 12
+          }}>
+            📈 Tăng trưởng tuần này
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: 60,
+              height: 3,
+              background: 'linear-gradient(45deg, #1db954, #1ed760)',
+              borderRadius: 2
+            }} />
+          </h2>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+            gap: 20 
+          }}>
+            {/* Người dùng mới */}
+            <div style={{
+              background: 'linear-gradient(145deg, #23232b 0%, #1e1e24 100%)',
+              borderRadius: 16,
+              padding: 24,
+              border: '1px solid #2e2e37',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                <div>
+                  <div style={{ color: '#b3b3b3', fontSize: 14, marginBottom: 8 }}>Người dùng mới</div>
+                  <div style={{ color: '#fff', fontSize: 32, fontWeight: 'bold' }}>
+                    {growthMetrics.users.thisWeek}
+                  </div>
+                </div>
+                <div style={{
+                  background: growthMetrics.users.growth >= 0 ? 'rgba(29, 185, 84, 0.2)' : 'rgba(255, 107, 107, 0.2)',
+                  color: growthMetrics.users.growth >= 0 ? '#1db954' : '#ff6b6b',
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 600
+                }}>
+                  {growthMetrics.users.growth >= 0 ? '↑' : '↓'} {Math.abs(growthMetrics.users.growth)}%
+                </div>
+              </div>
+              <div style={{ color: '#b3b3b3', fontSize: 12 }}>
+                Tuần trước: {growthMetrics.users.lastWeek}
+              </div>
+            </div>
+
+            {/* Bài hát mới */}
+            <div style={{
+              background: 'linear-gradient(145deg, #23232b 0%, #1e1e24 100%)',
+              borderRadius: 16,
+              padding: 24,
+              border: '1px solid #2e2e37',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                <div>
+                  <div style={{ color: '#b3b3b3', fontSize: 14, marginBottom: 8 }}>Bài hát mới</div>
+                  <div style={{ color: '#fff', fontSize: 32, fontWeight: 'bold' }}>
+                    {growthMetrics.songs.thisWeek}
+                  </div>
+                </div>
+                <div style={{
+                  background: growthMetrics.songs.growth >= 0 ? 'rgba(29, 185, 84, 0.2)' : 'rgba(255, 107, 107, 0.2)',
+                  color: growthMetrics.songs.growth >= 0 ? '#1db954' : '#ff6b6b',
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 600
+                }}>
+                  {growthMetrics.songs.growth >= 0 ? '↑' : '↓'} {Math.abs(growthMetrics.songs.growth)}%
+                </div>
+              </div>
+              <div style={{ color: '#b3b3b3', fontSize: 12 }}>
+                Tuần trước: {growthMetrics.songs.lastWeek}
+              </div>
+            </div>
+
+            {/* Lượt nghe */}
+            <div style={{
+              background: 'linear-gradient(145deg, #23232b 0%, #1e1e24 100%)',
+              borderRadius: 16,
+              padding: 24,
+              border: '1px solid #2e2e37',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                <div>
+                  <div style={{ color: '#b3b3b3', fontSize: 14, marginBottom: 8 }}>Lượt nghe</div>
+                  <div style={{ color: '#fff', fontSize: 32, fontWeight: 'bold' }}>
+                    {growthMetrics.plays.thisWeek}
+                  </div>
+                </div>
+                <div style={{
+                  background: growthMetrics.plays.growth >= 0 ? 'rgba(29, 185, 84, 0.2)' : 'rgba(255, 107, 107, 0.2)',
+                  color: growthMetrics.plays.growth >= 0 ? '#1db954' : '#ff6b6b',
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 600
+                }}>
+                  {growthMetrics.plays.growth >= 0 ? '↑' : '↓'} {Math.abs(growthMetrics.plays.growth)}%
+                </div>
+              </div>
+              <div style={{ color: '#b3b3b3', fontSize: 12 }}>
+                Tuần trước: {growthMetrics.plays.lastWeek}
+              </div>
+            </div>
+
+            {/* Bình luận */}
+            <div style={{
+              background: 'linear-gradient(145deg, #23232b 0%, #1e1e24 100%)',
+              borderRadius: 16,
+              padding: 24,
+              border: '1px solid #2e2e37',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                <div>
+                  <div style={{ color: '#b3b3b3', fontSize: 14, marginBottom: 8 }}>Bình luận</div>
+                  <div style={{ color: '#fff', fontSize: 32, fontWeight: 'bold' }}>
+                    {growthMetrics.comments.thisWeek}
+                  </div>
+                </div>
+                <div style={{
+                  background: growthMetrics.comments.growth >= 0 ? 'rgba(29, 185, 84, 0.2)' : 'rgba(255, 107, 107, 0.2)',
+                  color: growthMetrics.comments.growth >= 0 ? '#1db954' : '#ff6b6b',
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  fontSize: 14,
+                  fontWeight: 600
+                }}>
+                  {growthMetrics.comments.growth >= 0 ? '↑' : '↓'} {Math.abs(growthMetrics.comments.growth)}%
+                </div>
+              </div>
+              <div style={{ color: '#b3b3b3', fontSize: 12 }}>
+                Tuần trước: {growthMetrics.comments.lastWeek}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Insights và Phân tích */}
       <div style={{ marginBottom: 50 }}>
@@ -927,7 +1123,7 @@ function StatisticsAdmin() {
         )}
       </div>
 
-      {/* Top bài hát */}
+      {/* Thống kê theo thời gian */}
       <div style={{ marginBottom: 50 }}>
         <h2 style={{ 
           color: '#e5e5e5', 
@@ -937,7 +1133,7 @@ function StatisticsAdmin() {
           position: 'relative',
           paddingBottom: 12
         }}>
-          📅 Thống kê theo thời gian
+          📅 Thống kê đăng ký
           <div style={{
             position: 'absolute',
             bottom: 0,
@@ -1128,6 +1324,188 @@ function StatisticsAdmin() {
           )}
         </div>
       </div>
+
+      {/* Thống kê Album */}
+      {albumStats && (albumStats.topAlbums?.length > 0 || albumStats.topCommentedAlbums?.length > 0 || albumStats.topRatedAlbums?.length > 0) && (
+        <div style={{ marginBottom: 50 }}>
+          <h2 style={{ 
+            color: '#e5e5e5', 
+            marginBottom: 24,
+            fontSize: 28,
+            fontWeight: 700,
+            position: 'relative',
+            paddingBottom: 12
+          }}>
+            💿 Thống kê Album
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: 60,
+              height: 3,
+              background: 'linear-gradient(45deg, #1db954, #1ed760)',
+              borderRadius: 2
+            }} />
+          </h2>
+          
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
+            gap: 24 
+          }}>
+            {/* Top Albums theo lượt phát */}
+            {albumStats.topAlbums && albumStats.topAlbums.length > 0 && (
+              <div style={{
+                background: 'linear-gradient(145deg, #23232b 0%, #1e1e24 100%)',
+                borderRadius: 16,
+                padding: 24,
+                border: '1px solid #2e2e37',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+              }}>
+                <h3 style={{ 
+                  color: '#e5e5e5', 
+                  marginBottom: 20,
+                  fontSize: 18,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8
+                }}>
+                  🔥 Top Albums (Lượt phát)
+                </h3>
+                <div style={{ display: 'grid', gap: 12 }}>
+                  {albumStats.topAlbums.slice(0, 5).map((album, index) => (
+                    <div key={album._id || index} style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      padding: '12px',
+                      background: '#1a1a1d',
+                      borderRadius: 8,
+                      border: '1px solid #2e2e37',
+                      gap: 12
+                    }}>
+                      <span style={{ 
+                        color: '#1db954', 
+                        fontWeight: 'bold', 
+                        minWidth: 24
+                      }}>
+                        #{index + 1}
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: '#e5e5e5', fontWeight: 'bold', fontSize: 14 }}>{album.name}</div>
+                        <div style={{ color: '#b3b3b3', fontSize: 12 }}>{album.artist} • {album.songCount} bài</div>
+                      </div>
+                      <div style={{ 
+                        color: '#1db954', 
+                        fontWeight: 'bold',
+                        fontSize: 14
+                      }}>
+                        {formatPlayCount(album.totalPlays)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Albums có nhiều bình luận */}
+            {albumStats.topCommentedAlbums && albumStats.topCommentedAlbums.length > 0 && (
+              <div style={{
+                background: 'linear-gradient(145deg, #23232b 0%, #1e1e24 100%)',
+                borderRadius: 16,
+                padding: 24,
+                border: '1px solid #2e2e37',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+              }}>
+                <h3 style={{ 
+                  color: '#e5e5e5', 
+                  marginBottom: 20,
+                  fontSize: 18,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8
+                }}>
+                  💬 Albums nhiều bình luận nhất
+                </h3>
+                <div style={{ display: 'grid', gap: 12 }}>
+                  {albumStats.topCommentedAlbums.map((album, index) => (
+                    <div key={album._id || index} style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'center', 
+                      padding: '12px',
+                      background: '#1a1a1d',
+                      borderRadius: 8,
+                      border: '1px solid #2e2e37'
+                    }}>
+                      <div>
+                        <div style={{ color: '#e5e5e5', fontWeight: 'bold', fontSize: 14 }}>{album.name}</div>
+                        <div style={{ color: '#b3b3b3', fontSize: 12 }}>{album.artist}</div>
+                      </div>
+                      <div style={{ 
+                        color: '#1db954', 
+                        fontWeight: 'bold',
+                        fontSize: 14
+                      }}>
+                        {album.commentCount} 💬
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Albums có rating cao */}
+            {albumStats.topRatedAlbums && albumStats.topRatedAlbums.length > 0 && (
+              <div style={{
+                background: 'linear-gradient(145deg, #23232b 0%, #1e1e24 100%)',
+                borderRadius: 16,
+                padding: 24,
+                border: '1px solid #2e2e37',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+              }}>
+                <h3 style={{ 
+                  color: '#e5e5e5', 
+                  marginBottom: 20,
+                  fontSize: 18,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8
+                }}>
+                  ⭐ Albums đánh giá cao nhất
+                </h3>
+                <div style={{ display: 'grid', gap: 12 }}>
+                  {albumStats.topRatedAlbums.map((album, index) => (
+                    <div key={album._id || index} style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'center', 
+                      padding: '12px',
+                      background: '#1a1a1d',
+                      borderRadius: 8,
+                      border: '1px solid #2e2e37'
+                    }}>
+                      <div>
+                        <div style={{ color: '#e5e5e5', fontWeight: 'bold', fontSize: 14 }}>{album.name}</div>
+                        <div style={{ color: '#b3b3b3', fontSize: 12 }}>{album.artist} • {album.ratingCount} đánh giá</div>
+                      </div>
+                      <div style={{ 
+                        color: '#ffd700', 
+                        fontWeight: 'bold',
+                        fontSize: 16
+                      }}>
+                        ⭐ {album.avgRating}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Thống kê theo thể loại và nghệ sĩ */}
       <div style={{ 
@@ -1354,7 +1732,8 @@ function StatisticsAdmin() {
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', 
-        gap: 24 
+        gap: 24,
+        marginBottom: 50
       }}>
         <div style={{
           background: 'linear-gradient(145deg, #23232b 0%, #1e1e24 100%)',
@@ -1381,7 +1760,7 @@ function StatisticsAdmin() {
                   display: 'flex', 
                   justifyContent: 'space-between', 
                   alignItems: 'center',
-                  padding: '8px 0',
+                  padding: '12px 0',
                   borderBottom: index < userActivity.topListeners.length - 1 ? '1px solid #2e2e37' : 'none'
                 }}>
                   <div>
@@ -1407,6 +1786,56 @@ function StatisticsAdmin() {
           )}
         </div>
 
+        <div style={{
+          background: 'linear-gradient(145deg, #23232b 0%, #1e1e24 100%)',
+          borderRadius: 16,
+          padding: 24,
+          border: '1px solid #2e2e37',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+        }}>
+          <h3 style={{ 
+            color: '#e5e5e5', 
+            marginBottom: 20,
+            fontSize: 20,
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}>
+            📋 Người tạo playlist nhiều nhất
+          </h3>
+          {userActivity.topPlaylistCreators && userActivity.topPlaylistCreators.length > 0 ? (
+            <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+              {userActivity.topPlaylistCreators.map((user, index) => (
+                <div key={user._id || index} style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  padding: '12px 0',
+                  borderBottom: index < userActivity.topPlaylistCreators.length - 1 ? '1px solid #2e2e37' : 'none'
+                }}>
+                  <div>
+                    <div style={{ color: '#e5e5e5', fontWeight: 'bold', fontSize: 16 }}>
+                      {user.name || user.username || 'Người dùng không tên'}
+                    </div>
+                    <div style={{ color: '#b3b3b3', fontSize: 12 }}>
+                      {user.email || `ID: ${user._id}`}
+                    </div>
+                  </div>
+                  <div style={{ color: '#1db954', fontWeight: 'bold' }}>
+                    {user.playlistCount} playlist
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon="📋"
+              title="Chưa có dữ liệu playlist"
+              description="Hệ thống chưa có dữ liệu về người tạo playlist. Hãy để người dùng tạo playlist để xem thống kê."
+            />
+          )}
+        </div>
       </div>
       </div>
     </div>
