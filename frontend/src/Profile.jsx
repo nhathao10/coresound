@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
+import { usePlayer } from './PlayerContext';
 import Header from './Header';
+import { FaMusic, FaClock, FaHeart, FaList, FaEdit, FaChartLine, FaTimes, FaSave, FaSync } from 'react-icons/fa';
 
 const Profile = () => {
   const { user, isAuthenticated, refreshUser } = useAuth();
   const { showSuccess, showError } = useToast();
+  const { setQueueAndPlay } = usePlayer();
   const [loading, setLoading] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [stats, setStats] = useState(null);
+  const [userPlaylists, setUserPlaylists] = useState([]);
+  const [favoritesCount, setFavoritesCount] = useState(0);
+  const [loadingStats, setLoadingStats] = useState(true);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -35,8 +43,78 @@ const Profile = () => {
         avatar: null
       });
       setAvatarPreview(user.avatar || null);
+      
+      // Auto refresh stats when entering profile
+      refreshAllData();
     }
   }, [user]);
+
+  const fetchUserStats = async () => {
+    try {
+      const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
+      const response = await fetch('http://localhost:5000/api/history/stats?period=30', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const fetchUserPlaylists = async () => {
+    try {
+      const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
+      const response = await fetch('http://localhost:5000/api/user-playlists', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUserPlaylists(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching playlists:', error);
+    }
+  };
+
+  const fetchFavoritesCount = async () => {
+    try {
+      const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
+      const response = await fetch('http://localhost:5000/api/favorites?type=song', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFavoritesCount(data.favorites?.length || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+    }
+  };
+
+  const formatDuration = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
+  const refreshAllData = async () => {
+    setLoadingStats(true);
+    await Promise.all([
+      fetchUserStats(),
+      fetchUserPlaylists(),
+      fetchFavoritesCount()
+    ]);
+    setLoadingStats(false);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -115,12 +193,14 @@ const Profile = () => {
       refreshUser();
       
       // Update avatar preview
-      console.log('Profile update response:', data.user);
       if (data.user.avatar) {
         setAvatarPreview(data.user.avatar);
       } else {
         setAvatarPreview(null);
       }
+      
+      // Exit edit mode
+      setEditMode(false);
 
     } catch (error) {
       console.error('Profile update error:', error);
@@ -149,23 +229,18 @@ const Profile = () => {
     <div className="music-app dark-theme">
       <Header />
       <div style={{
-        maxWidth: '800px',
+        maxWidth: '1200px',
         margin: '0 auto',
         padding: '2rem',
-        background: 'rgba(255, 255, 255, 0.02)',
-        borderRadius: '16px',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        marginTop: '6rem', // Thêm margin-top để tránh bị header che
-        marginBottom: '120px' // Thêm margin-bottom để tránh bị music player che
+        marginTop: '6rem',
+        marginBottom: '120px'
       }}>
-        {/* Header */}
+        {/* Back Button */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: '1rem',
-          marginBottom: '2rem',
-          paddingBottom: '1rem',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+          marginBottom: '2rem'
         }}>
           <button
             onClick={() => window.location.hash = '#/'}
@@ -206,8 +281,428 @@ const Profile = () => {
           </h1>
         </div>
 
-        {/* Profile Form */}
-        <form onSubmit={handleSubmit}>
+        {!editMode ? (
+          /* Profile View */
+          <div>
+            {/* Banner Profile */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.02)',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              overflow: 'hidden',
+              marginBottom: '2rem'
+            }}>
+              {/* Banner */}
+              <div style={{
+                height: '200px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
+                position: 'relative'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  bottom: '-60px',
+                  left: '2rem',
+                  width: '140px',
+                  height: '140px',
+                  borderRadius: '50%',
+                  background: !avatarPreview ? 'linear-gradient(135deg, #1db954, #1ed760)' : 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fff',
+                  fontSize: '3.5rem',
+                  fontWeight: '700',
+                  overflow: 'hidden',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+                  border: '4px solid #1a1a1f'
+                }}>
+                  {avatarPreview ? (
+                    <img
+                      src={avatarPreview.startsWith('http') ? avatarPreview : `http://localhost:5000${avatarPreview}`}
+                      alt="Avatar"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    user?.name?.charAt(0)?.toUpperCase() || 'U'
+                  )}
+                </div>
+              </div>
+              
+              {/* User Info */}
+              <div style={{ padding: '4rem 2rem 2rem 2rem', position: 'relative' }}>
+                {/* Edit Button on Banner */}
+                {!editMode && (
+                  <button
+                    onClick={() => setEditMode(true)}
+                    style={{
+                      position: 'absolute',
+                      top: '2rem',
+                      right: '2rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.75rem 1.5rem',
+                      background: 'rgba(29, 185, 84, 0.9)',
+                      backdropFilter: 'blur(10px)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = 'rgba(30, 215, 96, 0.95)';
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = 'rgba(29, 185, 84, 0.9)';
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
+                    }}
+                  >
+                    <FaEdit /> Chỉnh sửa hồ sơ
+                  </button>
+                )}
+                <h2 style={{ color: '#fff', fontSize: '2.5rem', fontWeight: '700', margin: '0 0 0.75rem 0' }}>
+                  {user?.name || 'Người dùng'}
+                </h2>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#1db954' }}></div>
+                    <p style={{ color: '#b3b3b3', fontSize: '0.95rem', margin: 0 }}>
+                      {user?.email}
+                    </p>
+                  </div>
+                  {user?.gender && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#8a2be2' }}></div>
+                      <p style={{ color: '#b3b3b3', fontSize: '0.95rem', margin: 0 }}>
+                        {user.gender === 'male' ? 'Nam' : user.gender === 'female' ? 'Nữ' : 'Khác'}
+                      </p>
+                    </div>
+                  )}
+                  {user?.dateOfBirth && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff4500' }}></div>
+                      <p style={{ color: '#b3b3b3', fontSize: '0.95rem', margin: 0 }}>
+                        {new Date(user.dateOfBirth).toLocaleDateString('vi-VN')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Stats Cards */}
+            {loadingStats ? (
+              <div style={{ textAlign: 'center', padding: '2rem', color: '#b3b3b3' }}>
+                Đang tải thống kê...
+              </div>
+            ) : stats ? (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: '1.5rem',
+                marginBottom: '2rem'
+              }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(29, 185, 84, 0.1), rgba(30, 215, 96, 0.05))',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(29, 185, 84, 0.2)',
+                  padding: '1.5rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                    <FaClock style={{ color: '#1db954', fontSize: '1.5rem' }} />
+                    <h3 style={{ color: '#fff', fontSize: '1rem', fontWeight: '600', margin: 0 }}>
+                      Thời gian nghe
+                    </h3>
+                  </div>
+                  <p style={{ color: '#1db954', fontSize: '2rem', fontWeight: '700', margin: 0 }}>
+                    {stats.totalListeningTime > 0 ? formatDuration(stats.totalListeningTime) : '0m'}
+                  </p>
+                  <p style={{ color: '#b3b3b3', fontSize: '0.85rem', margin: '0.5rem 0 0 0' }}>
+                    Trong 30 ngày qua
+                  </p>
+                </div>
+
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(138, 43, 226, 0.1), rgba(186, 85, 211, 0.05))',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(138, 43, 226, 0.2)',
+                  padding: '1.5rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                    <FaMusic style={{ color: '#8a2be2', fontSize: '1.5rem' }} />
+                    <h3 style={{ color: '#fff', fontSize: '1rem', fontWeight: '600', margin: 0 }}>
+                      Bài hát đã nghe
+                    </h3>
+                  </div>
+                  <p style={{ color: '#8a2be2', fontSize: '2rem', fontWeight: '700', margin: 0 }}>
+                    {stats.dailyActivity?.reduce((sum, day) => sum + day.count, 0) || 0}
+                  </p>
+                  <p style={{ color: '#b3b3b3', fontSize: '0.85rem', margin: '0.5rem 0 0 0' }}>
+                    Lượt phát
+                  </p>
+                </div>
+
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(255, 69, 0, 0.1), rgba(255, 140, 0, 0.05))',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255, 69, 0, 0.2)',
+                  padding: '1.5rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                    <FaList style={{ color: '#ff4500', fontSize: '1.5rem' }} />
+                    <h3 style={{ color: '#fff', fontSize: '1rem', fontWeight: '600', margin: 0 }}>
+                      Playlist của bạn
+                    </h3>
+                  </div>
+                  <p style={{ color: '#ff4500', fontSize: '2rem', fontWeight: '700', margin: 0 }}>
+                    {userPlaylists.length}
+                  </p>
+                  <p style={{ color: '#b3b3b3', fontSize: '0.85rem', margin: '0.5rem 0 0 0' }}>
+                    Playlist đã tạo
+                  </p>
+                </div>
+
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(244, 114, 182, 0.05))',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(236, 72, 153, 0.2)',
+                  padding: '1.5rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                    <FaHeart style={{ color: '#ec4899', fontSize: '1.5rem' }} />
+                    <h3 style={{ color: '#fff', fontSize: '1rem', fontWeight: '600', margin: 0 }}>
+                      Yêu thích
+                    </h3>
+                  </div>
+                  <p style={{ color: '#ec4899', fontSize: '2rem', fontWeight: '700', margin: 0 }}>
+                    {favoritesCount}
+                  </p>
+                  <p style={{ color: '#b3b3b3', fontSize: '0.85rem', margin: '0.5rem 0 0 0' }}>
+                    Bài hát yêu thích
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
+            {/* Top Most Played Songs */}
+            {stats?.mostPlayedSongs && stats.mostPlayedSongs.length > 0 && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                borderRadius: '16px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                padding: '2rem',
+                marginBottom: '2rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <FaChartLine style={{ color: '#1db954', fontSize: '1.5rem' }} />
+                    <h3 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: '700', margin: 0 }}>
+                      Top bài hát yêu thích
+                    </h3>
+                  </div>
+                  <span style={{ color: '#b3b3b3', fontSize: '0.9rem' }}>
+                    30 ngày qua
+                  </span>
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {stats.mostPlayedSongs.map((item, index) => (
+                    <div
+                      key={item.song._id}
+                      onClick={() => {
+                        const songs = stats.mostPlayedSongs.map(s => s.song);
+                        setQueueAndPlay(songs, index, 'profile-top-songs');
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1rem',
+                        padding: '1rem',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(29, 185, 84, 0.1)';
+                        e.currentTarget.style.transform = 'translateX(8px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                        e.currentTarget.style.transform = 'translateX(0)';
+                      }}
+                    >
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '8px',
+                        background: index < 3 ? 'linear-gradient(135deg, #ffd700, #ffed4e)' : 'rgba(255, 255, 255, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.2rem',
+                        fontWeight: '700',
+                        color: index < 3 ? '#000' : '#fff'
+                      }}>
+                        {index + 1}
+                      </div>
+                      
+                      {item.song?.cover ? (
+                        <img
+                          src={item.song.cover.startsWith('http') ? item.song.cover : `http://localhost:5000${item.song.cover}`}
+                          alt={item.song.title}
+                          style={{
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '8px',
+                            objectFit: 'cover'
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '60px',
+                          height: '60px',
+                          borderRadius: '8px',
+                          background: 'linear-gradient(135deg, #1db954, #1ed760)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <FaMusic style={{ color: '#fff', fontSize: '1.5rem' }} />
+                        </div>
+                      )}
+                      
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ color: '#fff', fontSize: '1.05rem', fontWeight: '600', margin: '0 0 0.35rem 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.song?.title || 'Không rõ'}
+                        </p>
+                        <p style={{ color: '#b3b3b3', fontSize: '0.9rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.song?.artist || 'Không rõ'}
+                        </p>
+                      </div>
+                      
+                      <div style={{
+                        background: 'rgba(29, 185, 84, 0.2)',
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: '20px',
+                        border: '1px solid rgba(29, 185, 84, 0.3)'
+                      }}>
+                        <p style={{ color: '#1db954', fontSize: '0.9rem', margin: 0, fontWeight: '600' }}>
+                          {item.count} lượt phát
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* User Playlists */}
+            {userPlaylists.length > 0 && (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                borderRadius: '16px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                padding: '2rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <FaList style={{ color: '#ff4500', fontSize: '1.5rem' }} />
+                    <h3 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: '700', margin: 0 }}>
+                      Playlist của bạn
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => window.location.hash = '#/library'}
+                    style={{
+                      background: 'rgba(255, 69, 0, 0.2)',
+                      border: '1px solid rgba(255, 69, 0, 0.3)',
+                      borderRadius: '20px',
+                      padding: '0.5rem 1rem',
+                      color: '#ff4500',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = 'rgba(255, 69, 0, 0.3)'}
+                    onMouseLeave={(e) => e.target.style.background = 'rgba(255, 69, 0, 0.2)'}
+                  >
+                    Xem tất cả
+                  </button>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+                  {userPlaylists.slice(0, 4).map((playlist) => (
+                    <div
+                      key={playlist._id}
+                      onClick={() => window.location.hash = `#/playlist/${playlist._id}`}
+                      style={{
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                        padding: '1rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      {playlist.cover ? (
+                        <img
+                          src={playlist.cover.startsWith('http') ? playlist.cover : `http://localhost:5000${playlist.cover}`}
+                          alt={playlist.name}
+                          style={{
+                            width: '100%',
+                            aspectRatio: '1',
+                            borderRadius: '8px',
+                            objectFit: 'cover',
+                            marginBottom: '0.75rem'
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: '100%',
+                          aspectRatio: '1',
+                          borderRadius: '8px',
+                          background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          marginBottom: '0.75rem'
+                        }}>
+                          <FaList style={{ color: '#fff', fontSize: '2rem' }} />
+                        </div>
+                      )}
+                      <p style={{ color: '#fff', fontSize: '1rem', fontWeight: '600', margin: '0 0 0.25rem 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {playlist.name}
+                      </p>
+                      <p style={{ color: '#b3b3b3', fontSize: '0.85rem', margin: 0 }}>
+                        {playlist.songs?.length || 0} bài hát
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Edit Profile Form */
+          <form onSubmit={handleSubmit}>
           {/* Avatar Section */}
           <div style={{
             display: 'flex',
@@ -589,7 +1084,7 @@ const Profile = () => {
           }}>
             <button
               type="button"
-              onClick={() => window.location.hash = '#/'}
+              onClick={() => setEditMode(false)}
               style={{
                 padding: '0.75rem 2rem',
                 background: 'rgba(255, 255, 255, 0.1)',
@@ -649,6 +1144,7 @@ const Profile = () => {
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

@@ -53,6 +53,7 @@ router.get('/:id/songs', protect, async (req, res) => {
   try {
     const playlist = await UserPlaylist.findById(req.params.id)
       .populate('songs', 'title artist cover url')
+      .populate('user', 'name')
       .lean();
 
     if (!playlist) {
@@ -60,9 +61,13 @@ router.get('/:id/songs', protect, async (req, res) => {
     }
 
     // Check if user owns this playlist
-    if (playlist.user.toString() !== req.user._id.toString()) {
+    if (playlist.user._id.toString() !== req.user._id.toString()) {
       return res.status(403).json({ error: 'Không có quyền truy cập playlist này' });
     }
+    
+    // Rename 'user' to 'creator' for consistency with frontend
+    playlist.creator = playlist.user;
+    delete playlist.user;
 
     res.json(playlist);
   } catch (error) {

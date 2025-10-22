@@ -43,10 +43,28 @@ export default function GlobalPlayer() {
   const [showLyrics, setShowLyrics] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [previousVolume, setPreviousVolume] = useState(1);
+  const [listenStartTime, setListenStartTime] = useState(null);
+  const [currentSongId, setCurrentSongId] = useState(null);
+  const [hasSavedCurrentSong, setHasSavedCurrentSong] = useState(false);
 
-  // Add song to listening history
-  const addToListeningHistory = async (songId) => {
-    if (!isAuthenticated || !user?.token) return;
+  // Add song to listening history with duration
+  const addToListeningHistory = async (songId, listenDuration, isCompleted) => {
+    if (!isAuthenticated || !user?.token || !songId) return;
+    
+    const durationInSeconds = Math.floor(listenDuration || 0);
+    
+    // Only save if listened for at least 30 seconds
+    if (durationInSeconds < 30) {
+      console.log('⏭️ Skipped (< 30s):', durationInSeconds);
+      return;
+    }
+    
+    console.log('📊 Saving to history:', {
+      songId,
+      duration: durationInSeconds,
+      completed: isCompleted,
+      listenDuration
+    });
     
     try {
       await fetch('http://localhost:5000/api/history', {
@@ -57,12 +75,13 @@ export default function GlobalPlayer() {
         },
         body: JSON.stringify({
           songId: songId,
-          duration: 0,
-          completed: false
+          duration: durationInSeconds,
+          completed: isCompleted || false
         })
       });
+      console.log('✅ History saved successfully');
     } catch (error) {
-      console.error('Error adding to listening history:', error);
+      console.error('❌ Error adding to listening history:', error);
     }
   };
 
@@ -107,15 +126,29 @@ export default function GlobalPlayer() {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
+    
     const onTime = () => setProgress(audio.currentTime);
     const onMeta = () => setDuration(audio.duration || 0);
+    
+    // Track when song ends
+    const onEnded = () => {
+      if (currentSongId && listenStartTime && !hasSavedCurrentSong) {
+        const listenDuration = (Date.now() - listenStartTime) / 1000;
+        addToListeningHistory(currentSongId, listenDuration, true);
+        setHasSavedCurrentSong(true);
+      }
+    };
+    
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("loadedmetadata", onMeta);
+    audio.addEventListener("ended", onEnded);
+    
     return () => {
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("loadedmetadata", onMeta);
+      audio.removeEventListener("ended", onEnded);
     };
-  }, [currentIdx]);
+  }, [currentIdx, currentSongId, listenStartTime]);
 
   // Re-setup audio event listeners when returning from admin page
   useEffect(() => {
@@ -149,6 +182,26 @@ export default function GlobalPlayer() {
     };
   }, [current]);
 
+  // Handle song change - save previous song's listening time
+  useEffect(() => {
+    // Save previous song's listening time before changing
+    if (currentSongId && listenStartTime && current?._id !== currentSongId && !hasSavedCurrentSong) {
+      const listenDuration = (Date.now() - listenStartTime) / 1000;
+      const audio = audioRef.current;
+      const isCompleted = audio && audio.duration > 0 && audio.currentTime >= audio.duration * 0.8;
+      console.log('🔄 Song changed, saving previous song duration:', listenDuration);
+      addToListeningHistory(currentSongId, listenDuration, isCompleted);
+    }
+    
+    // Track new song
+    if (current?._id && current._id !== currentSongId) {
+      console.log('🎵 New song started:', current.title);
+      setCurrentSongId(current._id);
+      setListenStartTime(Date.now());
+      setHasSavedCurrentSong(false);
+    }
+  }, [current?._id]);
+
   useEffect(() => {
     if (!audioRef.current) return;
     
@@ -156,11 +209,6 @@ export default function GlobalPlayer() {
       audioRef.current.play().catch(error => {
         console.error('Audio play error:', error);
       });
-      
-      // Add to listening history when starting to play
-      if (current && isAuthenticated) {
-        addToListeningHistory(current._id);
-      }
     } else {
       audioRef.current.pause();
     }
@@ -191,11 +239,18 @@ export default function GlobalPlayer() {
     // Only stop music if user was previously authenticated and now is not (logout scenario)
     // Guest users (never authenticated) should be able to play music
     if (!isAuthenticated && queue.length > 0 && wasAuthenticated) {
+      // Save listening time before logout
+      if (currentSongId && listenStartTime) {
+        const listenDuration = (Date.now() - listenStartTime) / 1000;
+        const audio = audioRef.current;
+        const isCompleted = audio && audio.duration > 0 && audio.currentTime >= audio.duration * 0.8;
+        addToListeningHistory(currentSongId, listenDuration, isCompleted);
+      }
       // This is a logout, stop music
       stopPlayer();
       setWasAuthenticated(false);
     }
-  }, [isAuthenticated, queue.length, stopPlayer, wasAuthenticated]);
+  }, [isAuthenticated, queue.length, stopPlayer, wasAuthenticated, currentSongId, listenStartTime]);
 
   const next = () => {
     if (queue.length === 0) return;

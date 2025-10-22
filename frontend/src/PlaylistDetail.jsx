@@ -25,7 +25,20 @@ function PlaylistDetail() {
 
     const fetchPlaylist = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/curated-playlists/${playlistId}`);
+        // Try user playlist first
+        const token = localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null;
+        let response = await fetch(`http://localhost:5000/api/user-playlists/${playlistId}/songs`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setPlaylist(data);
+          return;
+        }
+        
+        // If not found, try curated playlist
+        response = await fetch(`http://localhost:5000/api/curated-playlists/${playlistId}`);
         if (!response.ok) {
           throw new Error('Không tìm thấy playlist');
         }
@@ -195,9 +208,15 @@ function PlaylistDetail() {
                 }}>
                   {playlist.songs?.length || 0} bài hát
                 </span>
-                <span style={{ opacity: 0.7 }}>
-                  • Curated by CoreSound
-                </span>
+                {playlist.creator ? (
+                  <span style={{ opacity: 0.7 }}>
+                    • Bởi {playlist.creator.name || 'Người dùng'}
+                  </span>
+                ) : (
+                  <span style={{ opacity: 0.7 }}>
+                    • Curated by CoreSound
+                  </span>
+                )}
               </div>
             </div>
           </div>
