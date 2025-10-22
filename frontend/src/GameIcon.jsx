@@ -351,7 +351,8 @@ const GameIcon = () => {
           userAnswer: userAnswer.trim(),
           timeSpent: 0, // No timer anymore
           hintsUsed: 0,
-          roundNumber: roundIndex
+          roundNumber: roundIndex,
+          currentScore: score // Send current score (after skip penalties)
         })
       });
 

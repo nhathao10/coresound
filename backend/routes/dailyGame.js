@@ -178,7 +178,7 @@ router.get('/daily-song', async (req, res) => {
 // Check answer for daily song
 router.post('/daily-song/check-answer', protect, async (req, res) => {
   try {
-    const { songId, userAnswer, timeSpent, hintsUsed, roundNumber } = req.body;
+    const { songId, userAnswer, timeSpent, hintsUsed, roundNumber, currentScore } = req.body;
     const userId = req.user.id;
 
     // Find today's daily song
@@ -220,10 +220,15 @@ router.post('/daily-song/check-answer', protect, async (req, res) => {
     // Calculate score (no timer, so no time bonus)
     let score = 0;
     if (isCorrect) {
-      const baseScore = 1000;
-      // No time bonus since the game doesn't have a timer
-      const hintPenalty = hintsUsed * 100;
-      score = Math.max(0, baseScore - hintPenalty);
+      // Use currentScore from frontend (already includes skip penalties)
+      // If currentScore is not provided, fallback to base calculation
+      if (currentScore !== undefined && currentScore !== null) {
+        score = Math.max(0, currentScore);
+      } else {
+        const baseScore = 1000;
+        const hintPenalty = hintsUsed * 100;
+        score = Math.max(0, baseScore - hintPenalty);
+      }
     }
 
     // Save game result only if not completed all rounds today
