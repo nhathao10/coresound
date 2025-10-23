@@ -1181,7 +1181,7 @@ const GameIcon = () => {
                         ❤️ Lives System
                       </h4>
                       <p style={{ margin: 0, fontSize: '0.9rem' }}>
-                        Bạn có <strong>3 lives</strong>. Mỗi lần đoán sai sẽ mất 1 life
+                        Bạn có <strong>3 lives</strong>. Mỗi lần đoán sai sẽ mất 1 tim. Bạn có 3 lượt đoán với mỗi bài hát
                       </p>
                     </div>
 
@@ -1200,7 +1200,7 @@ const GameIcon = () => {
                         🎯 Điểm số
                       </h4>
                       <p style={{ margin: 0, fontSize: '0.9rem' }}>
-                        Bắt đầu với 1000 điểm. Đoán đúng sớm = điểm cao hơn!
+                        Bắt đầu với 1000 điểm. Mỗi lần skip sẽ trừ đi 100 điểm
                       </p>
                     </div>
 
@@ -1211,7 +1211,7 @@ const GameIcon = () => {
                       border: '1px solid rgba(29, 185, 84, 0.2)'
                     }}>
                       <p style={{ margin: 0, fontSize: '0.9rem', color: '#1db954', fontWeight: '600' }}>
-                        💡 Mẹo: Nghe kỹ đoạn nhạc trước khi đoán, sử dụng gợi ý một cách thông minh!
+                        💡 Mẹo: Nghe kỹ đoạn nhạc trước khi đoán.
                       </p>
                     </div>
                   </div>
