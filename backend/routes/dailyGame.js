@@ -265,7 +265,7 @@ router.post('/daily-song/check-answer', protect, async (req, res) => {
 
     res.json({
       isCorrect,
-      score: hasPlayedToday ? existingResult.score : score, // Use existing score if already played
+      score: hasPlayedToday ? completedResult.score : score, // Use existing score if already played
       hasPlayedToday,
       correctAnswer: {
         title: dailySong.song.title,
