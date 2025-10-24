@@ -79,7 +79,7 @@ function App() {
       setDisplayedSongs(getRandomSongs(songsData, 7));
       setDisplayedAlbums(getRandomAlbums(albumsData, 7));
       setDisplayedPlaylists(getRandomPlaylists(playlistsData, 7));
-      setDisplayedPodcasts(getRandomPodcasts((podcastsData?.podcasts || podcastsData || []), 7));
+      setDisplayedPodcasts(getRandomPodcasts((podcastsData?.podcasts || podcastsData || []), 5));
 
       // Check for search query in URL
       const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
@@ -376,8 +376,13 @@ function App() {
   };
 
   const refreshPodcasts = () => {
+    if (podcasts.length <= 5) {
+      // Nếu tổng số podcast <= 5, không cần refresh
+      return;
+    }
     const currentPodcastIds = displayedPodcasts.map(podcast => podcast._id);
-    setDisplayedPodcasts(getRandomPodcasts(podcasts, 7, currentPodcastIds));
+    const newPodcasts = getRandomPodcasts(podcasts, 5, currentPodcastIds);
+    setDisplayedPodcasts(newPodcasts);
   };
 
 
@@ -1026,7 +1031,17 @@ function App() {
               ↻
             </button>
           </div>
-          <div style={{ gap: '1.5rem', display: 'flex', overflowX: 'auto', paddingBottom: '0.5rem', width: '100%' }}>
+          <div style={{ 
+            gap: '1.5rem', 
+            display: 'flex', 
+            overflowX: 'auto', 
+            paddingBottom: '0.5rem', 
+            width: '100%',
+            scrollbarWidth: 'none', /* Firefox */
+            msOverflowStyle: 'none' /* IE and Edge */
+          }} 
+          className="hide-scrollbar"
+          >
             {podcasts.length > 0 ? (
               displayedPodcasts.map((podcast) => (
                 <div
@@ -1205,8 +1220,146 @@ function App() {
           </div>
         </section>
         
+        {/* Nghệ sĩ nổi bật */}
+        <section style={{ marginTop: "2rem", padding: "1rem 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+            <h2 style={{ color: "#fff", fontSize: "1.5rem", margin: 0 }}>Nghệ sĩ nổi bật</h2>
+            <button
+              onClick={() => {
+                // Shuffle artists list
+                const shuffled = [...artists].sort(() => Math.random() - 0.5);
+                setArtists(shuffled);
+              }}
+              style={{
+                background: "transparent",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                borderRadius: "20px",
+                color: "#b3b3b3",
+                padding: "0.5rem 1rem",
+                fontSize: "0.8rem",
+                cursor: "pointer",
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.borderColor = "#1db954";
+                e.target.style.color = "#1db954";
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.borderColor = "rgba(255, 255, 255, 0.2)";
+                e.target.style.color = "#b3b3b3";
+              }}
+            >
+              Làm mới
+            </button>
+          </div>
+          
+          <div style={{ 
+            display: "flex", 
+            flexWrap: "wrap",
+            gap: "2rem",
+            justifyContent: "center",
+            maxWidth: "100%"
+          }}>
+            {(artists || []).slice(0, 6).map((artist) => (
+              <div
+                key={artist._id}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  textAlign: "center",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-8px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                {/* Avatar */}
+                <div 
+                  style={{ marginBottom: "1rem", position: "relative", cursor: "pointer" }}
+                  onClick={() => {
+                    window.location.hash = `#/artist/${artist._id}`;
+                  }}
+                >
+                  <img
+                    src={withMediaBase(artist.avatar) || "https://via.placeholder.com/140x140/18181b/fff?text=Artist"}
+                    alt={artist.name}
+                    style={{
+                      width: "140px",
+                      height: "140px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      border: "4px solid rgba(255, 255, 255, 0.1)",
+                      transition: "all 0.3s ease",
+                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.borderColor = "#1db954";
+                      e.target.style.transform = "scale(1.05)";
+                      e.target.style.boxShadow = "0 12px 40px rgba(29, 185, 84, 0.3)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                      e.target.style.transform = "scale(1)";
+                      e.target.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.3)";
+                    }}
+                  />
+                </div>
+                
+                {/* Artist Info */}
+                <h3 style={{ 
+                  color: "#fff", 
+                  fontSize: "1.2rem", 
+                  fontWeight: "600", 
+                  margin: "0 0 0.5rem 0",
+                  maxWidth: "160px",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem"
+                }}>
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {artist.name}
+                  </span>
+                  {artist.isVerified && (
+                    <FaCheckCircle 
+                      style={{ 
+                        color: "#1db954", 
+                        fontSize: "1rem",
+                        flexShrink: 0,
+                        filter: "drop-shadow(0 1px 2px rgba(29, 185, 84, 0.3))"
+                      }} 
+                      title="Nghệ sĩ đã xác minh"
+                    />
+                  )}
+                </h3>
+                
+                <p style={{ 
+                  color: "#b3b3b3", 
+                  fontSize: "0.9rem", 
+                  margin: "0 0 1rem 0",
+                  fontWeight: "400"
+                }}>
+                  {(artist.followers || 0).toLocaleString("vi-VN")} người theo dõi
+                </p>
+                
+                {/* Follow Button */}
+                <div onClick={(e) => e.stopPropagation()}>
+                  <FollowButton artist={artist} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Bảng Xếp Hạng Tuần */}
-        <section style={{ marginTop: "0", padding: "1rem 0" }}>
+        <section style={{ marginTop: "2rem", padding: "1rem 0" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
             <h2 style={{ color: "#fff", fontSize: "1.5rem", margin: 0 }}>Bảng Xếp Hạng Tuần</h2>
             <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
@@ -1454,144 +1607,6 @@ function App() {
                 </div>
               )) : <div style={{ color: "#b3b3b3" }}>Đang tải...</div>}
             </div>
-          </div>
-        </section>
-
-        {/* Nghệ sĩ nổi bật */}
-        <section style={{ marginTop: "2rem", padding: "1rem 0" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
-            <h2 style={{ color: "#fff", fontSize: "1.5rem", margin: 0 }}>Nghệ sĩ nổi bật</h2>
-            <button
-              onClick={() => {
-                // Shuffle artists list
-                const shuffled = [...artists].sort(() => Math.random() - 0.5);
-                setArtists(shuffled);
-              }}
-              style={{
-                background: "transparent",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-                borderRadius: "20px",
-                color: "#b3b3b3",
-                padding: "0.5rem 1rem",
-                fontSize: "0.8rem",
-                cursor: "pointer",
-                transition: "all 0.2s ease"
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.borderColor = "#1db954";
-                e.target.style.color = "#1db954";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.borderColor = "rgba(255, 255, 255, 0.2)";
-                e.target.style.color = "#b3b3b3";
-              }}
-            >
-              Làm mới
-            </button>
-          </div>
-          
-          <div style={{ 
-            display: "flex", 
-            flexWrap: "wrap",
-            gap: "2rem",
-            justifyContent: "center",
-            maxWidth: "100%"
-          }}>
-            {(artists || []).slice(0, 6).map((artist) => (
-              <div
-                key={artist._id}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  textAlign: "center",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-8px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                {/* Avatar */}
-                <div 
-                  style={{ marginBottom: "1rem", position: "relative", cursor: "pointer" }}
-                  onClick={() => {
-                    window.location.hash = `#/artist/${artist._id}`;
-                  }}
-                >
-                  <img
-                    src={withMediaBase(artist.avatar) || "https://via.placeholder.com/140x140/18181b/fff?text=Artist"}
-                    alt={artist.name}
-                    style={{
-                      width: "140px",
-                      height: "140px",
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      border: "4px solid rgba(255, 255, 255, 0.1)",
-                      transition: "all 0.3s ease",
-                      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)"
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.borderColor = "#1db954";
-                      e.target.style.transform = "scale(1.05)";
-                      e.target.style.boxShadow = "0 12px 40px rgba(29, 185, 84, 0.3)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.borderColor = "rgba(255, 255, 255, 0.1)";
-                      e.target.style.transform = "scale(1)";
-                      e.target.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.3)";
-                    }}
-                  />
-                </div>
-                
-                {/* Artist Info */}
-                <h3 style={{ 
-                  color: "#fff", 
-                  fontSize: "1.2rem", 
-                  fontWeight: "600", 
-                  margin: "0 0 0.5rem 0",
-                  maxWidth: "160px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem"
-                }}>
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {artist.name}
-                  </span>
-                  {artist.isVerified && (
-                    <FaCheckCircle 
-                      style={{ 
-                        color: "#1db954", 
-                        fontSize: "1rem",
-                        flexShrink: 0,
-                        filter: "drop-shadow(0 1px 2px rgba(29, 185, 84, 0.3))"
-                      }} 
-                      title="Nghệ sĩ đã xác minh"
-                    />
-                  )}
-                </h3>
-                
-                <p style={{ 
-                  color: "#b3b3b3", 
-                  fontSize: "0.9rem", 
-                  margin: "0 0 1rem 0",
-                  fontWeight: "400"
-                }}>
-                  {(artist.followers || 0).toLocaleString("vi-VN")} người theo dõi
-                </p>
-                
-                {/* Follow Button */}
-                <div onClick={(e) => e.stopPropagation()}>
-                  <FollowButton artist={artist} />
-                </div>
-              </div>
-            ))}
           </div>
         </section>
         

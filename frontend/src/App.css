@@ -34,6 +34,11 @@ body {
   background: linear-gradient(180deg, rgba(29, 185, 84, 0.5) 0%, rgba(30, 215, 96, 0.4) 100%);
 }
 
+/* Hide scrollbar for podcast horizontal scroll */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
 /* === LYRICS PANEL === */
 .lyrics-panel {
   position: fixed;
