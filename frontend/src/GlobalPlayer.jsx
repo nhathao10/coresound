@@ -464,32 +464,34 @@ export default function GlobalPlayer() {
           <span className="spotify-song-title">{current.title}</span>
             {isAuthenticated && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <HeartIcon 
-                  type="song"
-                  itemId={current._id}
-                  style={{
-                    width: '24px',
-                    height: '24px',
-                    minWidth: '24px',
-                    minHeight: '24px',
-                    borderRadius: '50%',
-                    background: 'rgba(0, 0, 0, 0.6)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backdropFilter: 'blur(4px)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)',
-                    boxSizing: 'border-box',
-                    flexShrink: 0,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    position: 'static',
-                    top: 'auto',
-                    right: 'auto',
-                    zIndex: 'auto',
-                    opacity: 1
-                  }}
-                />
+                {current?.type !== 'podcast' && (
+                  <HeartIcon 
+                    type="song"
+                    itemId={current._id}
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      minWidth: '24px',
+                      minHeight: '24px',
+                      borderRadius: '50%',
+                      background: 'rgba(0, 0, 0, 0.6)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backdropFilter: 'blur(4px)',
+                      border: '1px solid rgba(255, 255, 255, 0.2)',
+                      boxSizing: 'border-box',
+                      flexShrink: 0,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      position: 'static',
+                      top: 'auto',
+                      right: 'auto',
+                      zIndex: 'auto',
+                      opacity: 1
+                    }}
+                  />
+                )}
                 {current?.type !== 'podcast' && (
                   <AddToPlaylistIcon 
                     onClick={() => {

@@ -27,8 +27,8 @@ const podcastSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['Technology', 'News', 'Entertainment', 'Education', 'Business', 'Health', 'Sports', 'Comedy', 'True Crime', 'Other'],
-    default: 'Other'
+    enum: ['Tâm trạng', 'Tình yêu', 'Chữa lành', 'Giáo Dục'],
+    default: 'Tâm trạng'
   },
   // language: {
   //   type: String,

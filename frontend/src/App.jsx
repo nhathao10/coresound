@@ -1058,19 +1058,27 @@ function App() {
                   }}
                   onClick={() => {
                     console.log('Clicked podcast:', podcast); // Debug log
-                    if (podcast.type === 'single' && podcast.audioUrl) {
-                      setQueueAndPlay([{
-                        _id: podcast._id,
-                        title: podcast.title,
-                        artist: podcast.host,
-                        url: withMediaBase(podcast.audioUrl),
-                        cover: withMediaBase(podcast.cover) || "/default-cover.png",
-                        duration: podcast.duration || 0,
-                        type: 'podcast'
-                      }], 0);
-                    } else if (podcast.type === 'series' && podcast.episodes && podcast.episodes.length > 0) {
-                      // Navigate to podcast detail page for series
-                      window.location.hash = `#/podcast/${encodeURIComponent(podcast._id)}`;
+                    console.log('Podcast audioUrl:', podcast.audioUrl); // Debug audioUrl
+                    if (podcast.audioUrl) {
+                      // Tạo queue với tất cả podcast, podcast được click sẽ phát đầu tiên
+                      const podcastQueue = podcasts
+                        .filter(p => p.audioUrl) // Chỉ lấy podcast có audio
+                        .map(p => ({
+                          _id: p._id,
+                          title: p.title,
+                          artist: p.host,
+                          url: withMediaBase(p.audioUrl),
+                          cover: withMediaBase(p.cover) || "/default-cover.png",
+                          duration: p.duration || 0,
+                          type: 'podcast'
+                        }));
+                      
+                      // Tìm index của podcast được click
+                      const clickedIndex = podcastQueue.findIndex(p => p._id === podcast._id);
+                      
+                      if (clickedIndex !== -1) {
+                        setQueueAndPlay(podcastQueue, clickedIndex);
+                      }
                     } else {
                       alert('Podcast này chưa có nội dung để phát.');
                     }
@@ -1175,7 +1183,7 @@ function App() {
                       paddingTop: "8px",
                       borderTop: "1px solid #333"
                     }}>
-                      {podcast.type === 'single' ? 'Single Episode' : `${podcast.episodes?.length || 0} tập`}
+                      {podcast.category || 'Podcast'}
                     </div>
                   </div>
                 </div>

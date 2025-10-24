@@ -46,8 +46,7 @@ const PodcastsAdmin = () => {
   const [audioFile, setAudioFile] = useState(null);
 
   const categories = [
-    'Technology', 'News', 'Entertainment', 'Education', 
-    'Business', 'Health', 'Sports', 'Comedy', 'True Crime', 'Other'
+    'Tâm trạng', 'Tình yêu', 'Chữa lành', 'Giáo Dục'
   ];
 
   const episodeTypes = [
@@ -116,11 +115,19 @@ const PodcastsAdmin = () => {
   // Create podcast
   const handleCreatePodcast = async (e) => {
     e.preventDefault();
+    
+    // Validate audio file
+    if (!audioFile) {
+      alert('Vui lòng chọn file audio cho podcast!');
+      return;
+    }
+    
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
       console.log('Token:', token);
       console.log('User:', user);
       console.log('Podcast form:', podcastForm);
+      console.log('Audio file:', audioFile);
       
       const formData = new FormData();
       
@@ -427,50 +434,24 @@ const PodcastsAdmin = () => {
         width: '100%',
         boxSizing: 'border-box'
       }}>
-        {/* Tabs */}
+        {/* Header */}
         <div style={{
-          display: 'flex',
-          gap: '1rem',
           marginBottom: '2rem',
+          paddingBottom: '1rem',
           borderBottom: '1px solid #2e2e37'
         }}>
-          <button
-            onClick={() => setActiveTab('podcasts')}
-            style={{
-              background: activeTab === 'podcasts' ? '#1db954' : 'transparent',
-              color: '#e5e5e5',
-              border: 'none',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '8px 8px 0 0',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: '500',
-              transition: 'all 0.2s ease'
-            }}
-          >
+          <h2 style={{
+            color: '#e5e5e5',
+            margin: 0,
+            fontSize: '1.5rem',
+            fontWeight: '600'
+          }}>
             Podcasts ({podcasts.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('episodes')}
-            style={{
-              background: activeTab === 'episodes' ? '#1db954' : 'transparent',
-              color: '#e5e5e5',
-              border: 'none',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '8px 8px 0 0',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: '500',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            Episodes ({episodes.length})
-          </button>
+          </h2>
         </div>
 
-        {/* Podcasts Tab */}
-        {activeTab === 'podcasts' && (
-          <div>
+        {/* Podcasts List */}
+        <div>
             {/* Create Podcast Button */}
             <div style={{ marginBottom: '2rem' }}>
               <button
@@ -523,10 +504,6 @@ const PodcastsAdmin = () => {
                   }}
                   onClick={() => {
                     setSelectedPodcast(podcast);
-                    // Only switch to episodes tab if it's a series podcast
-                    if (podcast.type === 'series') {
-                      setActiveTab('episodes');
-                    }
                   }}
                 >
                   <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
@@ -561,7 +538,7 @@ const PodcastsAdmin = () => {
                         margin: '0',
                         fontSize: '0.8rem'
                       }}>
-                        {podcast.category} • {podcast.type === 'single' ? 'Single' : `${podcast.episodeCount || 0} episodes`}
+                        {podcast.category}
                       </p>
                     </div>
                   </div>
@@ -668,208 +645,7 @@ const PodcastsAdmin = () => {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Episodes Tab */}
-        {activeTab === 'episodes' && (
-          <div>
-            {selectedPodcast ? (
-              <div>
-                {/* Selected Podcast Info */}
-                <div style={{
-                  background: '#1e1e24',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  marginBottom: '2rem',
-                  border: '1px solid #2e2e37'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <img
-                      src={selectedPodcast.cover ? `http://localhost:5000${selectedPodcast.cover}` : '/default-cover.png'}
-                      alt={selectedPodcast.title}
-                      style={{
-                        width: '60px',
-                        height: '60px',
-                        borderRadius: '8px',
-                        objectFit: 'cover'
-                      }}
-                    />
-                    <div>
-                      <h3 style={{ color: '#fff', margin: '0 0 0.5rem 0' }}>
-                        {selectedPodcast.title}
-                      </h3>
-                      <p style={{ color: '#b3b3b3', margin: '0' }}>
-                        {selectedPodcast.type === 'single' ? 'Single Episode' : `${episodes.length} episodes`}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Create Episode Button - Only show for series podcasts */}
-                {selectedPodcast?.type === 'series' && (
-                  <div style={{ marginBottom: '2rem' }}>
-                    <button
-                      onClick={() => setShowEpisodeForm(true)}
-                      style={{
-                        background: '#1db954',
-                        color: '#fff',
-                        border: 'none',
-                        padding: '0.75rem 1.5rem',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '1rem',
-                        fontWeight: '500',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => e.target.style.background = '#1ed760'}
-                      onMouseLeave={(e) => e.target.style.background = '#1db954'}
-                    >
-                      <FaPlus /> Thêm Episode Mới
-                    </button>
-                  </div>
-                )}
-
-                {/* Episodes List */}
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1rem'
-                }}>
-                  {episodes.map((episode) => (
-                    <div
-                      key={episode._id}
-                      style={{
-                        background: '#1e1e24',
-                        borderRadius: '12px',
-                        padding: '1.5rem',
-                        border: '1px solid #2e2e37',
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-                            <h4 style={{ 
-                              color: '#fff', 
-                              margin: '0',
-                              fontSize: '1.1rem',
-                              fontWeight: '600'
-                            }}>
-                              Episode {episode.episodeNumber}: {episode.title}
-                            </h4>
-                            <span style={{
-                              background: episode.episodeType === 'full' ? '#1db954' : '#ffa500',
-                              color: '#fff',
-                              padding: '0.25rem 0.5rem',
-                              borderRadius: '4px',
-                              fontSize: '0.7rem',
-                              fontWeight: '500'
-                            }}>
-                              {episode.episodeType}
-                            </span>
-                          </div>
-                          
-                          <p style={{ 
-                            color: '#b3b3b3', 
-                            fontSize: '0.9rem',
-                            margin: '0 0 1rem 0',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden'
-                          }}>
-                            {episode.description}
-                          </p>
-
-                          <div style={{ display: 'flex', gap: '2rem', fontSize: '0.8rem', color: '#b3b3b3' }}>
-                            <span>Duration: {formatDuration(episode.duration)}</span>
-                            <span>Plays: {episode.plays || 0}</span>
-                            <span>Downloads: {episode.downloads || 0}</span>
-                            <span>Published: {new Date(episode.publishDate).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button
-                            onClick={() => {
-                              setEditingEpisode(episode);
-                              setEpisodeForm({
-                                title: episode.title,
-                                description: episode.description,
-                                duration: episode.duration,
-                                showNotes: episode.showNotes || '',
-                                guests: episode.guests ? JSON.stringify(episode.guests) : '',
-                                tags: episode.tags ? episode.tags.join(', ') : '',
-                                isExplicit: episode.isExplicit,
-                                season: episode.season,
-                                episodeType: episode.episodeType
-                              });
-                              setShowEpisodeForm(true);
-                            }}
-                            style={{
-                              background: 'transparent',
-                              border: '1px solid #2e2e37',
-                              color: '#b3b3b3',
-                              padding: '0.5rem',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.borderColor = '#1db954';
-                              e.target.style.color = '#1db954';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.borderColor = '#2e2e37';
-                              e.target.style.color = '#b3b3b3';
-                            }}
-                          >
-                            <FaEdit />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteEpisode(episode._id)}
-                            style={{
-                              background: 'transparent',
-                              border: '1px solid #2e2e37',
-                              color: '#b3b3b3',
-                              padding: '0.5rem',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s ease'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.borderColor = '#ff4444';
-                              e.target.style.color = '#ff4444';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.borderColor = '#2e2e37';
-                              e.target.style.color = '#b3b3b3';
-                            }}
-                          >
-                            <FaTrash />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div style={{
-                textAlign: 'center',
-                padding: '4rem 2rem',
-                color: '#b3b3b3'
-              }}>
-                <h3>Chọn một podcast để xem episodes</h3>
-                <p>Vui lòng chọn podcast từ tab Podcasts để xem danh sách episodes</p>
-              </div>
-            )}
-          </div>
-        )}
+        </div>
 
         {/* Create Podcast Modal */}
         {showCreateForm && (
@@ -944,62 +720,16 @@ const PodcastsAdmin = () => {
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div>
-                      <label style={{ color: '#e5e5e5', display: 'block', marginBottom: '0.5rem' }}>
-                        Host chính *
-                      </label>
-                      <input
-                        type="text"
-                        value={podcastForm.host}
-                        onChange={(e) => setPodcastForm({...podcastForm, host: e.target.value})}
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '0.75rem',
-                          background: '#2a2a35',
-                          border: '1px solid #2e2e37',
-                          borderRadius: '8px',
-                          color: '#fff',
-                          fontSize: '1rem'
-                        }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ color: '#e5e5e5', display: 'block', marginBottom: '0.5rem' }}>
-                        Thể loại *
-                      </label>
-                      <select
-                        value={podcastForm.category}
-                        onChange={(e) => setPodcastForm({...podcastForm, category: e.target.value})}
-                        required
-                        style={{
-                          width: '100%',
-                          padding: '0.75rem',
-                          background: '#2a2a35',
-                          border: '1px solid #2e2e37',
-                          borderRadius: '8px',
-                          color: '#fff',
-                          fontSize: '1rem'
-                        }}
-                      >
-                        {categories.map(category => (
-                          <option key={category} value={category}>{category}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
                   <div>
                     <label style={{ color: '#e5e5e5', display: 'block', marginBottom: '0.5rem' }}>
-                      Host khác (phân cách bằng dấu phẩy)
+                      Host chính *
                     </label>
                     <input
                       type="text"
-                      value={podcastForm.hosts}
-                      onChange={(e) => setPodcastForm({...podcastForm, hosts: e.target.value})}
-                      placeholder="Host 1, Host 2, Host 3"
+                      value={podcastForm.host}
+                      onChange={(e) => setPodcastForm({...podcastForm, host: e.target.value})}
+                      required
+                      placeholder="Tên người dẫn podcast"
                       style={{
                         width: '100%',
                         padding: '0.75rem',
@@ -1014,32 +744,12 @@ const PodcastsAdmin = () => {
 
                   <div>
                     <label style={{ color: '#e5e5e5', display: 'block', marginBottom: '0.5rem' }}>
-                      Tags (phân cách bằng dấu phẩy)
-                    </label>
-                    <input
-                      type="text"
-                      value={podcastForm.tags}
-                      onChange={(e) => setPodcastForm({...podcastForm, tags: e.target.value})}
-                      placeholder="tag1, tag2, tag3"
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        background: '#2a2a35',
-                        border: '1px solid #2e2e37',
-                        borderRadius: '8px',
-                        color: '#fff',
-                        fontSize: '1rem'
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ color: '#e5e5e5', display: 'block', marginBottom: '0.5rem' }}>
-                      Loại Podcast *
+                      Thể loại *
                     </label>
                     <select
-                      value={podcastForm.type}
-                      onChange={(e) => setPodcastForm({...podcastForm, type: e.target.value})}
+                      value={podcastForm.category}
+                      onChange={(e) => setPodcastForm({...podcastForm, category: e.target.value})}
+                      required
                       style={{
                         width: '100%',
                         padding: '0.75rem',
@@ -1050,10 +760,13 @@ const PodcastsAdmin = () => {
                         fontSize: '1rem'
                       }}
                     >
-                      <option value="series">Series (Nhiều tập)</option>
-                      <option value="single">Single (Một tập duy nhất)</option>
+                      {categories.map(category => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
                     </select>
                   </div>
+
+
 
                   <div>
                     <label style={{ color: '#e5e5e5', display: 'block', marginBottom: '0.5rem' }}>
@@ -1075,27 +788,25 @@ const PodcastsAdmin = () => {
                     />
                   </div>
 
-                  {podcastForm.type === 'single' && (
-                    <div>
-                      <label style={{ color: '#e5e5e5', display: 'block', marginBottom: '0.5rem' }}>
-                        File Audio *
-                      </label>
-                      <input
-                        type="file"
-                        accept="audio/*"
-                        onChange={(e) => setAudioFile(e.target.files[0])}
-                        style={{
-                          width: '100%',
-                          padding: '0.75rem',
-                          background: '#2a2a35',
-                          border: '1px solid #2e2e37',
-                          borderRadius: '8px',
-                          color: '#fff',
-                          fontSize: '1rem'
-                        }}
-                      />
-                    </div>
-                  )}
+                  <div>
+                    <label style={{ color: '#e5e5e5', display: 'block', marginBottom: '0.5rem' }}>
+                      File Audio *
+                    </label>
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => setAudioFile(e.target.files[0])}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        background: '#2a2a35',
+                        border: '1px solid #2e2e37',
+                        borderRadius: '8px',
+                        color: '#fff',
+                        fontSize: '1rem'
+                      }}
+                    />
+                  </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <input

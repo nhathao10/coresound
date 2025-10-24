@@ -8,6 +8,24 @@ const Episode = require('../models/Episode');
 const Favorite = require('../models/Favorite');
 const { protect } = require('../middleware/auth');
 
+// Function to sanitize filename - remove Vietnamese characters and special chars
+const sanitizeFilename = (filename) => {
+  const ext = path.extname(filename);
+  const nameWithoutExt = path.basename(filename, ext);
+  
+  // Remove Vietnamese characters
+  const sanitized = nameWithoutExt
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .replace(/[^a-zA-Z0-9-_]/g, '_') // Replace special chars with underscore
+    .replace(/_+/g, '_') // Replace multiple underscores with single
+    .substring(0, 50); // Limit length
+  
+  return sanitized + ext;
+};
+
 // Middleware kiểm tra admin
 const requireAdmin = (req, res, next) => {
   if (!req.user || req.user.role !== 'admin') {
@@ -27,7 +45,8 @@ const podcastCoverStorage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
+    const sanitizedName = sanitizeFilename(file.originalname);
+    cb(null, uniqueSuffix + '-' + sanitizedName);
   }
 });
 
@@ -42,7 +61,8 @@ const podcastAudioStorage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
+    const sanitizedName = sanitizeFilename(file.originalname);
+    cb(null, uniqueSuffix + '-' + sanitizedName);
   }
 });
 
@@ -57,7 +77,8 @@ const generalStorage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
+    const sanitizedName = sanitizeFilename(file.originalname);
+    cb(null, uniqueSuffix + '-' + sanitizedName);
   }
 });
 
@@ -72,7 +93,8 @@ const episodeAudioStorage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
+    const sanitizedName = sanitizeFilename(file.originalname);
+    cb(null, uniqueSuffix + '-' + sanitizedName);
   }
 });
 
