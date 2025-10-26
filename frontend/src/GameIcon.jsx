@@ -14,6 +14,7 @@ const GameIcon = () => {
   const [roundIndex, setRoundIndex] = useState(1); // 1..3
   const [showResult, setShowResult] = useState(false);
   const [score, setScore] = useState(0);
+  const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameCompleted, setGameCompleted] = useState(false);
   const [songs, setSongs] = useState([]);
@@ -61,6 +62,7 @@ const GameIcon = () => {
     setLives(3);
     setShowResult(false);
     setScore(1000);
+    setIsCorrectAnswer(false);
     setGameStarted(false);
     setGameCompleted(false);
     setShowSongDropdown(false);
@@ -122,6 +124,7 @@ const GameIcon = () => {
       setUserAnswer('');
       setGameCompleted(false);
       setShowResult(false);
+      setIsCorrectAnswer(false);
       setIsPlaying(false);
       if (audioRef.current) {
         audioRef.current.pause();
@@ -186,6 +189,7 @@ const GameIcon = () => {
           setGameCompleted(true);
           setShowResult(true);
           setScore(data.gameResult.score);
+          setIsCorrectAnswer(data.gameResult.isCorrect);
           setAttempts(0);
           setLives(data.gameResult.score > 0 ? 3 : 0);
           setCurrentClipDuration(3);
@@ -363,6 +367,7 @@ const GameIcon = () => {
           // Already played today - show result
           setShowResult(true);
           setScore(result.score);
+          setIsCorrectAnswer(result.isCorrect);
           setGameCompleted(true);
           if (result.isCorrect) {
             showSuccess(`Bạn đã chơi hôm nay! Điểm số: ${result.score}`);
@@ -373,6 +378,7 @@ const GameIcon = () => {
           // Correct answer - game won
           setShowResult(true);
           setScore(result.score);
+          setIsCorrectAnswer(true);
           setGameCompleted(true);
           // Update dailySong with correct answer data
           setDailySong(prev => ({
@@ -406,6 +412,7 @@ const GameIcon = () => {
             // Game over
             setShowResult(true);
             setScore(0);
+            setIsCorrectAnswer(false);
             setGameCompleted(true);
             // Update dailySong with correct answer data for game over
             setDailySong(prev => ({
@@ -979,13 +986,13 @@ const GameIcon = () => {
                   fontSize: '3rem',
                   marginBottom: '1rem'
                 }}>
-                  {score > 0 ? '🎉' : '😔'}
+                  {isCorrectAnswer ? '🎉' : '😔'}
                 </div>
                 <h3 style={{
-                  color: score > 0 ? '#1db954' : '#ff4444',
+                  color: isCorrectAnswer ? '#1db954' : '#ff4444',
                   marginBottom: '1rem'
                 }}>
-                  {score > 0 ? 'Chính xác!' : 'Sai rồi!'}
+                  {isCorrectAnswer ? 'Chính xác!' : 'Sai rồi!'}
                 </h3>
                 {/* Song Result Display */}
                 <div style={{

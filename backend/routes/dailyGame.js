@@ -223,11 +223,12 @@ router.post('/daily-song/check-answer', protect, async (req, res) => {
       // Use currentScore from frontend (already includes skip penalties)
       // If currentScore is not provided, fallback to base calculation
       if (currentScore !== undefined && currentScore !== null) {
-        score = Math.max(0, currentScore);
+        // Ensure minimum score of 10 points when answer is correct
+        score = Math.max(10, currentScore);
       } else {
         const baseScore = 1000;
         const hintPenalty = hintsUsed * 100;
-        score = Math.max(0, baseScore - hintPenalty);
+        score = Math.max(10, baseScore - hintPenalty);
       }
     }
 
