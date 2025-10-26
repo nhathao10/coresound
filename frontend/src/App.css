@@ -1238,6 +1238,7 @@ body {
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   background: rgba(255, 255, 255, 0.03);
   padding: 0.4rem;
@@ -2540,6 +2541,60 @@ body {
   padding: 2px 6px;
   border-radius: 999px;
   box-shadow: 0 2px 6px #0007;
+}
+
+/* Tạo khoảng trống cho badge số bài khi card có badge plays */
+.recommend-horizontal-card:has(.recommend-horizontal-plays) .recommend-horizontal-info {
+  padding-bottom: 30px;
+}
+
+/* === PLAYLIST CARD IMPROVEMENTS === */
+/* Giữ kích thước cố định cho playlist cards */
+.recommend-horizontal-list:has(.playlist-card) {
+  grid-auto-columns: 160px; /* Cố định bề rộng, không dàn đều */
+}
+
+/* Tên playlist có gradient đẹp mắt */
+.playlist-card .recommend-horizontal-title {
+  background: linear-gradient(135deg, #1db954 0%, #1ed760 50%, #ffffff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+/* Mô tả playlist hiển thị nhiều dòng */
+.playlist-card .recommend-horizontal-artist {
+  white-space: normal; /* Cho phép xuống dòng */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 4; /* Hiển thị tối đa 3 dòng */
+  line-clamp: 4; /* Standard property */
+  -webkit-box-orient: vertical;
+  line-height: 1.4;
+  font-size: 0.82rem;
+  color: #c0c0c0;
+  max-height: 4.6em; /* 1.4 * 3 lines * 0.82rem */
+}
+
+/* Hover vào card thì hiển thị đầy đủ mô tả */
+.playlist-card:hover .recommend-horizontal-artist {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  max-height: none;
+  animation: none; /* Tắt marquee khi hover */
+  overflow: visible;
+  z-index: 10;
+  position: relative;
+  background: rgba(30, 30, 36, 0.95);
+  padding: 0.4rem;
+  margin: -0.4rem;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+  color: #e0e0e0;
 }
 
 /* Album pill phía trên badge lượt nghe, có spacing nhỏ */

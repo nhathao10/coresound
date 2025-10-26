@@ -985,7 +985,7 @@ function App() {
                 <a 
                   key={playlist._id} 
                   href={`#/playlist/${encodeURIComponent(playlist._id)}`} 
-                  className="recommend-horizontal-card" 
+                  className="recommend-horizontal-card playlist-card" 
                   style={{ textDecoration: "none", color: "inherit", position: "relative" }}
                 >
                   <img
