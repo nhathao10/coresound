@@ -511,7 +511,7 @@ const GameIcon = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 2000,
+          zIndex: 10002,
           backdropFilter: 'blur(10px)'
         }}>
           <div

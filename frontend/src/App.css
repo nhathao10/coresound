@@ -2480,10 +2480,14 @@ body {
     width: 160px;
   }
 }
-.recommend-horizontal-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 16px #0007;
+/* Only apply hover effect on desktop */
+@media (hover: hover) and (pointer: fine) {
+  .recommend-horizontal-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px #0007;
+  }
 }
+
 .recommend-horizontal-card.active {
   border: 2px solid #1db954;
 }
@@ -2642,21 +2646,34 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s, opacity 0.25s ease;
+  transition: background 0.2s, opacity 0.25s ease, transform 0.2s ease;
   opacity: 0;                /* ẩn đi */
   pointer-events: none;       /* không bấm được khi ẩn */
   margin-top: 0.6rem;
+  position: relative;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(29, 185, 84, 0.4);
 }
 
-/* Khi hover vào card thì hiện nút */
-.recommend-horizontal-card:hover .recommend-horizontal-play {
-  opacity: 1;
-  pointer-events: auto;
-  transform: scale(0.9); /* nhỏ lại khi hover */
+/* Khi hover vào card thì hiện nút - only on desktop */
+@media (hover: hover) and (pointer: fine) {
+  .recommend-horizontal-card:hover .recommend-horizontal-play {
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(0.9); /* nhỏ lại khi hover */
+  }
+
+  /* Hover vào nút thì đổi màu */
+  .recommend-horizontal-play:hover {
+    background: #1ed760;
+    transform: scale(1) !important;
+    box-shadow: 0 6px 16px rgba(29, 185, 84, 0.6);
+  }
 }
 
-/* Hover vào nút thì đổi màu */
-.recommend-horizontal-play:hover {
+/* Active state for mobile */
+.recommend-horizontal-play:active {
+  transform: scale(0.95) !important;
   background: #1ed760;
 }
 
@@ -2666,6 +2683,7 @@ body {
   height: 20px;
   color: #fff;
   flex-shrink: 0;
+  pointer-events: none;
 }
 
 

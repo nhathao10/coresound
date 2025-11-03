@@ -1,6 +1,7 @@
 import React, { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './mobile.css'
 import App from './App.jsx'
 import Upload from './Upload.jsx'
 import AlbumsAdmin from './AlbumsAdmin.jsx'
@@ -27,6 +28,8 @@ import { ToastProvider } from './ToastContext.jsx'
 import { FavoritesProvider } from './FavoritesContext.jsx'
 import GlobalPlayer from './GlobalPlayer.jsx'
 import AddToPlaylistModal from './AddToPlaylistModal.jsx'
+import MobilePlayer from './MobilePlayer.jsx'
+import MobileNavDrawer from './MobileNavDrawer.jsx'
 
 function Router() {
   const hash = window.location.hash || '#/'
@@ -141,7 +144,19 @@ function Root() {
   const [showAddToPlaylistModal, setShowAddToPlaylistModal] = React.useState(false)
   const [selectedSongForPlaylist, setSelectedSongForPlaylist] = React.useState(null)
   const [hideGlobalPlayer, setHideGlobalPlayer] = React.useState(false)
+  const [showMobileNav, setShowMobileNav] = React.useState(false)
+  const [isMobile, setIsMobile] = React.useState(false)
   
+  // Detect mobile
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   React.useEffect(() => {
     const onHash = () => force()
     window.addEventListener('hashchange', onHash)
@@ -171,6 +186,13 @@ function Root() {
       window.removeEventListener('gameModalClose', handleGameModalClose)
     }
   }, [])
+
+  // Listen for mobile nav open event
+  React.useEffect(() => {
+    const handleOpenMobileNav = () => setShowMobileNav(true)
+    window.addEventListener('openMobileNav', handleOpenMobileNav)
+    return () => window.removeEventListener('openMobileNav', handleOpenMobileNav)
+  }, [])
   
   // Check if current route should hide the player
   const hash = window.location.hash || '#/'
@@ -193,7 +215,20 @@ function Root() {
             <SearchProvider>
               <PlayerProvider>
                 <Router />
-                {!hidePlayer && !hideGlobalPlayer && <GlobalPlayer />}
+                {/* Desktop Player */}
+                {!hidePlayer && !hideGlobalPlayer && !isMobile && <GlobalPlayer />}
+
+                {/* Mobile Player */}
+                {!hidePlayer && !hideGlobalPlayer && isMobile && <MobilePlayer />}
+
+                {/* Mobile Navigation Drawer */}
+                {isMobile && (
+                  <MobileNavDrawer
+                    isOpen={showMobileNav}
+                    onClose={() => setShowMobileNav(false)}
+                  />
+                )}
+
                 <AddToPlaylistModal
                   isOpen={showAddToPlaylistModal}
                   onClose={() => {

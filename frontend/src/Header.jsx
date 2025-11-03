@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, forwardRef } from "react";
+import { FaBars, FaSearch } from "react-icons/fa";
 import { usePlayer } from "./PlayerContext";
 import { useSearch } from "./SearchContext";
 import { useAuth } from "./AuthContext";
@@ -22,6 +23,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const userDropdownRef = useRef(null);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
 
@@ -145,11 +147,34 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
 
 
 
+  // Trigger mobile nav drawer
+  const openMobileNav = () => {
+    window.dispatchEvent(new CustomEvent('openMobileNav'));
+  };
+
   return (
     <header ref={ref} className="header">
       <div className="header-logo-block">
-        <span 
-          className="logo-gradient" 
+        {/* Mobile Menu Button */}
+        <button
+          onClick={openMobileNav}
+          className="mobile-menu-btn"
+          style={{
+            display: 'none',
+            background: 'transparent',
+            border: 'none',
+            color: '#fff',
+            fontSize: '1.5rem',
+            cursor: 'pointer',
+            padding: '0.5rem',
+            marginRight: '0.5rem'
+          }}
+        >
+          <FaBars />
+        </button>
+
+        <span
+          className="logo-gradient"
           style={{ cursor: "pointer" }}
           onClick={() => window.location.hash = "#/"}
         >
@@ -191,12 +216,13 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
         </nav>
         
         {showSearch && (
-          <div 
-            ref={searchWrapRef} 
-            style={{ 
-              position: "relative", 
-              marginLeft: 16, 
-              width: 360, 
+          <div
+            ref={searchWrapRef}
+            className="header-search-wrapper"
+            style={{
+              position: "relative",
+              marginLeft: 16,
+              width: 360,
               minWidth: 360,
               maxWidth: 360,
               display: "inline-block",
@@ -204,8 +230,27 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
               boxSizing: "border-box"
             }}
           >
+            {/* Mobile Search Icon */}
+            <button
+              className="mobile-search-icon"
+              onClick={() => setShowMobileSearch(true)}
+              style={{
+                display: 'none',
+                background: 'transparent',
+                border: 'none',
+                color: '#fff',
+                fontSize: '1.25rem',
+                cursor: 'pointer',
+                padding: '0.5rem'
+              }}
+            >
+              <FaSearch />
+            </button>
+
             <input
+              ref={searchInputRef}
               type="text"
+              className="header-search-input"
               placeholder="Tìm kiếm bài hát hoặc nghệ sĩ..."
               value={searchQuery}
               onChange={handleSearchChange}
@@ -228,11 +273,17 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                 boxSizing: "border-box"
               }}
             />
-            
-            
-            
+
+
+
           </div>
         )}
+
+        {/* Mobile Icons - Game and Notification (next to search) */}
+        <div className="mobile-header-icons" style={{ display: 'none', alignItems: 'center', gap: '0.5rem', marginLeft: '0.5rem' }}>
+          <GameIcon />
+          <NotificationBell />
+        </div>
       </div>
       
       {/* User Section */}
@@ -737,7 +788,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
         }}
       />
       
-      <SignupModal 
+      <SignupModal
         isOpen={showSignupModal}
         onClose={() => setShowSignupModal(false)}
         onSwitchToLogin={() => {
@@ -745,6 +796,266 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
           setShowLoginModal(true);
         }}
       />
+
+      {/* Mobile Search Modal */}
+      {showMobileSearch && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: '#18181b',
+            zIndex: 10000,
+            display: 'flex',
+            flexDirection: 'column',
+            animation: 'slideDown 0.3s ease-out'
+          }}
+        >
+          {/* Search Header */}
+          <div
+            style={{
+              padding: '1rem',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem'
+            }}
+          >
+            <button
+              onClick={() => setShowMobileSearch(false)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#fff',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                padding: '0.5rem'
+              }}
+            >
+              ←
+            </button>
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Tìm kiếm bài hát hoặc nghệ sĩ..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onKeyDown={handleKeyDown}
+              autoFocus
+              style={{
+                flex: 1,
+                padding: '0.75rem',
+                borderRadius: '8px',
+                border: '1px solid #444',
+                background: '#1f1f1f',
+                color: '#fff',
+                fontSize: '1rem',
+                outline: 'none'
+              }}
+            />
+          </div>
+
+          {/* Search Results */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+            {searchQuery.trim() ? (
+              searchResults.length > 0 ? (
+                <div>
+                  {searchResults.map((song) => (
+                    <div
+                      key={song._id}
+                      onMouseDown={(e) => {
+                        fetch("http://localhost:5000/api/songs")
+                          .then((r) => r.json())
+                          .then((data) => {
+                            const newSongs = data || [];
+                            const newIdx = newSongs.findIndex((s) => s._id === song._id);
+                            if (newIdx !== -1) {
+                              setSongs(newSongs);
+                              setQueueAndPlay(newSongs, newIdx);
+                              setQueueContext("search");
+                            }
+                          })
+                          .catch((e) => console.error("Error loading songs:", e));
+
+                        setShowMobileSearch(false);
+                        setSearchQuery('');
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1rem',
+                        padding: '0.75rem',
+                        cursor: 'pointer',
+                        borderRadius: '8px',
+                        marginBottom: '0.5rem',
+                        background: '#1e1e24',
+                        transition: 'background 0.2s ease'
+                      }}
+                    >
+                      <img
+                        src={withMediaBase(song.cover) || "/default-cover.png"}
+                        alt={song.title}
+                        style={{
+                          width: '50px',
+                          height: '50px',
+                          borderRadius: '6px',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            color: '#fff',
+                            fontWeight: '600',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                        >
+                          {song.title}
+                        </div>
+                        <div
+                          style={{
+                            color: '#b3b3b3',
+                            fontSize: '0.9rem',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                        >
+                          {song.artist}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ padding: '2rem', color: '#b3b3b3', textAlign: 'center' }}>
+                  Không tìm thấy kết quả cho "{searchQuery}"
+                </div>
+              )
+            ) : (
+              <div>
+                {searchHistory.length > 0 ? (
+                  <div>
+                    <h3 style={{ color: '#fff', marginBottom: '1rem' }}>Lịch sử tìm kiếm</h3>
+                    {searchHistory.slice(0, 10).map((song) => (
+                      <div
+                        key={song._id}
+                        onMouseDown={(e) => {
+                          fetch("http://localhost:5000/api/songs")
+                            .then((r) => r.json())
+                            .then((data) => {
+                              const newSongs = data || [];
+                              const newIdx = newSongs.findIndex((s) => s._id === song._id);
+                              if (newIdx !== -1) {
+                                setSongs(newSongs);
+                                setQueueAndPlay(newSongs, newIdx);
+                                setQueueContext("search");
+                              }
+                            })
+                            .catch((e) => console.error("Error loading songs:", e));
+
+                          setShowMobileSearch(false);
+                          setSearchQuery('');
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '1rem',
+                          padding: '0.75rem',
+                          cursor: 'pointer',
+                          borderRadius: '8px',
+                          marginBottom: '0.5rem',
+                          background: '#1e1e24',
+                          transition: 'background 0.2s ease'
+                        }}
+                      >
+                        <img
+                          src={withMediaBase(song.cover) || "/default-cover.png"}
+                          alt={song.title}
+                          style={{
+                            width: '50px',
+                            height: '50px',
+                            borderRadius: '6px',
+                            objectFit: 'cover'
+                          }}
+                        />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              color: '#fff',
+                              fontWeight: '600',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}
+                          >
+                            {song.title}
+                          </div>
+                          <div
+                            style={{
+                              color: '#b3b3b3',
+                              fontSize: '0.9rem',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}
+                          >
+                            {song.artist}
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFromSearchHistory(song._id);
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#b3b3b3',
+                            fontSize: '1.25rem',
+                            cursor: 'pointer',
+                            padding: '0.5rem'
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ padding: '2rem', color: '#b3b3b3', textAlign: 'center' }}>
+                    <div style={{ marginBottom: '0.5rem' }}>Chưa có lịch sử tìm kiếm</div>
+                    <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+                      Tìm kiếm bài hát để xem lịch sử
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <style>
+        {`
+          @keyframes slideDown {
+            from {
+              transform: translateY(-100%);
+            }
+            to {
+              transform: translateY(0);
+            }
+          }
+        `}
+      </style>
     </header>
   );
 });

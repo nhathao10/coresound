@@ -216,7 +216,7 @@ const NotificationBell = () => {
           borderRadius: '16px',
           boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          zIndex: 1000,
+          zIndex: 10002,
           overflow: 'hidden',
           animation: 'slideDown 0.3s ease-out'
         }}>
