@@ -3,7 +3,8 @@ import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { usePlayer } from './PlayerContext';
 import Header from './Header';
-import { FaMusic, FaClock, FaHeart, FaList, FaEdit, FaChartLine, FaTimes, FaSave, FaSync } from 'react-icons/fa';
+import PremiumModal from './PremiumModal';
+import { FaMusic, FaClock, FaHeart, FaList, FaEdit, FaChartLine, FaTimes, FaSave, FaSync, FaCrown } from 'react-icons/fa';
 
 const Profile = () => {
   const { user, isAuthenticated, refreshUser } = useAuth();
@@ -23,6 +24,7 @@ const Profile = () => {
     avatar: null
   });
   const [avatarPreview, setAvatarPreview] = useState(null);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -367,9 +369,27 @@ const Profile = () => {
                     <FaEdit /> Chỉnh sửa hồ sơ
                   </button>
                 )}
-                <h2 style={{ color: '#fff', fontSize: '2.5rem', fontWeight: '700', margin: '0 0 0.75rem 0' }}>
-                  {user?.name || 'Người dùng'}
-                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                  <h2 style={{ color: '#fff', fontSize: '2.5rem', fontWeight: '700', margin: 0 }}>
+                    {user?.name || 'Người dùng'}
+                  </h2>
+                  {user?.isPremium && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.5rem 1rem',
+                      background: 'linear-gradient(135deg, #ffd700, #ffed4e)',
+                      borderRadius: '20px',
+                      boxShadow: '0 4px 12px rgba(255, 215, 0, 0.3)'
+                    }}>
+                      <FaCrown style={{ color: '#000', fontSize: '1rem' }} />
+                      <span style={{ color: '#000', fontSize: '0.9rem', fontWeight: '700' }}>
+                        Premium
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#1db954' }}></div>
@@ -396,6 +416,82 @@ const Profile = () => {
                 </div>
               </div>
             </div>
+
+            {/* Premium Upgrade Button */}
+            {!user?.isPremium && (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05))',
+                borderRadius: '16px',
+                border: '2px solid rgba(255, 215, 0, 0.3)',
+                padding: '2rem',
+                marginBottom: '2rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1.5rem'
+              }}>
+                <div style={{ flex: 1, minWidth: '250px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                    <FaCrown style={{ color: '#ffd700', fontSize: '2rem' }} />
+                    <h3 style={{ color: '#fff', fontSize: '1.8rem', fontWeight: '700', margin: 0 }}>
+                      Nâng cấp lên Premium
+                    </h3>
+                  </div>
+                  <p style={{ color: '#b3b3b3', fontSize: '1rem', margin: 0, lineHeight: 1.6 }}>
+                    Trải nghiệm âm nhạc không giới hạn với chất lượng cao nhất.<br/>
+                    Không quảng cáo, tải offline và nhiều tính năng độc quyền khác.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowPremiumModal(true)}
+                  style={{
+                    padding: '1rem 2rem',
+                    background: 'linear-gradient(135deg, #ffd700, #ffed4e)',
+                    border: 'none',
+                    borderRadius: '12px',
+                    color: '#000',
+                    fontSize: '1.1rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 4px 16px rgba(255, 215, 0, 0.4)',
+                    whiteSpace: 'nowrap'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 6px 20px rgba(255, 215, 0, 0.5)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 16px rgba(255, 215, 0, 0.4)';
+                  }}
+                >
+                  <FaCrown style={{ marginRight: '0.5rem' }} />
+                  Nâng cấp ngay
+                </button>
+              </div>
+            )}
+
+            {/* Premium Info for Premium Users */}
+            {user?.isPremium && user?.premiumExpiresAt && (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05))',
+                borderRadius: '16px',
+                border: '2px solid rgba(255, 215, 0, 0.3)',
+                padding: '2rem',
+                marginBottom: '2rem',
+                textAlign: 'center'
+              }}>
+                <FaCrown style={{ color: '#ffd700', fontSize: '3rem', marginBottom: '1rem' }} />
+                <h3 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: '700', margin: '0 0 0.5rem 0' }}>
+                  Bạn đang là thành viên Premium
+                </h3>
+                <p style={{ color: '#b3b3b3', fontSize: '1rem', margin: 0 }}>
+                  Gói Premium của bạn sẽ hết hạn vào: {new Date(user.premiumExpiresAt).toLocaleDateString('vi-VN')}
+                </p>
+              </div>
+            )}
 
             {/* Stats Cards */}
             {loadingStats ? (
@@ -1146,6 +1242,12 @@ const Profile = () => {
         </form>
         )}
       </div>
+
+      {/* Premium Modal */}
+      <PremiumModal 
+        isOpen={showPremiumModal} 
+        onClose={() => setShowPremiumModal(false)} 
+      />
     </div>
   );
 };

@@ -15,6 +15,7 @@ import StatisticsAdmin from './StatisticsAdmin.jsx'
 import PodcastsAdmin from './PodcastsAdmin.jsx'
 import PlaylistDetail from './PlaylistDetail.jsx'
 import Profile from './Profile.jsx'
+import PremiumSuccess from './PremiumSuccess.jsx'
 import Favorites from './Favorites.jsx'
 import Library from './Library.jsx'
 import AlbumDetail from './AlbumDetail.jsx'
@@ -107,6 +108,13 @@ function Router() {
     return (
       <ProtectedRoute requireAdmin={false}>
         <Profile />
+      </ProtectedRoute>
+    )
+  }
+  if (hash.startsWith('#/premium-success')) {
+    return (
+      <ProtectedRoute requireAdmin={false}>
+        <PremiumSuccess />
       </ProtectedRoute>
     )
   }

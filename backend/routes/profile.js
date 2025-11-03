@@ -90,6 +90,8 @@ router.get('/', protect, async (req, res) => {
         dateOfBirth: req.user.dateOfBirth,
         avatar: req.user.avatar,
         isActive: req.user.isActive,
+        isPremium: req.user.isPremium || false,
+        premiumExpiresAt: req.user.premiumExpiresAt || null,
         createdAt: req.user.createdAt,
       }
     });
@@ -148,6 +150,8 @@ router.put('/', protect, upload.single('avatar'), async (req, res) => {
         dateOfBirth: updatedUser.dateOfBirth,
         avatar: updatedUser.avatar,
         isActive: updatedUser.isActive,
+        isPremium: updatedUser.isPremium || false,
+        premiumExpiresAt: updatedUser.premiumExpiresAt || null,
         createdAt: updatedUser.createdAt,
       }
     });

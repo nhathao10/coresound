@@ -86,6 +86,7 @@ const artistsRoute = require('./routes/artists');
 const authRoute = require('./routes/auth');
 const usersRoute = require('./routes/users');
 const profileRoute = require('./routes/profile');
+const premiumRoute = require('./routes/premium');
 const favoritesRoute = require('./routes/favorites');
 const historyRoute = require('./routes/history');
 const notificationsRoute = require('./routes/notifications');
@@ -122,6 +123,9 @@ app.use('/api/users', usersRoute);
 
 // API profile
 app.use('/api/profile', profileRoute);
+
+// API premium
+app.use('/api/premium', premiumRoute);
 
 // API favorites
 app.use('/api/favorites', favoritesRoute);

@@ -54,7 +54,15 @@ const userSchema = new mongoose.Schema({
   followedArtists: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Artist'
-  }]
+  }],
+  isPremium: {
+    type: Boolean,
+    default: false
+  },
+  premiumExpiresAt: {
+    type: Date,
+    default: null
+  }
 }, {
   timestamps: true
 });

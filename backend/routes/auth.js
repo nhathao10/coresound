@@ -58,6 +58,8 @@ router.post('/register', async (req, res) => {
       dateOfBirth: user.dateOfBirth,
       avatar: user.avatar,
       followedArtists: user.followedArtists || [],
+      isPremium: user.isPremium || false,
+      premiumExpiresAt: user.premiumExpiresAt || null,
       createdAt: user.createdAt
     };
 
@@ -111,6 +113,8 @@ router.post('/login', async (req, res) => {
       dateOfBirth: user.dateOfBirth,
       avatar: user.avatar,
       followedArtists: user.followedArtists || [],
+      isPremium: user.isPremium || false,
+      premiumExpiresAt: user.premiumExpiresAt || null,
       createdAt: user.createdAt
     };
 
