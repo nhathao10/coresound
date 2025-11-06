@@ -87,30 +87,24 @@ const PremiumModal = ({ isOpen, onClose }) => {
             position: 'absolute',
             top: '1.5rem',
             right: '1.5rem',
-            background: 'rgba(255, 255, 255, 0.1)',
+            background: 'none',
             border: 'none',
-            borderRadius: '50%',
-            width: '40px',
-            height: '40px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            color: '#b3b3b3',
             cursor: 'pointer',
-            color: '#fff',
-            fontSize: '1.2rem',
-            transition: 'all 0.2s ease',
-            zIndex: 10
+            padding: '0.5rem',
+            borderRadius: '50%',
+            transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => {
-            e.target.style.background = 'rgba(255, 255, 255, 0.2)';
-            e.target.style.transform = 'rotate(90deg)';
+            e.target.style.background = 'rgba(255, 0, 0, 0.1)';
+            e.target.style.color = '#ff4444';
           }}
           onMouseLeave={(e) => {
-            e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-            e.target.style.transform = 'rotate(0deg)';
+            e.target.style.background = 'none';
+            e.target.style.color = '#b3b3b3';
           }}
         >
-          <FaTimes />
+          <FaTimes size="1rem" />
         </button>
 
         {/* Header */}
@@ -227,7 +221,7 @@ const PremiumModal = ({ isOpen, onClose }) => {
                 'Nghe nhạc không quảng cáo',
                 'Chất lượng âm thanh cao',
                 'Tải nhạc offline',
-                'Bỏ qua không giới hạn'
+                'Chơi minigame không giới hạn'
               ].map((feature, idx) => (
                 <li key={idx} style={{
                   display: 'flex',

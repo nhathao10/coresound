@@ -4,6 +4,7 @@ const DailySong = require('../models/DailySong');
 const GameResult = require('../models/GameResult');
 const Song = require('../models/Song');
 const Genre = require('../models/Genre');
+const User = require('../models/User');
 const { protect } = require('../middleware/auth');
 
 // Check if user has completed today's game
@@ -503,6 +504,103 @@ router.post('/new-random-song', protect, async (req, res) => {
   } catch (error) {
     console.error('Error generating new random songs:', error);
     res.status(500).json({ error: 'Lỗi server khi tạo bài hát mới' });
+  }
+});
+
+// Check if user can access the game (Free users: 3 plays limit)
+router.get('/game/access-check', protect, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    }
+
+    const isPremium = user.isPremium && (!user.premiumExpiresAt || user.premiumExpiresAt > new Date());
+    const freeGamePlaysUsed = user.freeGamePlaysUsed || 0;
+    const maxFreePlays = 3;
+    const playsRemaining = Math.max(0, maxFreePlays - freeGamePlaysUsed);
+
+    // Premium users have unlimited access
+    if (isPremium) {
+      return res.json({
+        canAccess: true,
+        isPremium: true,
+        playsRemaining: -1, // -1 means unlimited
+        playsUsed: 0,
+        maxPlays: -1
+      });
+    }
+
+    // Free users check
+    const canAccess = freeGamePlaysUsed < maxFreePlays;
+
+    res.json({
+      canAccess,
+      isPremium: false,
+      playsRemaining,
+      playsUsed: freeGamePlaysUsed,
+      maxPlays: maxFreePlays
+    });
+
+  } catch (error) {
+    console.error('Error checking game access:', error);
+    res.status(500).json({ error: 'Lỗi server khi kiểm tra quyền truy cập game' });
+  }
+});
+
+// Increment play count when user opens the game
+router.post('/game/increment-play', protect, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    }
+
+    const isPremium = user.isPremium && (!user.premiumExpiresAt || user.premiumExpiresAt > new Date());
+
+    // Premium users don't need to increment
+    if (isPremium) {
+      return res.json({
+        success: true,
+        isPremium: true,
+        playsRemaining: -1
+      });
+    }
+
+    // Check if user still has plays remaining
+    const freeGamePlaysUsed = user.freeGamePlaysUsed || 0;
+    const maxFreePlays = 3;
+
+    if (freeGamePlaysUsed >= maxFreePlays) {
+      return res.status(403).json({ 
+        error: 'Bạn đã hết lượt chơi miễn phí',
+        canAccess: false,
+        playsRemaining: 0,
+        maxPlays: maxFreePlays
+      });
+    }
+
+    // Increment the play count
+    user.freeGamePlaysUsed = freeGamePlaysUsed + 1;
+    await user.save();
+
+    const playsRemaining = Math.max(0, maxFreePlays - user.freeGamePlaysUsed);
+
+    res.json({
+      success: true,
+      isPremium: false,
+      playsRemaining,
+      playsUsed: user.freeGamePlaysUsed,
+      maxPlays: maxFreePlays
+    });
+
+  } catch (error) {
+    console.error('Error incrementing play count:', error);
+    res.status(500).json({ error: 'Lỗi server khi cập nhật lượt chơi' });
   }
 });
 

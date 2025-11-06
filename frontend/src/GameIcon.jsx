@@ -1,12 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaGamepad, FaMusic, FaTrophy, FaTimes, FaPlay, FaPause, FaLightbulb, FaInfoCircle, FaTags, FaCalendarAlt, FaChartBar } from 'react-icons/fa';
+import { FaGamepad, FaMusic, FaTrophy, FaTimes, FaPlay, FaPause, FaLightbulb, FaInfoCircle, FaTags, FaCalendarAlt, FaChartBar, FaCrown, FaStar } from 'react-icons/fa';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
+import PremiumModal from './PremiumModal';
 
 const GameIcon = () => {
   const { user, isAuthenticated } = useAuth();
   const { showSuccess, showError } = useToast();
   const [showGameModal, setShowGameModal] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [gameAccess, setGameAccess] = useState({
+    canAccess: true,
+    isPremium: false,
+    playsRemaining: 3,
+    playsUsed: 0,
+    maxPlays: 3
+  });
   const [dailySong, setDailySong] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [userAnswer, setUserAnswer] = useState('');
@@ -27,6 +36,30 @@ const GameIcon = () => {
   const audioRef = useRef(null);
   const gameModalRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Check game access on mount
+  useEffect(() => {
+    if (isAuthenticated && user?.token) {
+      checkGameAccess();
+    }
+  }, [isAuthenticated, user?.token]);
+
+  const checkGameAccess = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/game/access-check', {
+        headers: {
+          'Authorization': `Bearer ${user?.token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setGameAccess(data);
+      }
+    } catch (error) {
+      console.error('Error checking game access:', error);
+    }
+  };
 
   // Close modal when clicking outside
   useEffect(() => {
@@ -452,6 +485,51 @@ const GameIcon = () => {
 
 
   const openGameModal = async () => {
+    // Check access first
+    if (!gameAccess.canAccess && !gameAccess.isPremium) {
+      setShowPremiumModal(true);
+      showError(`Bạn đã hết ${gameAccess.maxPlays} lượt chơi miễn phí. Nâng cấp Premium để chơi không giới hạn!`);
+      return;
+    }
+
+    // Increment play count for free users
+    if (!gameAccess.isPremium) {
+      try {
+        const response = await fetch('http://localhost:5000/api/game/increment-play', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${user?.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          showError(errorData.error || 'Không thể mở game');
+          setShowPremiumModal(true);
+          return;
+        }
+
+        const data = await response.json();
+        setGameAccess(prev => ({
+          ...prev,
+          playsRemaining: data.playsRemaining,
+          playsUsed: data.playsUsed
+        }));
+
+        // Show remaining plays notification
+        if (data.playsRemaining > 0) {
+          showSuccess(`Còn ${data.playsRemaining} lượt chơi miễn phí`);
+        } else {
+          showSuccess('Đây là lượt chơi miễn phí cuối cùng của bạn!');
+        }
+      } catch (error) {
+        console.error('Error incrementing play:', error);
+        showError('Lỗi khi mở game');
+        return;
+      }
+    }
+
     setShowGameModal(true);
     // Dispatch event to hide GlobalPlayer
     window.dispatchEvent(new CustomEvent('gameModalOpen'));
@@ -487,16 +565,83 @@ const GameIcon = () => {
           marginRight: '1rem'
         }}
         onMouseEnter={(e) => {
-          e.target.style.background = 'rgba(255, 255, 255, 0.1)';
-          e.target.style.color = '#1db954';
+          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+          e.currentTarget.style.color = '#1db954';
         }}
         onMouseLeave={(e) => {
-          e.target.style.background = 'none';
-          e.target.style.color = '#b3b3b3';
+          e.currentTarget.style.background = 'none';
+          e.currentTarget.style.color = '#b3b3b3';
         }}
-        title="Game đoán bài hát"
+        title={gameAccess.isPremium ? "Game đoán bài hát (Premium)" : `Game đoán bài hát (${gameAccess.playsRemaining}/${gameAccess.maxPlays} lượt)`}
       >
         <FaGamepad size="1.2rem" />
+        
+        {/* Premium Badge */}
+        {gameAccess.isPremium ? (
+          <div style={{
+            position: 'absolute',
+            top: '-4px',
+            right: '-4px',
+            background: 'linear-gradient(135deg, #ffd700, #ffed4e)',
+            width: '18px',
+            height: '18px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '2px solid #18181b',
+            boxShadow: '0 2px 8px rgba(255, 215, 0, 0.5)'
+          }}>
+            <FaCrown size="0.6rem" color="#18181b" />
+          </div>
+        ) : (
+          /* Free User - Show remaining plays */
+          gameAccess.playsRemaining > 0 && (
+            <div style={{
+              position: 'absolute',
+              top: '-4px',
+              right: '-4px',
+              background: gameAccess.playsRemaining === 1 ? 'linear-gradient(135deg, #ff4444, #ff6b6b)' : 'linear-gradient(135deg, #1db954, #1ed760)',
+              minWidth: '18px',
+              height: '18px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.65rem',
+              fontWeight: 'bold',
+              color: 'white',
+              border: '2px solid #18181b',
+              padding: '0 4px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+            }}>
+              {gameAccess.playsRemaining}
+            </div>
+          )
+        )}
+        
+        {/* No plays remaining badge */}
+        {!gameAccess.isPremium && gameAccess.playsRemaining === 0 && (
+          <div style={{
+            position: 'absolute',
+            top: '-4px',
+            right: '-4px',
+            background: 'linear-gradient(135deg, #ff4444, #ff6b6b)',
+            width: '18px',
+            height: '18px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '2px solid #18181b',
+            boxShadow: '0 2px 8px rgba(255, 68, 68, 0.5)',
+            fontSize: '0.7rem',
+            fontWeight: 'bold',
+            color: 'white'
+          }}>
+            0
+          </div>
+        )}
       </button>
 
       {/* Game Modal */}
@@ -1229,6 +1374,12 @@ const GameIcon = () => {
           </div>
         </div>
       )}
+
+      {/* Premium Modal */}
+      <PremiumModal 
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+      />
 
       <style jsx>{`
         @keyframes modalSlideIn {

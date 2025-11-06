@@ -62,6 +62,10 @@ const userSchema = new mongoose.Schema({
   premiumExpiresAt: {
     type: Date,
     default: null
+  },
+  freeGamePlaysUsed: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true

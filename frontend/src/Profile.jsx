@@ -25,6 +25,13 @@ const Profile = () => {
   });
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -209,6 +216,70 @@ const Profile = () => {
       showError(error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPasswordData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      showError('Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      showError('Mật khẩu mới không khớp');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      showError('Mật khẩu mới phải có ít nhất 6 ký tự');
+      return;
+    }
+
+    setPasswordLoading(true);
+
+    try {
+      const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
+      const response = await fetch('http://localhost:5000/api/profile/change-password', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(passwordData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Không thể đổi mật khẩu');
+      }
+
+      showSuccess('Đổi mật khẩu thành công!');
+      
+      // Reset form
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setShowChangePassword(false);
+
+    } catch (error) {
+      console.error('Password change error:', error);
+      showError(error.message);
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -795,6 +866,256 @@ const Profile = () => {
                 </div>
               </div>
             )}
+
+            {/* Change Password Section */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.02)',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              padding: '1.5rem',
+              marginTop: '2rem'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem'
+              }}>
+                <h3 style={{
+                  color: '#fff',
+                  fontSize: '1.2rem',
+                  fontWeight: '600',
+                  margin: 0
+                }}>
+                  Bảo mật
+                </h3>
+                {!showChangePassword && (
+                  <button
+                    onClick={() => setShowChangePassword(true)}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: 'rgba(29, 185, 84, 0.1)',
+                      border: '1px solid rgba(29, 185, 84, 0.3)',
+                      borderRadius: '8px',
+                      color: '#1db954',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = 'rgba(29, 185, 84, 0.2)';
+                      e.target.style.borderColor = 'rgba(29, 185, 84, 0.5)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = 'rgba(29, 185, 84, 0.1)';
+                      e.target.style.borderColor = 'rgba(29, 185, 84, 0.3)';
+                    }}
+                  >
+                    Đổi mật khẩu
+                  </button>
+                )}
+              </div>
+
+              {showChangePassword ? (
+                <form onSubmit={handlePasswordSubmit} style={{ marginTop: '1.5rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {/* Current Password */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        color: '#fff',
+                        fontSize: '0.9rem',
+                        fontWeight: '600',
+                        marginBottom: '0.5rem'
+                      }}>
+                        Mật khẩu hiện tại *
+                      </label>
+                      <input
+                        type="password"
+                        name="currentPassword"
+                        value={passwordData.currentPassword}
+                        onChange={handlePasswordChange}
+                        required
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '8px',
+                          color: '#fff',
+                          fontSize: '0.95rem',
+                          outline: 'none',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = '#1db954';
+                          e.target.style.background = 'rgba(29, 185, 84, 0.05)';
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                          e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                        }}
+                      />
+                    </div>
+
+                    {/* New Password */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        color: '#fff',
+                        fontSize: '0.9rem',
+                        fontWeight: '600',
+                        marginBottom: '0.5rem'
+                      }}>
+                        Mật khẩu mới *
+                      </label>
+                      <input
+                        type="password"
+                        name="newPassword"
+                        value={passwordData.newPassword}
+                        onChange={handlePasswordChange}
+                        required
+                        minLength={6}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '8px',
+                          color: '#fff',
+                          fontSize: '0.95rem',
+                          outline: 'none',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = '#1db954';
+                          e.target.style.background = 'rgba(29, 185, 84, 0.05)';
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                          e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                        }}
+                      />
+                      <small style={{ color: '#b3b3b3', fontSize: '0.8rem', marginTop: '0.25rem', display: 'block' }}>
+                        Ít nhất 6 ký tự
+                      </small>
+                    </div>
+
+                    {/* Confirm Password */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        color: '#fff',
+                        fontSize: '0.9rem',
+                        fontWeight: '600',
+                        marginBottom: '0.5rem'
+                      }}>
+                        Xác nhận mật khẩu mới *
+                      </label>
+                      <input
+                        type="password"
+                        name="confirmPassword"
+                        value={passwordData.confirmPassword}
+                        onChange={handlePasswordChange}
+                        required
+                        minLength={6}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '8px',
+                          color: '#fff',
+                          fontSize: '0.95rem',
+                          outline: 'none',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = '#1db954';
+                          e.target.style.background = 'rgba(29, 185, 84, 0.05)';
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                          e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                        }}
+                      />
+                    </div>
+
+                    {/* Buttons */}
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowChangePassword(false);
+                          setPasswordData({
+                            currentPassword: '',
+                            newPassword: '',
+                            confirmPassword: ''
+                          });
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '0.75rem',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '8px',
+                          color: '#b3b3b3',
+                          fontSize: '0.95rem',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                          e.target.style.color = '#fff';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                          e.target.style.color = '#b3b3b3';
+                        }}
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={passwordLoading}
+                        style={{
+                          flex: 1,
+                          padding: '0.75rem',
+                          background: passwordLoading ? 'rgba(29, 185, 84, 0.5)' : '#1db954',
+                          border: 'none',
+                          borderRadius: '8px',
+                          color: '#fff',
+                          fontSize: '0.95rem',
+                          fontWeight: '600',
+                          cursor: passwordLoading ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!passwordLoading) {
+                            e.target.style.background = '#1ed760';
+                            e.target.style.transform = 'translateY(-1px)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!passwordLoading) {
+                            e.target.style.background = '#1db954';
+                            e.target.style.transform = 'translateY(0)';
+                          }
+                        }}
+                      >
+                        {passwordLoading ? 'Đang xử lý...' : 'Đổi mật khẩu'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              ) : (
+                <p style={{ color: '#b3b3b3', fontSize: '0.9rem', margin: 0 }}>
+                  Giữ tài khoản của bạn an toàn bằng cách thay đổi mật khẩu định kỳ
+                </p>
+              )}
+            </div>
           </div>
         ) : (
           /* Edit Profile Form */

@@ -60,6 +60,7 @@ router.post('/register', async (req, res) => {
       followedArtists: user.followedArtists || [],
       isPremium: user.isPremium || false,
       premiumExpiresAt: user.premiumExpiresAt || null,
+      freeGamePlaysUsed: user.freeGamePlaysUsed || 0,
       createdAt: user.createdAt
     };
 
@@ -115,6 +116,7 @@ router.post('/login', async (req, res) => {
       followedArtists: user.followedArtists || [],
       isPremium: user.isPremium || false,
       premiumExpiresAt: user.premiumExpiresAt || null,
+      freeGamePlaysUsed: user.freeGamePlaysUsed || 0,
       createdAt: user.createdAt
     };
 

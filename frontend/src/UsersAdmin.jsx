@@ -303,7 +303,7 @@ const UsersAdmin = () => {
                   <th>Tên</th>
                   <th>Email</th>
                   <th>Vai trò</th>
-                  <th>Trạng thái</th>
+                  <th>Loại tài khoản</th>
                   <th>Ngày tạo</th>
                   <th>Thao tác</th>
                 </tr>
@@ -326,8 +326,8 @@ const UsersAdmin = () => {
                       </span>
                     </td>
                     <td>
-                      <span className={`status-badge ${user.isActive ? 'active' : 'inactive'}`}>
-                        {user.isActive ? 'Hoạt động' : 'Không hoạt động'}
+                      <span className={`status-badge ${user.isPremium ? 'premium' : 'free'}`}>
+                        {user.isPremium ? '👑 Premium' : 'Thường'}
                       </span>
                     </td>
                     <td>{formatDate(user.createdAt)}</td>
