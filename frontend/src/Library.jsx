@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlay, FaPause, FaMusic, FaCompactDisc, FaUser, FaHistory, FaPlus, FaEdit, FaTrash, FaHeart, FaHeartBroken, FaTimes } from 'react-icons/fa';
+import { FaPlay, FaPause, FaMusic, FaCompactDisc, FaUser, FaHistory, FaPlus, FaEdit, FaTrash, FaHeart, FaHeartBroken, FaTimes, FaCrown } from 'react-icons/fa';
 import { usePlayer } from './PlayerContext';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
@@ -7,6 +7,7 @@ import CreatePlaylistModal from './CreatePlaylistModal';
 import FollowButton from './FollowButton';
 import Header from './Header';
 import ConfirmationModal from './ConfirmationModal';
+import PremiumModal from './PremiumModal';
 
 const Library = () => {
   const { user, isAuthenticated, updateUserFollowedArtists } = useAuth();
@@ -46,6 +47,13 @@ const Library = () => {
     cancelText: "Hủy",
     type: "warning"
   });
+  const [playlistStats, setPlaylistStats] = useState({
+    count: 0,
+    limit: 2,
+    canCreate: true,
+    isPremium: false
+  });
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   // Create unique history (latest play time for each song)
   useEffect(() => {
@@ -143,6 +151,12 @@ const Library = () => {
       const playlistsData = await playlistsRes.json();
       setPlaylists(playlistsData);
 
+      // Load playlist stats
+      const statsRes = await fetch('http://localhost:5000/api/user-playlists/stats', { headers });
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        setPlaylistStats(statsData);
+      }
 
       // Load listening history
       const historyRes = await fetch('http://localhost:5000/api/history', { headers });
@@ -442,30 +456,68 @@ const Library = () => {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  marginBottom: '2rem'
+                  marginBottom: '2rem',
+                  flexWrap: 'wrap',
+                  gap: '1rem'
                 }}>
-                  <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold' }}>Playlists của bạn</h2>
+                  <div>
+                    <h2 style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Playlists của bạn</h2>
+                    {!playlistStats.isPremium && (
+                      <p style={{ 
+                        color: '#b3b3b3', 
+                        fontSize: '0.9rem',
+                        margin: 0
+                      }}>
+                        {playlistStats.canCreate ? (
+                          <>Bạn có thể tạo {playlistStats.count}/{playlistStats.limit} playlist miễn phí</>
+                        ) : (
+                          <>🔒 Đã đạt giới hạn {playlistStats.limit} playlist</>
+                        )}
+                      </p>
+                    )}
+                  </div>
                   <button
-                    onClick={() => setShowCreatePlaylist(true)}
+                    onClick={() => {
+                      if (!playlistStats.canCreate) {
+                        setShowPremiumModal(true);
+                        showError('Nâng cấp Premium để tạo playlist không giới hạn!');
+                      } else {
+                        setShowCreatePlaylist(true);
+                      }
+                    }}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
                       padding: '0.75rem 1.5rem',
-                      background: '#1db954',
+                      background: playlistStats.canCreate ? '#1db954' : '#666',
                       color: 'white',
                       border: 'none',
                       borderRadius: '25px',
                       fontSize: '1rem',
                       fontWeight: 'bold',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease'
+                      cursor: playlistStats.canCreate ? 'pointer' : 'not-allowed',
+                      transition: 'all 0.3s ease',
+                      position: 'relative'
                     }}
-                    onMouseEnter={(e) => e.target.style.background = '#1ed760'}
-                    onMouseLeave={(e) => e.target.style.background = '#1db954'}
+                    onMouseEnter={(e) => {
+                      if (playlistStats.canCreate) {
+                        e.target.style.background = '#1ed760';
+                      } else {
+                        e.target.style.background = '#777';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (playlistStats.canCreate) {
+                        e.target.style.background = '#1db954';
+                      } else {
+                        e.target.style.background = '#666';
+                      }
+                    }}
                   >
                     <FaPlus size="1rem" />
                     Tạo playlist
+                    {!playlistStats.canCreate && <FaCrown size="0.9rem" style={{ marginLeft: '0.25rem' }} />}
                   </button>
                 </div>
 
@@ -1293,6 +1345,12 @@ const Library = () => {
         confirmText={confirmConfig.confirmText}
         cancelText={confirmConfig.cancelText}
         type={confirmConfig.type}
+      />
+
+      {/* Premium Modal */}
+      <PremiumModal 
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
       />
       </div>
     </div>

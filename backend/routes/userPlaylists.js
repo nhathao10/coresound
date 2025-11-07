@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const UserPlaylist = require('../models/UserPlaylist');
 const Song = require('../models/Song');
+const User = require('../models/User');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
@@ -26,6 +27,28 @@ const upload = multer({
     } else {
       cb(new Error('Only image files are allowed'), false);
     }
+  }
+});
+
+// @route   GET /api/user-playlists/stats
+// @desc    Get user's playlist stats (count and limit)
+// @access  Private
+router.get('/stats', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const playlistCount = await UserPlaylist.countDocuments({ user: req.user._id });
+    const isPremium = user.isPremium && (!user.premiumExpiresAt || user.premiumExpiresAt > new Date());
+    const MAX_FREE_PLAYLISTS = 2;
+    
+    res.json({
+      count: playlistCount,
+      limit: isPremium ? -1 : MAX_FREE_PLAYLISTS,
+      canCreate: isPremium || playlistCount < MAX_FREE_PLAYLISTS,
+      isPremium: isPremium
+    });
+  } catch (error) {
+    console.error('Get playlist stats error:', error);
+    res.status(500).json({ error: 'Lỗi server nội bộ' });
   }
 });
 
@@ -85,6 +108,26 @@ router.post('/', protect, upload.single('cover'), async (req, res) => {
     
     if (!name || name.trim().length === 0) {
       return res.status(400).json({ error: 'Tên playlist không được để trống' });
+    }
+
+    // Check playlist limit for free users
+    const user = await User.findById(req.user._id);
+    const isPremium = user.isPremium && (!user.premiumExpiresAt || user.premiumExpiresAt > new Date());
+    
+    if (!isPremium) {
+      // Free users can only create 2 playlists
+      const playlistCount = await UserPlaylist.countDocuments({ user: req.user._id });
+      const MAX_FREE_PLAYLISTS = 2;
+      
+      if (playlistCount >= MAX_FREE_PLAYLISTS) {
+        return res.status(403).json({ 
+          error: 'Bạn đã đạt giới hạn playlist miễn phí',
+          message: `Người dùng thường chỉ được tạo tối đa ${MAX_FREE_PLAYLISTS} playlist. Nâng cấp Premium để tạo không giới hạn!`,
+          limit: MAX_FREE_PLAYLISTS,
+          current: playlistCount,
+          needsPremium: true
+        });
+      }
     }
 
     const playlistData = {

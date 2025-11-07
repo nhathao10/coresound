@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FaTimes, FaUpload, FaMusic } from 'react-icons/fa';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
+import PremiumModal from './PremiumModal';
 
 const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) => {
   const { user } = useAuth();
@@ -15,6 +16,7 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
   const [coverFile, setCoverFile] = useState(null);
   const [coverPreview, setCoverPreview] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const fileInputRef = useRef(null);
 
   // Populate form when editing
@@ -106,6 +108,12 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
       const data = await response.json();
 
       if (!response.ok) {
+        // Check if this is a playlist limit error for free users
+        if (response.status === 403 && data.needsPremium) {
+          showError(data.message || 'Bạn đã đạt giới hạn playlist miễn phí');
+          setShowPremiumModal(true);
+          return;
+        }
         throw new Error(data.error || 'Lỗi khi tạo playlist');
       }
 
@@ -220,12 +228,13 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '1rem'
+              gap: '1.5rem'
             }}>
               {/* Cover Preview */}
               <div style={{
                 width: '120px',
                 height: '120px',
+                minWidth: '120px',
                 borderRadius: '12px',
                 background: coverPreview ? 
                   `url(${coverPreview}) center/cover` :
@@ -234,10 +243,11 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative',
-                overflow: 'hidden'
+                overflow: 'hidden',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
               }}>
                 {!coverPreview && (
-                  <FaMusic size="2rem" color="white" style={{ opacity: 0.8 }} />
+                  <FaMusic size="2.5rem" color="white" style={{ opacity: 0.9 }} />
                 )}
                 
                 {coverPreview && (
@@ -248,9 +258,9 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
                       position: 'absolute',
                       top: '8px',
                       right: '8px',
-                      width: '24px',
-                      height: '24px',
-                      background: 'rgba(0, 0, 0, 0.7)',
+                      width: '28px',
+                      height: '28px',
+                      background: 'rgba(0, 0, 0, 0.8)',
                       border: 'none',
                       borderRadius: '50%',
                       color: 'white',
@@ -258,7 +268,17 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '0.8rem'
+                      fontSize: '1.2rem',
+                      fontWeight: 'bold',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.background = 'rgba(255, 68, 68, 0.9)';
+                      e.target.style.transform = 'scale(1.1)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.background = 'rgba(0, 0, 0, 0.8)';
+                      e.target.style.transform = 'scale(1)';
                     }}
                   >
                     ×
@@ -266,8 +286,14 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
                 )}
               </div>
 
-              {/* Upload Button */}
-              <div>
+              {/* Upload Button Section */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                gap: '0.75rem',
+                flex: 1
+              }}>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -279,32 +305,40 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   style={{
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
+                    justifyContent: 'center',
                     gap: '0.5rem',
-                    padding: '0.75rem 1.5rem',
+                    padding: '0.875rem 1.75rem',
                     background: 'rgba(255, 255, 255, 0.1)',
                     color: 'white',
                     border: '1px solid rgba(255, 255, 255, 0.2)',
                     borderRadius: '8px',
                     cursor: 'pointer',
-                    fontSize: '0.9rem',
-                    transition: 'all 0.3s ease'
+                    fontSize: '0.95rem',
+                    fontWeight: '500',
+                    transition: 'all 0.3s ease',
+                    width: 'fit-content'
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.background = 'rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.4)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                    e.currentTarget.style.transform = 'translateY(0)';
                   }}
                 >
-                  <FaUpload size="0.9rem" />
+                  <FaUpload size="1rem" />
                   {coverFile ? 'Thay đổi ảnh' : 'Chọn ảnh'}
                 </button>
                 <p style={{
                   color: '#b3b3b3',
-                  fontSize: '0.8rem',
-                  margin: '0.5rem 0 0 0'
+                  fontSize: '0.85rem',
+                  margin: 0,
+                  lineHeight: '1.4'
                 }}>
                   JPG, PNG tối đa 5MB
                 </p>
@@ -338,7 +372,8 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
                 color: 'white',
                 fontSize: '1rem',
                 outline: 'none',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
+                boxSizing: 'border-box'
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = '#1db954';
@@ -379,7 +414,8 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
                 outline: 'none',
                 resize: 'vertical',
                 minHeight: '80px',
-                transition: 'all 0.3s ease'
+                transition: 'all 0.3s ease',
+                boxSizing: 'border-box'
               }}
               onFocus={(e) => {
                 e.target.style.borderColor = '#1db954';
@@ -483,6 +519,12 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
           </div>
         </form>
       </div>
+
+      {/* Premium Modal */}
+      <PremiumModal 
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+      />
     </div>
   );
 };

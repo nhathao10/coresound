@@ -946,7 +946,8 @@ const Profile = () => {
                           color: '#fff',
                           fontSize: '0.95rem',
                           outline: 'none',
-                          transition: 'all 0.2s ease'
+                          transition: 'all 0.2s ease',
+                          boxSizing: 'border-box'
                         }}
                         onFocus={(e) => {
                           e.target.style.borderColor = '#1db954';
@@ -986,7 +987,8 @@ const Profile = () => {
                           color: '#fff',
                           fontSize: '0.95rem',
                           outline: 'none',
-                          transition: 'all 0.2s ease'
+                          transition: 'all 0.2s ease',
+                          boxSizing: 'border-box'
                         }}
                         onFocus={(e) => {
                           e.target.style.borderColor = '#1db954';
@@ -1029,7 +1031,8 @@ const Profile = () => {
                           color: '#fff',
                           fontSize: '0.95rem',
                           outline: 'none',
-                          transition: 'all 0.2s ease'
+                          transition: 'all 0.2s ease',
+                          boxSizing: 'border-box'
                         }}
                         onFocus={(e) => {
                           e.target.style.borderColor = '#1db954';
