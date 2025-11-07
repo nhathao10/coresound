@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import Header from './Header';
@@ -9,9 +9,15 @@ const PremiumSuccess = () => {
   const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
+  const hasVerified = useRef(false); // Flag to prevent double API call
 
   useEffect(() => {
     const verifyAndActivatePremium = async () => {
+      // Prevent double API call in React StrictMode
+      if (hasVerified.current) {
+        return;
+      }
+      hasVerified.current = true;
       try {
         // Get session_id from URL
         const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
@@ -65,7 +71,7 @@ const PremiumSuccess = () => {
         }
         
         setSuccess(true);
-        showSuccess('Chúc mừng! Bạn đã nâng cấp lên Premium thành công!');
+        // Toast removed - UI already shows success message clearly
 
       } catch (error) {
         console.error('Premium verification error:', error);

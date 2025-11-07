@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { sendPremiumActivationEmail } = require('../services/emailService');
 require('dotenv').config();
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -138,6 +139,10 @@ router.post('/verify-session', protect, async (req, res) => {
       expiresAt.setFullYear(expiresAt.getFullYear() + 1);
     }
 
+    // Check if already premium to avoid sending duplicate emails
+    const currentUser = await User.findById(req.user._id);
+    const wasAlreadyPremium = currentUser.isPremium;
+
     // Update user premium status
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
@@ -149,6 +154,22 @@ router.post('/verify-session', protect, async (req, res) => {
     ).select('-password');
 
     console.log(`✅ Premium activated for ${updatedUser.email} until ${expiresAt.toLocaleDateString('vi-VN')} - Session: ${sessionId}`);
+
+    // Send activation email ONLY if this is a NEW premium activation (not already premium)
+    if (!wasAlreadyPremium) {
+      sendPremiumActivationEmail(
+        updatedUser.email,
+        updatedUser.name,
+        plan,
+        expiresAt
+      ).catch(emailError => {
+        // Log error but don't fail the request
+        console.error('Email sending failed (non-critical):', emailError);
+      });
+      console.log(`📧 Sending premium activation email to ${updatedUser.email}...`);
+    } else {
+      console.log(`⏭️  User ${updatedUser.email} already premium, skipping email`);
+    }
 
     res.json({
       message: 'Nâng cấp Premium thành công',
