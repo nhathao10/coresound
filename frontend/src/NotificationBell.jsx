@@ -218,7 +218,7 @@ const NotificationBell = () => {
           border: '1px solid rgba(255, 255, 255, 0.1)',
           zIndex: 10002,
           overflow: 'hidden',
-          animation: 'slideDown 0.3s ease-out'
+          animation: 'fadeInScale 0.25s ease-out'
         }}>
           {/* Header */}
           <div style={{
@@ -430,14 +430,14 @@ const NotificationBell = () => {
           }
         }
         
-        @keyframes slideDown {
+        @keyframes fadeInScale {
           from {
             opacity: 0;
-            transform: translateY(-10px) scale(0.95);
+            transform: scale(0.96);
           }
           to {
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: scale(1);
           }
         }
       `}</style>

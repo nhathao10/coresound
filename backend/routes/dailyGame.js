@@ -93,16 +93,45 @@ router.get('/daily-song', async (req, res) => {
         return res.status(404).json({ error: 'Cần ít nhất 3 bài hát trong database' });
       }
 
-      // Create 3 unique random songs for today
-      const selectedSongs = [];
-      const usedIndices = new Set();
+      // Get songs that were used in the last 7 days to avoid repetition
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       
-      while (selectedSongs.length < 3) {
-        const randomIndex = Math.floor(Math.random() * songs.length);
-        if (!usedIndices.has(randomIndex)) {
-          usedIndices.add(randomIndex);
-          selectedSongs.push(songs[randomIndex]);
+      const recentDailySongs = await DailySong.find({
+        date: { $gte: sevenDaysAgo, $lt: today }
+      }).select('song');
+      
+      const recentSongIds = new Set(recentDailySongs.map(ds => ds.song.toString()));
+      
+      // Filter out recently used songs if we have enough songs
+      let availableSongs = songs;
+      if (songs.length > 21) { // Only filter if we have more than 21 songs (7 days * 3 songs)
+        availableSongs = songs.filter(song => !recentSongIds.has(song._id.toString()));
+      }
+      
+      // If filtering left us with less than 3 songs, use all songs
+      if (availableSongs.length < 3) {
+        availableSongs = songs;
+      }
+
+      // Shuffle array using Fisher-Yates algorithm for better randomness
+      const shuffleArray = (array) => {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
+        return shuffled;
+      };
+
+      // Shuffle and select 3 unique songs
+      const shuffledSongs = shuffleArray(availableSongs);
+      const selectedSongs = shuffledSongs.slice(0, 3);
+
+      console.log(`[Daily Song] Selected ${selectedSongs.length} songs for ${today.toISOString().split('T')[0]}`);
+      console.log(`[Daily Song] Total songs in DB: ${songs.length}, Available after filtering: ${availableSongs.length}`);
+      if (selectedSongs.length > 0) {
+        console.log(`[Daily Song] Songs: ${selectedSongs.map(s => `${s.title || 'Unknown'} - ${s.artist || 'Unknown'}`).join(', ')}`);
       }
 
       // Create 3 daily songs
@@ -212,11 +241,36 @@ router.post('/daily-song/check-answer', protect, async (req, res) => {
     const correctArtist = dailySong.song.artist.toLowerCase().trim();
     const userAnswerLower = userAnswer.toLowerCase().trim();
 
-    // Simple matching - check if user answer contains song title or artist
-    const isCorrect = userAnswerLower.includes(correctTitle) || 
-                     userAnswerLower.includes(correctArtist) ||
-                     correctTitle.includes(userAnswerLower) ||
-                     correctArtist.includes(userAnswerLower);
+    // Parse user answer to extract title and artist (format: "Title - Artist")
+    const parts = userAnswerLower.split('-').map(part => part.trim());
+    const userTitle = parts[0] || '';
+    const userArtist = parts.length > 1 ? parts.slice(1).join('-').trim() : '';
+
+    // Normalize strings for comparison (remove extra spaces, normalize)
+    const normalizeString = (str) => {
+      return str.replace(/\s+/g, ' ').trim();
+    };
+
+    const normalizedCorrectTitle = normalizeString(correctTitle);
+    const normalizedCorrectArtist = normalizeString(correctArtist);
+    const normalizedUserTitle = normalizeString(userTitle);
+    const normalizedUserArtist = normalizeString(userArtist);
+
+    // STRICT matching: Both title AND artist must match EXACTLY
+    // This ensures that:
+    // - "Perfect - Ed Sheeran" will NOT match "Shape of You - Ed Sheeran" (different songs)
+    // - "Shape - Ed Sheeran" will NOT match "Shape of You - Ed Sheeran" (partial title)
+    // - Only exact matches are accepted
+    
+    // Title must match EXACTLY (after normalization)
+    const titleMatch = normalizedUserTitle === normalizedCorrectTitle;
+    
+    // Artist must match EXACTLY (after normalization)
+    const artistMatch = normalizedUserArtist === normalizedCorrectArtist;
+
+    // Both title AND artist must match EXACTLY for the answer to be correct
+    // Also ensure user provided both title and artist
+    const isCorrect = titleMatch && artistMatch && normalizedUserTitle.length > 0 && normalizedUserArtist.length > 0;
 
     // Calculate score (no timer, so no time bonus)
     let score = 0;
@@ -441,17 +495,40 @@ router.post('/new-random-song', protect, async (req, res) => {
       return res.status(404).json({ error: 'Cần ít nhất 3 bài hát trong database' });
     }
 
-    // Create 3 unique random songs for today
-    const selectedSongs = [];
-    const usedIndices = new Set();
+    // Get songs that were used in the last 7 days to avoid repetition
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
-    while (selectedSongs.length < 3) {
-      const randomIndex = Math.floor(Math.random() * songs.length);
-      if (!usedIndices.has(randomIndex)) {
-        usedIndices.add(randomIndex);
-        selectedSongs.push(songs[randomIndex]);
-      }
+    const recentDailySongs = await DailySong.find({
+      date: { $gte: sevenDaysAgo, $lt: today }
+    }).select('song');
+    
+    const recentSongIds = new Set(recentDailySongs.map(ds => ds.song.toString()));
+    
+    // Filter out recently used songs if we have enough songs
+    let availableSongs = songs;
+    if (songs.length > 21) { // Only filter if we have more than 21 songs (7 days * 3 songs)
+      availableSongs = songs.filter(song => !recentSongIds.has(song._id.toString()));
     }
+    
+    // If filtering left us with less than 3 songs, use all songs
+    if (availableSongs.length < 3) {
+      availableSongs = songs;
+    }
+
+    // Shuffle array using Fisher-Yates algorithm for better randomness
+    const shuffleArray = (array) => {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    };
+
+    // Shuffle and select 3 unique songs
+    const shuffledSongs = shuffleArray(availableSongs);
+    const selectedSongs = shuffledSongs.slice(0, 3);
 
     // Create 3 daily songs
     const createdSongs = [];
