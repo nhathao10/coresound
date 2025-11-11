@@ -116,22 +116,23 @@ function PlaylistDetail() {
   }
 
   return (
-    <div className="music-app dark-theme" style={{ paddingTop: 100, paddingBottom: 120 }}>
+    <div className="music-app dark-theme playlist-detail-page" style={{ paddingTop: 100, paddingBottom: 120 }}>
       <Header showSearch={false} />
-      <div style={{ padding: "0 24px" }}>
+      <div className="playlist-detail-content" style={{ padding: "0 24px" }}>
         {/* Playlist Header */}
-        <div style={{ 
+        <div className="playlist-detail-header" style={{ 
           marginBottom: 40,
           background: 'linear-gradient(135deg, rgba(29, 185, 84, 0.1) 0%, rgba(0, 0, 0, 0.3) 100%)',
           borderRadius: 16,
           padding: 32,
           border: '1px solid rgba(255, 255, 255, 0.05)'
         }}>
-          <div style={{ display: "flex", gap: 32, alignItems: "flex-end" }}>
-            <div style={{ position: 'relative' }}>
+          <div className="playlist-header-content" style={{ display: "flex", gap: 32, alignItems: "flex-end" }}>
+            <div className="playlist-header-image" style={{ position: 'relative' }}>
               <img
                 src={withMediaBase(playlist.cover) || "/default-cover.png"}
                 alt={playlist.name}
+                className="playlist-cover-image"
                 style={{
                   width: 240,
                   height: 240,
@@ -153,8 +154,8 @@ function PlaylistDetail() {
               }} />
             </div>
             
-            <div style={{ flex: 1, paddingBottom: 8 }}>
-              <div style={{ 
+            <div className="playlist-header-info" style={{ flex: 1, paddingBottom: 8 }}>
+              <div className="playlist-type-label" style={{ 
                 color: "#1db954", 
                 fontSize: 12, 
                 fontWeight: 600,
@@ -165,7 +166,7 @@ function PlaylistDetail() {
               }}>
                 PLAYLIST
               </div>
-              <h1 style={{ 
+              <h1 className="playlist-name" style={{ 
                 color: "#fff", 
                 fontSize: 56, 
                 fontWeight: 800, 
@@ -180,7 +181,7 @@ function PlaylistDetail() {
                 {playlist.name}
               </h1>
               {playlist.description && (
-                <div style={{ 
+                <div className="playlist-description" style={{ 
                   color: "#b3b3b3", 
                   fontSize: 18, 
                   marginBottom: 20,
@@ -191,15 +192,16 @@ function PlaylistDetail() {
                   {playlist.description}
                 </div>
               )}
-              <div style={{ 
+              <div className="playlist-meta" style={{ 
                 display: 'flex',
                 alignItems: 'center',
                 gap: 16,
                 color: "#b3b3b3", 
                 fontSize: 16,
-                fontWeight: 500
+                fontWeight: 500,
+                flexWrap: 'wrap'
               }}>
-                <span style={{
+                <span className="playlist-song-count" style={{
                   background: 'rgba(29, 185, 84, 0.2)',
                   padding: '6px 12px',
                   borderRadius: 20,
@@ -223,8 +225,9 @@ function PlaylistDetail() {
         </div>
 
       {/* Play Button */}
-      <div style={{ marginBottom: 40, paddingLeft: 8 }}>
+      <div className="playlist-play-button-wrapper" style={{ marginBottom: 40, paddingLeft: 8 }}>
         <button
+          className="playlist-play-all-button"
           onClick={playPlaylist}
           style={{
             padding: "16px 40px",
@@ -260,7 +263,7 @@ function PlaylistDetail() {
       </div>
 
       {/* Songs List */}
-      <div style={{ 
+      <div className="playlist-songs-container" style={{ 
         background: "rgba(30, 30, 36, 0.8)", 
         border: "1px solid rgba(46, 46, 55, 0.3)", 
         borderRadius: 16, 
@@ -268,7 +271,7 @@ function PlaylistDetail() {
         backdropFilter: 'blur(10px)',
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
       }}>
-        <div style={{ 
+        <div className="playlist-songs-header" style={{ 
           display: "grid", 
           gridTemplateColumns: "50px 1fr 1fr 50px 50px", 
           gap: 20, 
@@ -282,16 +285,17 @@ function PlaylistDetail() {
           letterSpacing: '0.5px'
         }}>
           <div style={{ textAlign: 'center' }}>#</div>
-          <div>TÊN BÀI HÁT</div>
-          <div>NGHỆ SĨ</div>
-          <div style={{ textAlign: 'center' }}></div>
-          <div style={{ textAlign: 'center' }}></div>
+          <div className="playlist-header-title">TÊN BÀI HÁT</div>
+          <div className="playlist-header-artist">NGHỆ SĨ</div>
+          <div className="playlist-header-action" style={{ textAlign: 'center' }}></div>
+          <div className="playlist-header-action" style={{ textAlign: 'center' }}></div>
         </div>
 
         {playlist.songs && playlist.songs.length > 0 ? (
           playlist.songs.map((song, index) => (
             <div
               key={song._id}
+              className="playlist-song-item"
               style={{
                 display: "grid",
                 gridTemplateColumns: "50px 1fr 1fr 50px 50px",
@@ -323,7 +327,7 @@ function PlaylistDetail() {
               }}
               onClick={() => playSong(index)}
             >
-              <div style={{ 
+              <div className="playlist-song-number" style={{ 
                 color: current && current._id === song._id ? "#1db954" : "#b3b3b3", 
                 fontSize: 16,
                 fontWeight: current && current._id === song._id ? 600 : 400,
@@ -339,8 +343,9 @@ function PlaylistDetail() {
                 )}
               </div>
               
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+              <div className="playlist-song-info" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
                 <img
+                  className="playlist-song-cover"
                   src={withMediaBase(song.cover) || "/default-cover.png"}
                   alt={song.title}
                   style={{
@@ -348,31 +353,40 @@ function PlaylistDetail() {
                     height: 48,
                     borderRadius: 8,
                     objectFit: "cover",
-                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)"
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+                    flexShrink: 0
                   }}
                 />
-                <div>
-                  <div style={{ 
+                <div className="playlist-song-title-wrapper" style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
+                  <div className="playlist-song-title" style={{ 
                     color: current && current._id === song._id ? "#1db954" : "#fff", 
                     fontSize: 17, 
                     fontWeight: current && current._id === song._id ? 600 : 500,
-                    marginBottom: 2
+                    marginBottom: 2,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "block",
+                    width: "100%"
                   }}>
                     {song.title}
                   </div>
                 </div>
               </div>
               
-              <div style={{ 
+              <div className="playlist-song-artist" style={{ 
                 color: current && current._id === song._id ? "#1db954" : "#b3b3b3", 
                 fontSize: 15,
                 fontWeight: current && current._id === song._id ? 500 : 400,
-                opacity: current && current._id === song._id ? 1 : 0.8
+                opacity: current && current._id === song._id ? 1 : 0.8,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis"
               }}>
                 {song.artist}
               </div>
               
-              <div style={{ display: "flex", justifyContent: "center" }}>
+              <div className="playlist-song-heart" style={{ display: "flex", justifyContent: "center" }}>
                 <HeartIcon 
                   type="song" 
                   itemId={song._id} 
@@ -380,7 +394,7 @@ function PlaylistDetail() {
                 />
               </div>
               
-              <div style={{ display: "flex", justifyContent: "center" }}>
+              <div className="playlist-song-add" style={{ display: "flex", justifyContent: "center" }}>
                 <AddToPlaylistIcon 
                   onClick={(e) => {
                     e.stopPropagation();

@@ -255,16 +255,41 @@ function AlbumDetail() {
   };
 
   // Read album id from hash: #/album/<id>
+  // Use state to track hash changes and force re-render
+  const [hash, setHash] = useState(window.location.hash || "#/");
+  
+  // Update hash state when hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      setHash(window.location.hash || "#/");
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    // Also check on mount in case hash was set before component mounted
+    handleHashChange();
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
+  
   const albumId = useMemo(() => {
-    const hash = window.location.hash || "#/";
     const match = hash.match(/^#\/album\/([^/?#]+)/);
     return match ? decodeURIComponent(match[1]) : "";
-  }, []);
+  }, [hash]);
 
   useEffect(() => {
+    if (!albumId) {
+      setIsLoading(false);
+      setError("Không tìm thấy album ID");
+      return;
+    }
+    
     let mounted = true;
     setIsLoading(true);
     setError("");
+    setAlbum(null); // Clear previous album data
+    
     Promise.all([
       fetch(`http://localhost:5000/api/albums/${albumId}`).then((r) => r.json()),
       fetch("http://localhost:5000/api/songs").then((r) => r.json()),
@@ -308,11 +333,18 @@ function AlbumDetail() {
   // Get other albums by the same artist
   const relatedAlbums = useMemo(() => {
     if (!album || !allAlbums.length) return [];
-    return allAlbums.filter(a => 
-      a._id !== album._id && 
-      a.artist && 
-      a.artist.toLowerCase().trim() === album.artist.toLowerCase().trim()
-    ).slice(0, 4); // Show max 4 related albums
+    const currentArtist = album.artist ? album.artist.toLowerCase().trim() : '';
+    if (!currentArtist) return [];
+    
+    const filtered = allAlbums.filter(a => {
+      if (!a || !a._id) return false;
+      if (String(a._id) === String(album._id)) return false;
+      if (!a.artist) return false;
+      const otherArtist = a.artist.toLowerCase().trim();
+      return otherArtist === currentArtist && otherArtist.length > 0;
+    });
+    
+    return filtered.slice(0, 4); // Show max 4 related albums
   }, [album, allAlbums]);
 
   // Preload durations for all songs in this album to compute total duration
@@ -468,14 +500,15 @@ function AlbumDetail() {
       <Header showSearch={true} showSearchResults={false} />
       <main className="main-content" style={{ width: "100%", flex: 1, minWidth: 0 }}>
         <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-        <section className="recommend-section" style={{ width: "100%", padding: 20, background: "linear-gradient(180deg, #0f2a3a 0%, #15161a 70%)", borderRadius: 12 }}>
-          <div style={{ display: "flex", gap: 20, alignItems: "center", marginBottom: 12 }}>
-            <img src={withMediaBase(album.cover) || "/default-cover.png"} alt={album.name} style={{ width: 200, height: 200, borderRadius: 12, objectFit: "cover", boxShadow: "0 10px 30px rgba(0,0,0,0.4)" }} />
-            <div>
-              <div style={{ color: "#89b4fa", textTransform: "uppercase", letterSpacing: 1, fontSize: 14, marginBottom: 6 }}>Album</div>
-              <div className="logo-gradient" style={{ fontSize: 64, lineHeight: 1, marginBottom: 10 }}>{album.name}</div>
-              <div style={{ color: "#cfd3da", marginBottom: 14, fontSize: 16 }}>
+        <section className="album-detail-section recommend-section" style={{ width: "100%", padding: 20, background: "linear-gradient(180deg, #0f2a3a 0%, #15161a 70%)", borderRadius: 12 }}>
+          <div className="album-detail-header" style={{ display: "flex", gap: 20, alignItems: "center", marginBottom: 12 }}>
+            <img className="album-detail-cover" src={withMediaBase(album.cover) || "/default-cover.png"} alt={album.name} style={{ width: 200, height: 200, borderRadius: 12, objectFit: "cover", boxShadow: "0 10px 30px rgba(0,0,0,0.4)" }} />
+            <div className="album-detail-info">
+              <div className="album-detail-type" style={{ color: "#89b4fa", textTransform: "uppercase", letterSpacing: 1, fontSize: 14, marginBottom: 6 }}>Album</div>
+              <div className="album-detail-title logo-gradient" style={{ fontSize: 64, lineHeight: 1, marginBottom: 10 }}>{album.name}</div>
+              <div className="album-detail-meta" style={{ color: "#cfd3da", marginBottom: 14, fontSize: 16 }}>
                   <span 
+                    className="album-detail-artist"
                     style={{ 
                       color: "#fff", 
                       cursor: "pointer", 
@@ -516,12 +549,13 @@ function AlbumDetail() {
                 {" • "}{songs.length} bài • {formatTotalDuration(totalDuration)}
               </div>
               {album.genres && album.genres.length > 0 && (
-                <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ color: "#89b4fa", fontSize: 14 }}>Thể loại</div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div className="album-detail-genres" style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
+                  <div className="album-genres-label" style={{ color: "#89b4fa", fontSize: 14 }}>Thể loại</div>
+                  <div className="album-genres-list" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {album.genres.map((genre, index) => (
                       <span
                         key={index}
+                        className="album-genre-tag"
                         style={{
                           background: "rgba(137, 180, 250, 0.1)",
                           color: "#89b4fa",
@@ -537,11 +571,11 @@ function AlbumDetail() {
                   </div>
               </div>
               )}
-              <div style={{ display: "flex", gap: 10 }}>
-                <button className="spotify-btn playpause" onClick={() => songs.length && playAt(0)} title="Phát album" style={{ transform: "scale(1.2)" }}>
+              <div className="album-detail-actions" style={{ display: "flex", gap: 10 }}>
+                <button className="album-play-button spotify-btn playpause" onClick={() => songs.length && playAt(0)} title="Phát album" style={{ transform: "scale(1.2)" }}>
                   <FaPlay />
                 </button>
-                <button className={`spotify-btn shuffle${shuffle ? " active" : ""}`} onClick={() => setShuffle((s) => !s)} title="Shuffle">
+                <button className={`album-shuffle-button spotify-btn shuffle${shuffle ? " active" : ""}`} onClick={() => setShuffle((s) => !s)} title="Shuffle">
                   <FaRandom />
                 </button>
               </div>
@@ -549,11 +583,11 @@ function AlbumDetail() {
           </div>
 
           <div style={{ border: "1px solid #2e2e37", borderRadius: 12, overflow: "hidden", background: "#1b1c22" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "48px 1fr 140px 80px", padding: "10px 16px", background: "#20212a", color: "#b3b3b3", fontSize: 14 }}>
+            <div className="album-song-list-header" style={{ display: "grid", gridTemplateColumns: "48px 1fr 140px 80px", padding: "10px 16px", background: "#20212a", color: "#b3b3b3", fontSize: 14 }}>
               <div style={{ textAlign: "right", paddingRight: 12 }}>#</div>
               <div>Tiêu đề</div>
-              <div>Nghệ sĩ</div>
-              <div style={{ textAlign: "center" }}>Phát</div>
+              <div className="album-song-artist-header">Nghệ sĩ</div>
+              <div className="album-song-play-header" style={{ textAlign: "center" }}>Phát</div>
             </div>
 
             {songs.map((s, idx) => {
@@ -561,6 +595,7 @@ function AlbumDetail() {
               return (
                 <div
                   key={s._id}
+                  className="album-song-item"
                   onClick={() => (isCurrent ? setIsPlaying((p) => !p) : playAt(idx))}
                   style={{
                     display: "grid",
@@ -572,16 +607,16 @@ function AlbumDetail() {
                     borderTop: "1px solid #262833",
                   }}
                 >
-                  <div style={{ textAlign: "right", paddingRight: 12, color: "#b3b3b3" }}>{idx + 1}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <img src={withMediaBase(s.cover) || "/default-cover.png"} alt={s.title} style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover" }} />
-                    <div>
-                      <div style={{ fontWeight: 600 }}>{s.title}</div>
-                      <div style={{ color: "#9aa0a6", fontSize: 13 }}>{album.artist}</div>
+                  <div className="album-song-number" style={{ textAlign: "right", paddingRight: 12, color: "#b3b3b3" }}>{idx + 1}</div>
+                  <div className="album-song-info" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                    <img src={withMediaBase(s.cover) || "/default-cover.png"} alt={s.title} style={{ width: 40, height: 40, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="album-song-title" style={{ fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.title}</div>
+                      <div className="album-song-artist-name" style={{ color: "#9aa0a6", fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{album.artist}</div>
                     </div>
                   </div>
-                  <div style={{ color: "#cfd3da" }}>{s.artist}</div>
-                  <div style={{ display: "flex", justifyContent: "center" }}>
+                  <div className="album-song-artist-column" style={{ color: "#cfd3da" }}>{s.artist}</div>
+                  <div className="album-song-play-button" style={{ display: "flex", justifyContent: "center" }}>
                     <button
                       className="spotify-btn playpause"
                       onClick={(e) => {
@@ -602,31 +637,76 @@ function AlbumDetail() {
 
         {/* Related Albums Section */}
         {relatedAlbums.length > 0 && (
-          <section style={{ marginTop: "2rem", padding: "1.5rem", background: "rgba(255, 255, 255, 0.05)", borderRadius: "12px", border: "1px solid rgba(255, 255, 255, 0.1)" }}>
-            <h3 style={{ color: "#fff", marginBottom: "1rem", fontSize: "1.2rem", fontWeight: "600" }}>Album khác của {album.artist}</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem" }}>
-              {relatedAlbums.map((relatedAlbum) => (
-                <div 
+          <section className="related-albums-section" style={{ marginTop: "2rem", padding: "1.5rem", background: "rgba(255, 255, 255, 0.05)", borderRadius: "12px", border: "1px solid rgba(255, 255, 255, 0.1)" }}>
+            <h3 className="related-albums-title" style={{ color: "#fff", marginBottom: "1rem", fontSize: "1.2rem", fontWeight: "600" }}>Album khác của {album.artist}</h3>
+            <div className="related-albums-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem" }}>
+              {relatedAlbums.map((relatedAlbum) => {
+                const albumId = relatedAlbum._id;
+                if (!albumId) return null;
+                
+                return (
+                <div
                   key={relatedAlbum._id}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Navigate to the album - use the relatedAlbum's ID directly
+                    const targetAlbumId = relatedAlbum._id;
+                    if (!targetAlbumId) {
+                      console.error('No album ID found');
+                      return;
+                    }
+                    
+                    const targetHash = `#/album/${encodeURIComponent(targetAlbumId)}`;
+                    console.log('Clicking album card:', {
+                      name: relatedAlbum.name,
+                      id: targetAlbumId,
+                      currentHash: window.location.hash,
+                      targetHash: targetHash
+                    });
+                    
+                    // Set hash - this should trigger hashchange event
+                    window.location.hash = targetHash;
+                    
+                    // Force router re-render by dispatching hashchange event
+                    // The router in main.jsx listens to this and will force re-render
+                    const hashChangeEvent = new Event('hashchange', {
+                      bubbles: true,
+                      cancelable: true
+                    });
+                    window.dispatchEvent(hashChangeEvent);
+                  }}
+                  className="related-album-card"
                   style={{ 
                     cursor: "pointer",
                     padding: "1rem", 
                     background: "rgba(255, 255, 255, 0.05)", 
                     borderRadius: "8px",
                     transition: "all 0.2s ease",
-                    border: "1px solid rgba(255, 255, 255, 0.1)"
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    position: "relative",
+                    touchAction: "manipulation",
+                    WebkitTapHighlightColor: "rgba(29, 185, 84, 0.3)",
+                    display: "block",
+                    color: "inherit",
+                    zIndex: 1000
                   }}
                   onMouseEnter={(e) => {
-                    e.target.style.background = "rgba(255, 255, 255, 0.1)";
-                    e.target.style.transform = "translateY(-2px)";
+                    if (window.innerWidth > 768) {
+                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.background = "rgba(255, 255, 255, 0.05)";
-                    e.target.style.transform = "translateY(0)";
+                    if (window.innerWidth > 768) {
+                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                      e.currentTarget.style.transform = "translateY(0)";
+                    }
                   }}
-                  onClick={() => window.location.hash = `#/album/${encodeURIComponent(relatedAlbum._id)}`}
                 >
                   <img 
+                    className="related-album-cover"
                     src={withMediaBase(relatedAlbum.cover) || "/default-cover.png"} 
                     alt={relatedAlbum.name} 
                     style={{ 
@@ -634,17 +714,20 @@ function AlbumDetail() {
                       height: "120px", 
                       borderRadius: "6px", 
                       objectFit: "cover",
-                      marginBottom: "0.5rem"
+                      marginBottom: "0.5rem",
+                      pointerEvents: "none",
+                      userSelect: "none"
                     }} 
                   />
-                  <div style={{ color: "#fff", fontWeight: "600", fontSize: "0.9rem", marginBottom: "0.25rem" }}>
+                  <div className="related-album-name" style={{ color: "#fff", fontWeight: "600", fontSize: "0.9rem", marginBottom: "0.25rem", pointerEvents: "none", userSelect: "none" }}>
                     {relatedAlbum.name}
                   </div>
-                  <div style={{ color: "#b3b3b3", fontSize: "0.8rem" }}>
+                  <div className="related-album-year" style={{ color: "#b3b3b3", fontSize: "0.8rem", pointerEvents: "none", userSelect: "none" }}>
                     {relatedAlbum.releaseDate ? new Date(relatedAlbum.releaseDate).getFullYear() : "N/A"}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}

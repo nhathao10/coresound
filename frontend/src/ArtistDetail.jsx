@@ -471,6 +471,7 @@ function ArtistDetail() {
               {artistSongs.slice(0, 10).map((song, index) => (
                 <div
                   key={song._id}
+                  className="artist-song-item"
                   style={{
                     display: "grid",
                     gridTemplateColumns: "auto auto 1fr auto auto",
@@ -489,49 +490,48 @@ function ArtistDetail() {
                   }}
                   onClick={() => playSong(index)}
                 >
-                  <div style={{ 
+                  <div className="artist-song-number" style={{ 
                     color: current && current._id === song._id && isPlaying ? "#1db954" : "#b3b3b3",
                     fontSize: "1rem",
                     fontWeight: "500",
                     minWidth: "20px"
                   }}>
-                    {current && current._id === song._id && isPlaying ? (
-                      <FaPause style={{ fontSize: "0.9rem" }} />
-                    ) : (
-                      index + 1
-                    )}
+                    {index + 1}
                   </div>
                   
                   {/* Song Cover */}
                   <img
+                    className="artist-song-cover"
                     src={withMediaBase(song.cover) || "https://via.placeholder.com/50x50/333/fff?text=Song"}
                     alt={song.title}
                     style={{
                       width: "50px",
                       height: "50px",
                       borderRadius: "6px",
-                      objectFit: "cover"
+                      objectFit: "cover",
+                      flexShrink: 0
                     }}
                   />
                   
-                  <div>
-                    <div style={{ 
-                      color: current && current._id === song._id ? "#1db954" : "#fff",
-                      fontWeight: "500",
-                      marginBottom: "0.25rem"
-                    }}>
-                      {song.title}
+                  <div className="artist-song-info">
+                    <div className="artist-song-title">
+                      {song.title || "Unknown Title"}
                     </div>
-                    <div style={{ color: "#b3b3b3", fontSize: "0.9rem" }}>
-                      {song.artist}
+                    <div className="artist-song-artist">
+                      {song.artist || "Unknown Artist"}
                     </div>
                   </div>
                   
-                  <div style={{ color: "#b3b3b3", fontSize: "0.9rem" }}>
+                  <div className="artist-song-plays" style={{ 
+                    color: "#b3b3b3", 
+                    fontSize: "0.9rem",
+                    flexShrink: 0
+                  }}>
                     {(song.plays || 0).toLocaleString("vi-VN")}
                   </div>
                   
                   <button
+                    className={`artist-song-play-btn ${current && current._id === song._id && isPlaying ? 'playing' : ''}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       playSong(index);
@@ -544,7 +544,8 @@ function ArtistDetail() {
                       cursor: "pointer",
                       padding: "0.5rem",
                       borderRadius: "50%",
-                      transition: "all 0.2s ease"
+                      transition: "all 0.2s ease",
+                      flexShrink: 0
                     }}
                     onMouseEnter={(e) => {
                       e.target.style.background = "rgba(29, 185, 84, 0.2)";
@@ -555,7 +556,7 @@ function ArtistDetail() {
                       e.target.style.color = "#b3b3b3";
                     }}
                   >
-                    {current && current._id === song._id && isPlaying ? <FaPause /> : <FaPlay />}
+                    <FaPlay />
                   </button>
                 </div>
               ))}

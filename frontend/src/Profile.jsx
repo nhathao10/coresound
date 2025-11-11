@@ -406,6 +406,7 @@ const Profile = () => {
                 {/* Edit Button on Banner */}
                 {!editMode && (
                   <button
+                    className="profile-edit-button"
                     onClick={() => setEditMode(true)}
                     style={{
                       position: 'absolute',
@@ -440,12 +441,12 @@ const Profile = () => {
                     <FaEdit /> Chỉnh sửa hồ sơ
                   </button>
                 )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-                  <h2 style={{ color: '#fff', fontSize: '2.5rem', fontWeight: '700', margin: 0 }}>
+                <div className="profile-name-section" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                  <h2 className="profile-user-name" style={{ color: '#fff', fontSize: '2.5rem', fontWeight: '700', margin: 0 }}>
                     {user?.name || 'Người dùng'}
                   </h2>
                   {user?.isPremium && (
-                    <div style={{
+                    <div className="profile-premium-badge" style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
@@ -461,7 +462,7 @@ const Profile = () => {
                     </div>
                   )}
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center' }}>
+                <div className="profile-info-section" style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#1db954' }}></div>
                     <p style={{ color: '#b3b3b3', fontSize: '0.95rem', margin: 0 }}>
@@ -679,10 +680,11 @@ const Profile = () => {
                   </span>
                 </div>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div className="profile-top-songs-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {stats.mostPlayedSongs.map((item, index) => (
                     <div
                       key={item.song._id}
+                      className="profile-top-song-item"
                       onClick={() => {
                         const songs = stats.mostPlayedSongs.map(s => s.song);
                         setQueueAndPlay(songs, index, 'profile-top-songs');
@@ -707,7 +709,7 @@ const Profile = () => {
                         e.currentTarget.style.transform = 'translateX(0)';
                       }}
                     >
-                      <div style={{
+                      <div className="profile-song-number" style={{
                         width: '40px',
                         height: '40px',
                         borderRadius: '8px',
@@ -717,52 +719,76 @@ const Profile = () => {
                         justifyContent: 'center',
                         fontSize: '1.2rem',
                         fontWeight: '700',
-                        color: index < 3 ? '#000' : '#fff'
+                        color: index < 3 ? '#000' : '#fff',
+                        flexShrink: 0
                       }}>
                         {index + 1}
                       </div>
                       
                       {item.song?.cover ? (
                         <img
+                          className="profile-song-cover"
                           src={item.song.cover.startsWith('http') ? item.song.cover : `http://localhost:5000${item.song.cover}`}
                           alt={item.song.title}
                           style={{
                             width: '60px',
                             height: '60px',
                             borderRadius: '8px',
-                            objectFit: 'cover'
+                            objectFit: 'cover',
+                            flexShrink: 0
                           }}
                         />
                       ) : (
-                        <div style={{
+                        <div className="profile-song-cover" style={{
                           width: '60px',
                           height: '60px',
                           borderRadius: '8px',
                           background: 'linear-gradient(135deg, #1db954, #1ed760)',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center'
+                          justifyContent: 'center',
+                          flexShrink: 0
                         }}>
                           <FaMusic style={{ color: '#fff', fontSize: '1.5rem' }} />
                         </div>
                       )}
                       
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ color: '#fff', fontSize: '1.05rem', fontWeight: '600', margin: '0 0 0.35rem 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div className="profile-song-info" style={{ flex: 1, minWidth: 0, marginRight: '0.5rem' }}>
+                        <p className="profile-song-title" style={{ 
+                          color: '#fff', 
+                          fontSize: '1.05rem', 
+                          fontWeight: '600', 
+                          margin: '0 0 0.35rem 0', 
+                          overflow: 'hidden', 
+                          textOverflow: 'ellipsis', 
+                          whiteSpace: 'nowrap',
+                          display: 'block',
+                          width: '100%'
+                        }}>
                           {item.song?.title || 'Không rõ'}
                         </p>
-                        <p style={{ color: '#b3b3b3', fontSize: '0.9rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <p className="profile-song-artist" style={{ 
+                          color: '#b3b3b3', 
+                          fontSize: '0.9rem', 
+                          margin: 0, 
+                          overflow: 'hidden', 
+                          textOverflow: 'ellipsis', 
+                          whiteSpace: 'nowrap',
+                          display: 'block',
+                          width: '100%'
+                        }}>
                           {item.song?.artist || 'Không rõ'}
                         </p>
                       </div>
                       
-                      <div style={{
+                      <div className="profile-song-plays" style={{
                         background: 'rgba(29, 185, 84, 0.2)',
                         padding: '0.35rem 0.75rem',
                         borderRadius: '20px',
-                        border: '1px solid rgba(29, 185, 84, 0.3)'
+                        border: '1px solid rgba(29, 185, 84, 0.3)',
+                        flexShrink: 0
                       }}>
-                        <p style={{ color: '#1db954', fontSize: '0.9rem', margin: 0, fontWeight: '600' }}>
+                        <p style={{ color: '#1db954', fontSize: '0.9rem', margin: 0, fontWeight: '600', whiteSpace: 'nowrap' }}>
                           {item.count} lượt phát
                         </p>
                       </div>
