@@ -40,7 +40,8 @@ const MobilePlayer = () => {
     setProgress,
     setDuration,
     setVolume,
-    setQueueContext
+    setQueueContext,
+    shouldRestorePosition
   } = usePlayer();
 
   const { isAuthenticated } = useAuth();
@@ -98,6 +99,50 @@ const MobilePlayer = () => {
       audioRef.current.volume = volume;
     }
   }, [volume]);
+
+  // Restore playback position when audio is loaded (after page refresh)
+  useEffect(() => {
+    if (!current || !audioRef.current || !shouldRestorePosition) return;
+    
+    const audio = audioRef.current;
+    
+    const restorePosition = () => {
+      try {
+        const savedState = localStorage.getItem('cs_player_state');
+        if (savedState) {
+          const parsed = JSON.parse(savedState);
+          // Only restore position if it's the same song and position is reasonable
+          if (parsed.progress > 0 && parsed.progress < (audio.duration || 0) * 0.95) {
+            // Check if saved state is recent (within 30 minutes) and matches current song
+            const isRecent = (Date.now() - (parsed.timestamp || 0)) < 30 * 60 * 1000;
+            if (isRecent) {
+              console.log('🔄 Mobile: Restoring playback position:', parsed.progress);
+              audio.currentTime = parsed.progress;
+              setProgress(parsed.progress);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Mobile: Error restoring playback position:', error);
+      }
+    };
+    
+    // Restore position when audio metadata is loaded
+    const onLoadedMetadata = () => {
+      restorePosition();
+    };
+    
+    audio.addEventListener('loadedmetadata', onLoadedMetadata);
+    
+    // If audio is already loaded, restore immediately
+    if (audio.readyState >= 1) {
+      restorePosition();
+    }
+    
+    return () => {
+      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+    };
+  }, [current?._id, shouldRestorePosition]); // Only run when song changes or flag changes
 
   // Update audio src when current song changes - CRITICAL FOR PLAYBACK
   useEffect(() => {
