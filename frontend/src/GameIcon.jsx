@@ -93,6 +93,7 @@ const GameIcon = () => {
     setIsPlaying(false);
     setUserAnswer('');
     setLives(3);
+    setRoundIndex(1); // Reset round to 1
     setShowResult(false);
     setScore(1000);
     setIsCorrectAnswer(false);
@@ -172,6 +173,7 @@ const GameIcon = () => {
         setDailySong(data);
         setGameStarted(true);
         setScore(1000);
+        setRoundIndex(nextRound); // Update round index after successful fetch
       } else {
         showError('Không thể tải bài hát tiếp theo');
       }
@@ -429,7 +431,6 @@ const GameIcon = () => {
           if (roundIndex < 3) {
             const nextRound = roundIndex + 1;
             setTimeout(async () => {
-              setRoundIndex(nextRound);
               await advanceToNextRound(nextRound);
             }, 3000);
           } else {
@@ -463,7 +464,6 @@ const GameIcon = () => {
             if (roundIndex < 3) {
               const nextRound = roundIndex + 1;
               setTimeout(async () => {
-                setRoundIndex(nextRound);
                 await advanceToNextRound(nextRound);
               }, 3000);
             } else {

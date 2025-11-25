@@ -290,7 +290,8 @@ router.post('/daily-song/check-answer', protect, async (req, res) => {
     // Save game result only if not completed all rounds today
     if (!hasPlayedToday) {
       const currentRound = roundNumber || 1;
-      const isLastRound = currentRound === 3;
+      // Only mark as completed all rounds if this is round 3 AND answer is correct
+      const isLastRound = currentRound === 3 && isCorrect;
       
       const gameResult = new GameResult({
         user: userId,
