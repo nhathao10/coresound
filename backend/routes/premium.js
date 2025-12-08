@@ -139,11 +139,10 @@ router.post('/verify-session', protect, async (req, res) => {
       expiresAt.setFullYear(expiresAt.getFullYear() + 1);
     }
 
-    // Check if already premium to avoid sending duplicate emails
+    // Lấy thông tin người dùng hiện tại
     const currentUser = await User.findById(req.user._id);
-    const wasAlreadyPremium = currentUser.isPremium;
-
-    // Update user premium status
+    
+    // Cập nhật trạng thái premium cho người dùng
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       {
@@ -153,22 +152,20 @@ router.post('/verify-session', protect, async (req, res) => {
       { new: true }
     ).select('-password');
 
-    console.log(`✅ Premium activated for ${updatedUser.email} until ${expiresAt.toLocaleDateString('vi-VN')} - Session: ${sessionId}`);
+    console.log(`✅ Premium ${currentUser.isPremium ? 'renewed' : 'activated'} for ${updatedUser.email} until ${expiresAt.toLocaleDateString('vi-VN')}`);
 
-    // Send activation email ONLY if this is a NEW premium activation (not already premium)
-    if (!wasAlreadyPremium) {
-      sendPremiumActivationEmail(
+    // Gửi email xác nhận cho mọi lần thanh toán thành công
+    try {
+      await sendPremiumActivationEmail(
         updatedUser.email,
         updatedUser.name,
         plan,
         expiresAt
-      ).catch(emailError => {
-        // Log error but don't fail the request
-        console.error('Email sending failed (non-critical):', emailError);
-      });
-      console.log(`📧 Sending premium activation email to ${updatedUser.email}...`);
-    } else {
-      console.log(`⏭️  User ${updatedUser.email} already premium, skipping email`);
+      );
+      console.log(`📧 Sent premium ${currentUser.isPremium ? 'renewal' : 'activation'} email to ${updatedUser.email}`);
+    } catch (emailError) {
+      // Ghi log lỗi nhưng không làm gián đoạn quá trình
+      console.error('Email sending failed (non-critical):', emailError);
     }
 
     res.json({
