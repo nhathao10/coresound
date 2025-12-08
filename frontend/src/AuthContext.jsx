@@ -23,26 +23,50 @@ export const AuthProvider = ({ children }) => {
         if (savedUser) {
           const userData = JSON.parse(savedUser);
           
-          // Try to refresh user data from server to get latest followedArtists
+          // Try to refresh user data from server to get latest data
           try {
-            const response = await fetch('http://localhost:5000/api/auth/me', {
+            // Lấy thông tin người dùng
+            const userResponse = await fetch('http://localhost:5000/api/auth/me', {
               headers: {
                 'Authorization': `Bearer ${userData.token}`
               }
             });
             
-            if (response.ok) {
-              const serverData = await response.json();
-              const updatedUser = { ...serverData.user, token: userData.token };
+            if (userResponse.ok) {
+              const serverData = await userResponse.json();
+              let updatedUser = { ...serverData.user, token: userData.token };
+              
+              // Kiểm tra trạng thái premium
+              try {
+                const premiumResponse = await fetch('http://localhost:5000/api/premium/status', {
+                  headers: {
+                    'Authorization': `Bearer ${userData.token}`
+                  }
+                });
+                
+                if (premiumResponse.ok) {
+                  const premiumData = await premiumResponse.json();
+                  updatedUser = {
+                    ...updatedUser,
+                    isPremium: premiumData.isPremium,
+                    premiumExpiresAt: premiumData.premiumExpiresAt
+                  };
+                  console.log('Premium status updated:', premiumData);
+                }
+              } catch (premiumError) {
+                console.error('Error checking premium status:', premiumError);
+                // Tiếp tục với dữ liệu người dùng hiện có nếu không kiểm tra được trạng thái premium
+              }
+              
+              // Lưu thông tin mới vào localStorage
               localStorage.setItem('cs_user', JSON.stringify(updatedUser));
               setUser(updatedUser);
             } else {
-              // If server request fails, use localStorage data
+              // Nếu không lấy được từ server, dùng dữ liệu từ localStorage
               setUser(userData);
             }
           } catch (error) {
-            // If server request fails, use localStorage data
-            console.error('Error refreshing user from server:', error);
+            console.error('Error refreshing user data:', error);
             setUser(userData);
           }
           

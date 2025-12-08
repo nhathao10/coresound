@@ -698,7 +698,7 @@ const GameIcon = () => {
                   gap: '0.5rem'
                 }}>
                   <FaGamepad size="1.2rem" color="#1db954" />
-                  Daily Song Challenge
+                  Thử Thách Bài Hát
                 </h2>
                 <button
                   onClick={() => setShowInstructions(true)}
