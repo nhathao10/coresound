@@ -220,8 +220,8 @@ const PremiumModal = ({ isOpen, onClose }) => {
               {[
                 'Nghe nhạc không quảng cáo',
                 'Chất lượng âm thanh cao',
-                'Tải nhạc offline',
-                'Chơi minigame không giới hạn'
+                'Tạo playlist không giới hạn',
+                'Chơi minigame độc quyền'
               ].map((feature, idx) => (
                 <li key={idx} style={{
                   display: 'flex',
