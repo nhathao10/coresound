@@ -9,9 +9,14 @@ export function PlayerProvider({ children }) {
       const savedState = localStorage.getItem('cs_player_state');
       if (savedState) {
         const parsed = JSON.parse(savedState);
+        if (!parsed || typeof parsed !== 'object') {
+          // Invalid data in localStorage, clear it and use defaults
+          localStorage.removeItem('cs_player_state');
+          return null;
+        }
         return {
           queue: parsed.queue || [],
-          currentIdx: parsed.currentIdx !== null ? parsed.currentIdx : null,
+          currentIdx: parsed.currentIdx != null ? parsed.currentIdx : null,
           isPlaying: false, // Always start paused on page load
           shuffle: parsed.shuffle || false,
           repeat: parsed.repeat || false,
@@ -26,7 +31,19 @@ export function PlayerProvider({ children }) {
     } catch (error) {
       console.error('Error loading player state from localStorage:', error);
     }
-    return null;
+    return {
+      queue: [],
+      currentIdx: null,
+      isPlaying: false,
+      shuffle: false,
+      repeat: false,
+      progress: 0,
+      duration: 0,
+      volume: 1,
+      queueContext: "suggestions",
+      pendingPlay: null,
+      shouldRestorePosition: false
+    };
   };
 
   const initialState = initializeFromStorage();
