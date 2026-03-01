@@ -60,26 +60,37 @@ function App() {
   };
 
   useEffect(() => {
+    const safeFetch = (url) => fetch(url)
+      .then((r) => r.ok ? r.json() : [])
+      .catch(() => []);
+
     Promise.all([
-      fetch(`${import.meta.env.VITE_API_URL}/api/songs`).then((r) => r.json()),
-      fetch(`${import.meta.env.VITE_API_URL}/api/albums`).then((r) => r.json()),
-      fetch(`${import.meta.env.VITE_API_URL}/api/genres`).then((r) => r.json()),
-      fetch(`${import.meta.env.VITE_API_URL}/api/artists`).then((r) => r.json()),
-      fetch(`${import.meta.env.VITE_API_URL}/api/curated-playlists`).then((r) => r.json()),
-      fetch(`${import.meta.env.VITE_API_URL}/api/podcasts`).then((r) => r.json()),
+      safeFetch(`${import.meta.env.VITE_API_URL}/api/songs`),
+      safeFetch(`${import.meta.env.VITE_API_URL}/api/albums`),
+      safeFetch(`${import.meta.env.VITE_API_URL}/api/genres`),
+      safeFetch(`${import.meta.env.VITE_API_URL}/api/artists`),
+      safeFetch(`${import.meta.env.VITE_API_URL}/api/curated-playlists`),
+      safeFetch(`${import.meta.env.VITE_API_URL}/api/podcasts`),
     ]).then(([songsData, albumsData, genresData, artistsData, playlistsData, podcastsData]) => {
-      console.log('Fetched curated playlists:', playlistsData);
-      setSongs(songsData);
-      setAlbums(albumsData);
-      setGenres(genresData);
-      setArtists(artistsData);
+      const safeSongs = Array.isArray(songsData) ? songsData : [];
+      const safeAlbums = Array.isArray(albumsData) ? albumsData : [];
+      const safeGenres = Array.isArray(genresData) ? genresData : [];
+      const safeArtists = Array.isArray(artistsData) ? artistsData : [];
+      const safePlaylists = Array.isArray(playlistsData) ? playlistsData : [];
+      const podcastsList = Array.isArray(podcastsData?.podcasts) ? podcastsData.podcasts : (Array.isArray(podcastsData) ? podcastsData : []);
+
+      console.log('Fetched curated playlists:', safePlaylists);
+      setSongs(safeSongs);
+      setAlbums(safeAlbums);
+      setGenres(safeGenres);
+      setArtists(safeArtists);
       
-      setCuratedPlaylists(playlistsData);
-      setPodcasts(podcastsData?.podcasts || podcastsData || []);
-      setDisplayedSongs(getRandomSongs(songsData, 7));
-      setDisplayedAlbums(getRandomAlbums(albumsData, 7));
-      setDisplayedPlaylists(getRandomPlaylists(playlistsData, 7));
-      setDisplayedPodcasts(getRandomPodcasts((podcastsData?.podcasts || podcastsData || []), 5));
+      setCuratedPlaylists(safePlaylists);
+      setPodcasts(podcastsList);
+      setDisplayedSongs(getRandomSongs(safeSongs, 7));
+      setDisplayedAlbums(getRandomAlbums(safeAlbums, 7));
+      setDisplayedPlaylists(getRandomPlaylists(safePlaylists, 7));
+      setDisplayedPodcasts(getRandomPodcasts(podcastsList, 5));
 
       // Check for search query in URL
       const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
@@ -90,6 +101,8 @@ function App() {
         window.location.hash = '#/';
       }
       
+    }).catch((err) => {
+      console.error('Error fetching initial data:', err);
     });
   }, []);
 
@@ -288,6 +301,7 @@ function App() {
 
   // Hàm lấy 7 bài hát ngẫu nhiên (tránh trùng với danh sách hiện tại)
   const getRandomSongs = (allSongs, count, excludeIds = []) => {
+    if (!Array.isArray(allSongs)) return [];
     if (allSongs.length <= count) return allSongs;
     
     // Lọc ra những bài hát không có trong danh sách hiện tại
@@ -306,6 +320,7 @@ function App() {
 
   // Hàm lấy 7 album ngẫu nhiên (tránh trùng với danh sách hiện tại)
   const getRandomAlbums = (allAlbums, count, excludeIds = []) => {
+    if (!Array.isArray(allAlbums)) return [];
     if (allAlbums.length <= count) return allAlbums;
     
     // Lọc ra những album không có trong danh sách hiện tại
@@ -324,6 +339,7 @@ function App() {
 
   // Hàm lấy 7 playlist ngẫu nhiên (tránh trùng với danh sách hiện tại)
   const getRandomPlaylists = (allPlaylists, count, excludeIds = []) => {
+    if (!Array.isArray(allPlaylists)) return [];
     if (allPlaylists.length <= count) return allPlaylists;
     
     // Lọc ra những playlist không có trong danh sách hiện tại
@@ -353,6 +369,7 @@ function App() {
   };
 
   const getRandomPodcasts = (allPodcasts, count, excludeIds = []) => {
+    if (!Array.isArray(allPodcasts)) return [];
     if (allPodcasts.length <= count) return allPodcasts;
     
     // Lọc ra những podcast không có trong danh sách hiện tại
@@ -1260,7 +1277,7 @@ function App() {
             justifyContent: "center",
             maxWidth: "100%"
           }}>
-            {(artists || []).slice(0, 6).map((artist) => (
+            {Array.isArray(artists) ? artists.slice(0, 6).map((artist) => (
               <div
                 key={artist._id}
                 style={{
@@ -1354,7 +1371,7 @@ function App() {
                   <FollowButton artist={artist} />
                 </div>
               </div>
-            ))}
+            )) : null}
           </div>
         </section>
 
