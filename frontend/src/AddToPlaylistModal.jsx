@@ -12,7 +12,7 @@ const AddToPlaylistModal = ({ isOpen, onClose, song, onSuccess }) => {
     if (song) {
       console.log('AddToPlaylistModal - song object:', song);
       console.log('AddToPlaylistModal - song.cover:', song.cover);
-      console.log('AddToPlaylistModal - full image URL:', song.cover ? `http://localhost:5000${song.cover}` : 'No cover');
+      console.log('AddToPlaylistModal - full image URL:', song.cover ? `${import.meta.env.VITE_API_URL}${song.cover}` : 'No cover');
     }
   }, [song]);
   
@@ -30,7 +30,7 @@ const AddToPlaylistModal = ({ isOpen, onClose, song, onSuccess }) => {
   const loadPlaylists = async () => {
     try {
       const token = user?.token;
-      const response = await fetch('http://localhost:5000/api/user-playlists', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user-playlists`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -51,7 +51,7 @@ const AddToPlaylistModal = ({ isOpen, onClose, song, onSuccess }) => {
     
     try {
       const token = user?.token;
-      const response = await fetch(`http://localhost:5000/api/user-playlists/${selectedPlaylistId}/songs/${song._id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user-playlists/${selectedPlaylistId}/songs/${song._id}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -165,7 +165,7 @@ const AddToPlaylistModal = ({ isOpen, onClose, song, onSuccess }) => {
             height: '50px',
             borderRadius: '8px',
             background: song?.cover 
-              ? `url(http://localhost:5000${song.cover}) center/cover, linear-gradient(135deg, #1db954 0%, #1ed760 100%)`
+              ? `url(${import.meta.env.VITE_API_URL}${song.cover}) center/cover, linear-gradient(135deg, #1db954 0%, #1ed760 100%)`
               : 'linear-gradient(135deg, #1db954 0%, #1ed760 100%)',
             display: 'flex',
             alignItems: 'center',
@@ -262,7 +262,7 @@ const AddToPlaylistModal = ({ isOpen, onClose, song, onSuccess }) => {
                     width: '40px',
                     height: '40px',
                     borderRadius: '8px',
-                    background: `url(${playlist.cover ? `http://localhost:5000${playlist.cover}` : '/default-cover.png'}) center/cover`
+                    background: `url(${playlist.cover ? `${import.meta.env.VITE_API_URL}${playlist.cover}` : '/default-cover.png'}) center/cover`
                   }} />
                   <div style={{ flex: 1 }}>
                     <h4 style={{

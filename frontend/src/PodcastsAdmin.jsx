@@ -59,7 +59,7 @@ const PodcastsAdmin = () => {
   const fetchPodcasts = async () => {
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch('http://localhost:5000/api/podcasts', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/podcasts`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -81,7 +81,7 @@ const PodcastsAdmin = () => {
   const fetchEpisodes = async (podcastId) => {
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch(`http://localhost:5000/api/podcasts/${podcastId}/episodes`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/podcasts/${podcastId}/episodes`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -143,7 +143,7 @@ const PodcastsAdmin = () => {
         formData.append('audio', audioFile);
       }
 
-      const response = await fetch('http://localhost:5000/api/podcasts', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/podcasts`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -190,7 +190,7 @@ const PodcastsAdmin = () => {
         formData.append('audio', audioFile);
       }
 
-      const response = await fetch(`http://localhost:5000/api/podcasts/${editingPodcast._id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/podcasts/${editingPodcast._id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -228,7 +228,7 @@ const PodcastsAdmin = () => {
         formData.append('audio', audioFile);
       }
 
-      const response = await fetch(`http://localhost:5000/api/podcasts/${selectedPodcast._id}/episodes`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/podcasts/${selectedPodcast._id}/episodes`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -256,7 +256,7 @@ const PodcastsAdmin = () => {
     
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch(`http://localhost:5000/api/podcasts/${podcastId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/podcasts/${podcastId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -284,7 +284,7 @@ const PodcastsAdmin = () => {
     
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch(`http://localhost:5000/api/podcasts/${selectedPodcast._id}/episodes/${episodeId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/podcasts/${selectedPodcast._id}/episodes/${episodeId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -508,7 +508,7 @@ const PodcastsAdmin = () => {
                 >
                   <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
                     <img
-                      src={podcast.cover ? `http://localhost:5000${podcast.cover}` : '/default-cover.png'}
+                      src={podcast.cover ? `${import.meta.env.VITE_API_URL}${podcast.cover}` : '/default-cover.png'}
                       alt={podcast.title}
                       style={{
                         width: '80px',

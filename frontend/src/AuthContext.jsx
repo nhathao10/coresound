@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
           // Try to refresh user data from server to get latest data
           try {
             // Lấy thông tin người dùng
-            const userResponse = await fetch('http://localhost:5000/api/auth/me', {
+            const userResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
               headers: {
                 'Authorization': `Bearer ${userData.token}`
               }
@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
               
               // Kiểm tra trạng thái premium
               try {
-                const premiumResponse = await fetch('http://localhost:5000/api/premium/status', {
+                const premiumResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/premium/status`, {
                   headers: {
                     'Authorization': `Bearer ${userData.token}`
                   }
@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -119,7 +119,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (name, email, password, role = 'user') => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

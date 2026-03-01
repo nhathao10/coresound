@@ -61,7 +61,7 @@ const Profile = () => {
   const fetchUserStats = async () => {
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch('http://localhost:5000/api/history/stats?period=30', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/history/stats?period=30`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -79,7 +79,7 @@ const Profile = () => {
   const fetchUserPlaylists = async () => {
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch('http://localhost:5000/api/user-playlists', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user-playlists`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -95,7 +95,7 @@ const Profile = () => {
   const fetchFavoritesCount = async () => {
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch('http://localhost:5000/api/favorites?type=song', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites?type=song`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -178,7 +178,7 @@ const Profile = () => {
 
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
       
-      const response = await fetch('http://localhost:5000/api/profile', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -250,7 +250,7 @@ const Profile = () => {
 
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch('http://localhost:5000/api/profile/change-password', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/profile/change-password`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -391,7 +391,7 @@ const Profile = () => {
                 }}>
                   {avatarPreview ? (
                     <img
-                      src={avatarPreview.startsWith('http') ? avatarPreview : `http://localhost:5000${avatarPreview}`}
+                      src={avatarPreview.startsWith('http') ? avatarPreview : `${import.meta.env.VITE_API_URL}${avatarPreview}`}
                       alt="Avatar"
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
@@ -728,7 +728,7 @@ const Profile = () => {
                       {item.song?.cover ? (
                         <img
                           className="profile-song-cover"
-                          src={item.song.cover.startsWith('http') ? item.song.cover : `http://localhost:5000${item.song.cover}`}
+                          src={item.song.cover.startsWith('http') ? item.song.cover : `${import.meta.env.VITE_API_URL}${item.song.cover}`}
                           alt={item.song.title}
                           style={{
                             width: '60px',
@@ -857,7 +857,7 @@ const Profile = () => {
                     >
                       {playlist.cover ? (
                         <img
-                          src={playlist.cover.startsWith('http') ? playlist.cover : `http://localhost:5000${playlist.cover}`}
+                          src={playlist.cover.startsWith('http') ? playlist.cover : `${import.meta.env.VITE_API_URL}${playlist.cover}`}
                           alt={playlist.name}
                           style={{
                             width: '100%',
@@ -1181,7 +1181,7 @@ const Profile = () => {
               }}>
                 {avatarPreview ? (
                   <img
-                    src={avatarPreview.startsWith('http') ? avatarPreview : `http://localhost:5000${avatarPreview}`}
+                    src={avatarPreview.startsWith('http') ? avatarPreview : `${import.meta.env.VITE_API_URL}${avatarPreview}`}
                     alt="Avatar"
                     style={{
                       width: '100%',

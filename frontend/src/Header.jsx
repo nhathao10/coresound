@@ -25,7 +25,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
   const userDropdownRef = useRef(null);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
 
-  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
+  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `${import.meta.env.VITE_API_URL}${p}` : p);
 
   // Play song function - simplified for better reliability
   const playSong = (idx) => {
@@ -38,7 +38,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
 
   // Load songs
   useEffect(() => {
-    fetch("http://localhost:5000/api/songs")
+    fetch(`${import.meta.env.VITE_API_URL}/api/songs`)
       .then((r) => r.json())
       .then((data) => setSongs(data || []))
       .catch((e) => console.error("Error loading songs:", e));
@@ -306,7 +306,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                 height: "40px",
                 borderRadius: "50%",
                 background: user?.avatar ? 
-                  `url(${user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}`})` :
+                  `url(${user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_URL}${user.avatar}`})` :
                   "linear-gradient(135deg, #1db954, #1ed760)",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
@@ -366,7 +366,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                       height: "40px",
                       borderRadius: "50%",
                       background: user?.avatar ? 
-                        `url(${user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}`})` :
+                        `url(${user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_URL}${user.avatar}`})` :
                         "linear-gradient(135deg, #1db954, #1ed760)",
                       backgroundSize: "cover",
                       backgroundPosition: "center",
@@ -640,7 +640,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                         addToSearchHistory(song);
                         
                         // Simplified approach: always fetch fresh songs and play
-                        fetch("http://localhost:5000/api/songs")
+                        fetch(`${import.meta.env.VITE_API_URL}/api/songs`)
                           .then((r) => r.json())
                           .then((data) => {
                             const newSongs = data || [];
@@ -697,7 +697,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                     <div key={song._id} 
                       onMouseDown={(e) => {
                         // Simplified approach: always fetch fresh songs and play
-                        fetch("http://localhost:5000/api/songs")
+                        fetch(`${import.meta.env.VITE_API_URL}/api/songs`)
                           .then((r) => r.json())
                           .then((data) => {
                             const newSongs = data || [];
@@ -866,7 +866,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                     <div
                       key={song._id}
                       onMouseDown={(e) => {
-                        fetch("http://localhost:5000/api/songs")
+                        fetch(`${import.meta.env.VITE_API_URL}/api/songs`)
                           .then((r) => r.json())
                           .then((data) => {
                             const newSongs = data || [];
@@ -947,7 +947,7 @@ const Header = forwardRef(({ showSearch = true, onSearchChange, onSearchFocus, s
                       <div
                         key={song._id}
                         onMouseDown={(e) => {
-                          fetch("http://localhost:5000/api/songs")
+                          fetch(`${import.meta.env.VITE_API_URL}/api/songs`)
                             .then((r) => r.json())
                             .then((data) => {
                               const newSongs = data || [];

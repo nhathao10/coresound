@@ -58,7 +58,7 @@ const FilteredSongs = ({ selectedGenres, onSongSelect, onSongsUpdate }) => {
         sortOrder
       });
 
-      const response = await fetch(`http://localhost:5000/api/songs/filter/by-genres?${params}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/songs/filter/by-genres?${params}`);
       
       if (!response.ok) {
         const errorText = await response.text();

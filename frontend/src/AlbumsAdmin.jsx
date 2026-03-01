@@ -17,9 +17,9 @@ function AlbumsAdmin() {
   useEffect(() => {
     document.title = "CoreSound";
     Promise.all([
-      fetch("http://localhost:5000/api/albums").then(r=>r.json()),
-      fetch("http://localhost:5000/api/songs").then(r=>r.json()),
-      fetch("http://localhost:5000/api/genres").then(r=>r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/albums`).then(r=>r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/songs`).then(r=>r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/genres`).then(r=>r.json()),
     ]).then(([a, s, g]) => {
       setAlbums(a);
       setSongs(s);
@@ -43,7 +43,7 @@ function AlbumsAdmin() {
       if (form.plays !== "") fd.append("plays", String(form.plays));
       if (form.genres.length > 0) fd.append("genres", JSON.stringify(form.genres));
       fd.append("cover", form.cover);
-      const res = await fetch("http://localhost:5000/api/albums", { method: "POST", body: fd });
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/albums`, { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Tạo album thất bại");
       
@@ -66,7 +66,7 @@ function AlbumsAdmin() {
   };
 
   const saveAlbum = async (albumId, patch) => {
-    const res = await fetch(`http://localhost:5000/api/albums/${albumId}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/albums/${albumId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
@@ -88,7 +88,7 @@ function AlbumsAdmin() {
 
   const deleteAlbum = async (albumId) => {
     if (!confirm("Xoá album này?")) return;
-    const res = await fetch(`http://localhost:5000/api/albums/${albumId}`, { method: "DELETE" });
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/albums/${albumId}`, { method: "DELETE" });
     const data = await res.json();
     if (!res.ok) return alert(data?.error || "Xoá thất bại");
     setAlbums((prev)=> prev.filter((a)=> a._id !== albumId));
@@ -98,7 +98,7 @@ function AlbumsAdmin() {
   const changeCover = async (albumId, file) => {
     const fd = new FormData();
     fd.append("cover", file);
-    const res = await fetch(`http://localhost:5000/api/albums/${albumId}`, { method: "PUT", body: fd });
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/albums/${albumId}`, { method: "PUT", body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error || "Cập nhật cover thất bại");
     setAlbums((prev)=> prev.map((a)=> a._id === data._id ? data : a));
@@ -106,7 +106,7 @@ function AlbumsAdmin() {
 
   const attachSongToAlbum = async (albumId, songId) => {
     // cập nhật bài hát để gán album
-    const res = await fetch(`http://localhost:5000/api/songs/${songId}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/songs/${songId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ album: albumId }),
@@ -118,7 +118,7 @@ function AlbumsAdmin() {
   };
 
   const removeSongFromAlbum = async (songId) => {
-    const res = await fetch(`http://localhost:5000/api/songs/${songId}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/songs/${songId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ album: null }),

@@ -44,7 +44,7 @@ const UsersAdmin = () => {
         ...(roleFilter && { role: roleFilter })
       });
 
-      const response = await fetch(`http://localhost:5000/api/users?${params}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users?${params}`, {
         headers: {
           'Authorization': `Bearer ${userData.token || 'dummy-token'}`,
           'Content-Type': 'application/json'
@@ -78,7 +78,7 @@ const UsersAdmin = () => {
       const token = localStorage.getItem('cs_user');
       const userData = token ? JSON.parse(token) : null;
 
-      const response = await fetch('http://localhost:5000/api/users', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${userData.token || 'dummy-token'}`,
@@ -109,7 +109,7 @@ const UsersAdmin = () => {
       const token = localStorage.getItem('cs_user');
       const userData = token ? JSON.parse(token) : null;
 
-      const response = await fetch(`http://localhost:5000/api/users/${selectedUser._id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${selectedUser._id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${userData.token || 'dummy-token'}`,
@@ -147,7 +147,7 @@ const UsersAdmin = () => {
       const token = localStorage.getItem('cs_user');
       const userData = token ? JSON.parse(token) : null;
 
-      const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${userData.token || 'dummy-token'}`,
@@ -175,7 +175,7 @@ const UsersAdmin = () => {
       const token = localStorage.getItem('cs_user');
       const userData = token ? JSON.parse(token) : null;
 
-      const response = await fetch(`http://localhost:5000/api/users/${selectedUser._id}/reset-password`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${selectedUser._id}/reset-password`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${userData.token || 'dummy-token'}`,

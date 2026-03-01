@@ -12,7 +12,7 @@ const GenreFilter = ({ onFilterChange, selectedGenres = [], className = "" }) =>
     const fetchGenres = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:5000/api/genres');
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/genres`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }

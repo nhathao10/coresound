@@ -35,7 +35,7 @@ const FollowButton = ({ artist, onFollowChange, isFollowing: externalIsFollowing
       const token = user?.token;
       const endpoint = isFollowing ? 'unfollow' : 'follow';
       
-      const response = await fetch(`http://localhost:5000/api/artists/${artist._id}/${endpoint}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/${artist._id}/${endpoint}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

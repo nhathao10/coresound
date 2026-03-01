@@ -13,7 +13,7 @@ function PlaylistDetail() {
   
   const { setQueueAndPlay, currentIdx, isPlaying, setIsPlaying, current } = usePlayer();
   
-  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
+  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `${import.meta.env.VITE_API_URL}${p}` : p);
 
   useEffect(() => {
     const playlistId = window.location.hash.split('/')[2];
@@ -27,7 +27,7 @@ function PlaylistDetail() {
       try {
         // Try user playlist first
         const token = localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null;
-        let response = await fetch(`http://localhost:5000/api/user-playlists/${playlistId}/songs`, {
+        let response = await fetch(`${import.meta.env.VITE_API_URL}/api/user-playlists/${playlistId}/songs`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         
@@ -38,7 +38,7 @@ function PlaylistDetail() {
         }
         
         // If not found, try curated playlist
-        response = await fetch(`http://localhost:5000/api/curated-playlists/${playlistId}`);
+        response = await fetch(`${import.meta.env.VITE_API_URL}/api/curated-playlists/${playlistId}`);
         if (!response.ok) {
           throw new Error('Không tìm thấy playlist');
         }

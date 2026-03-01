@@ -126,7 +126,7 @@ const MobileNavDrawer = ({ isOpen, onClose }) => {
                   height: '50px',
                   borderRadius: '50%',
                   background: user?.avatar
-                    ? `url(${user.avatar.startsWith('http') ? user.avatar : `http://localhost:5000${user.avatar}`})`
+                    ? `url(${user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_URL}${user.avatar}`})`
                     : 'linear-gradient(135deg, #1db954, #1ed760)',
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',

@@ -42,9 +42,9 @@ function Upload() {
     document.title = "CoreSound";
     // load danh sách bài hát, thể loại và khu vực
     Promise.all([
-      fetch("http://localhost:5000/api/songs").then((r) => r.json()),
-      fetch("http://localhost:5000/api/genres").then((r) => r.json()),
-      fetch("http://localhost:5000/api/regions").then((r) => r.json())
+      fetch(`${import.meta.env.VITE_API_URL}/api/songs`).then((r) => r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/genres`).then((r) => r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/regions`).then((r) => r.json())
     ]).then(([songsData, genresData, regionsData]) => {
       setSongs(songsData);
       setGenres(genresData);
@@ -78,7 +78,7 @@ function Upload() {
       fd.append("cover", coverFile);
       fd.append("song", songFile);
 
-      const res = await fetch("http://localhost:5000/api/songs/add", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/songs/add`, {
         method: "POST",
         body: fd,
       });
@@ -359,7 +359,7 @@ function SongRow({ song, genres, regions, onChange, onDelete }) {
         genres: form.genres,
         region: form.region || null
       };
-      const res = await fetch(`http://localhost:5000/api/songs/${song._id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/songs/${song._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updateData),
@@ -371,7 +371,7 @@ function SongRow({ song, genres, regions, onChange, onDelete }) {
         const fd = new FormData();
         if (newCover) fd.append("cover", newCover);
         if (newSong) fd.append("song", newSong);
-        const res2 = await fetch(`http://localhost:5000/api/songs/${song._id}/files`, { method: "PATCH", body: fd });
+        const res2 = await fetch(`${import.meta.env.VITE_API_URL}/api/songs/${song._id}/files`, { method: "PATCH", body: fd });
         const data2 = await res2.json();
         if (!res2.ok) throw new Error(data2?.error || "Cập nhật file thất bại");
         updated = data2;
@@ -408,7 +408,7 @@ function SongRow({ song, genres, regions, onChange, onDelete }) {
 
   const removeSong = async () => {
     if (!confirm("Xoá bài hát này?")) return;
-    const res = await fetch(`http://localhost:5000/api/songs/${song._id}`, { method: "DELETE" });
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/songs/${song._id}`, { method: "DELETE" });
     const data = await res.json();
     if (!res.ok) return alert(data?.error || "Xoá thất bại");
     onDelete(song._id);

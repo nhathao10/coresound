@@ -36,7 +36,7 @@ const LyricsPanel = ({ isOpen, onClose, currentSong, currentTime, isPlaying, onS
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:5000/api/songs/${songId}/lyrics`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/songs/${songId}/lyrics`);
       if (response.ok) {
         const data = await response.json();
         setLyrics(data.lyrics);
@@ -82,7 +82,7 @@ const LyricsPanel = ({ isOpen, onClose, currentSong, currentTime, isPlaying, onS
         <div className="lyrics-song-info">
           <div className="song-image">
             <img 
-              src={currentSong?.cover ? `http://localhost:5000${currentSong.cover}` : '/default-album.svg'} 
+              src={currentSong?.cover ? `${import.meta.env.VITE_API_URL}${currentSong.cover}` : '/default-album.svg'} 
               alt={currentSong?.title}
               onError={(e) => {
                 e.target.src = '/default-album.svg';

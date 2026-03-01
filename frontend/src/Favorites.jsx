@@ -13,7 +13,7 @@ const Favorites = () => {
   const { setQueueAndPlay, current, isPlaying, setIsPlaying } = usePlayer();
   const [activeTab, setActiveTab] = useState('songs');
 
-  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
+  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `${import.meta.env.VITE_API_URL}${p}` : p);
 
   const favoriteSongs = getFavoriteSongs();
   const favoriteAlbums = getFavoriteAlbums();

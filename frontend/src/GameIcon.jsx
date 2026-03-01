@@ -46,7 +46,7 @@ const GameIcon = () => {
 
   const checkGameAccess = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/game/access-check', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/game/access-check`, {
         headers: {
           'Authorization': `Bearer ${user?.token}`
         }
@@ -115,7 +115,7 @@ const GameIcon = () => {
   const resetTodayGame = async () => {
     try {
       // Reset today's game (silent - no toast)
-      await fetch('http://localhost:5000/api/reset-today', {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/reset-today`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${user?.token}`
@@ -123,7 +123,7 @@ const GameIcon = () => {
       });
 
       // Generate a new random song (silent - no toast)
-      await fetch('http://localhost:5000/api/new-random-song', {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/new-random-song`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${user?.token}`
@@ -167,7 +167,7 @@ const GameIcon = () => {
       }
       
       // Fetch next song with the specified round number
-      const response = await fetch(`http://localhost:5000/api/daily-song?sequence=${nextRound}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/daily-song?sequence=${nextRound}`);
       if (response.ok) {
         const data = await response.json();
         setDailySong(data);
@@ -187,7 +187,7 @@ const GameIcon = () => {
   // Load songs for autocomplete
   useEffect(() => {
     if (showGameModal) {
-      fetch('http://localhost:5000/api/songs')
+      fetch(`${import.meta.env.VITE_API_URL}/api/songs`)
         .then(res => res.json())
         .then(data => setSongs(data || []))
         .catch(err => console.error('Error loading songs:', err));
@@ -211,7 +211,7 @@ const GameIcon = () => {
 
   const checkGameStatus = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/daily-song/status', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/daily-song/status`, {
         headers: {
           'Authorization': `Bearer ${user?.token}`
         }
@@ -251,7 +251,7 @@ const GameIcon = () => {
 
   const fetchDailySong = async () => {
     try {
-      const response = await fetch(`http://localhost:5000/api/daily-song?sequence=${roundIndex}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/daily-song?sequence=${roundIndex}`);
       if (response.ok) {
         const data = await response.json();
         
@@ -260,7 +260,7 @@ const GameIcon = () => {
           // Check if audioUrl already has full URL
           const fullUrl = data.audioUrl.startsWith('http') 
             ? data.audioUrl 
-            : `http://localhost:5000${data.audioUrl}`;
+            : `${import.meta.env.VITE_API_URL}${data.audioUrl}`;
           
           // Test file accessibility
           fetch(fullUrl, { method: 'HEAD' })
@@ -298,7 +298,7 @@ const GameIcon = () => {
         // Ensure audio src is set correctly
         const fullUrl = dailySong.audioUrl.startsWith('http') 
           ? dailySong.audioUrl 
-          : `http://localhost:5000${dailySong.audioUrl}`;
+          : `${import.meta.env.VITE_API_URL}${dailySong.audioUrl}`;
         if (audioRef.current.src !== fullUrl) {
           audioRef.current.src = fullUrl;
         }
@@ -379,7 +379,7 @@ const GameIcon = () => {
     setAttempts(attempts + 1);
 
     try {
-      const response = await fetch('http://localhost:5000/api/daily-song/check-answer', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/daily-song/check-answer`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -495,7 +495,7 @@ const GameIcon = () => {
     // Increment play count for free users
     if (!gameAccess.isPremium) {
       try {
-        const response = await fetch('http://localhost:5000/api/game/increment-play', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/game/increment-play`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${user?.token}`,
@@ -913,7 +913,7 @@ const GameIcon = () => {
                       ref={audioRef}
                       src={dailySong.audioUrl.startsWith('http') 
                         ? dailySong.audioUrl 
-                        : `http://localhost:5000${dailySong.audioUrl}`}
+                        : `${import.meta.env.VITE_API_URL}${dailySong.audioUrl}`}
                       preload="metadata"
                       crossOrigin="anonymous"
                       onError={(e) => {
@@ -1163,7 +1163,7 @@ const GameIcon = () => {
                       <img 
                         src={(dailySong.song?.cover || dailySong.cover).startsWith('http') 
                           ? (dailySong.song?.cover || dailySong.cover)
-                          : `http://localhost:5000${dailySong.song?.cover || dailySong.cover}`} 
+                          : `${import.meta.env.VITE_API_URL}${dailySong.song?.cover || dailySong.cover}`} 
                         alt="Song Cover"
                         style={{
                           width: '100%',

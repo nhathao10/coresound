@@ -35,7 +35,7 @@ function AlbumDetail() {
   
   const { user, isAuthenticated } = useAuth();
 
-  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
+  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `${import.meta.env.VITE_API_URL}${p}` : p);
 
   // Load comments and ratings
   const loadCommentsAndRatings = async () => {
@@ -43,8 +43,8 @@ function AlbumDetail() {
     
     try {
       const [commentsRes, ratingsRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/albums/${album._id}/comments`),
-        fetch(`http://localhost:5000/api/albums/${album._id}/ratings`)
+        fetch(`${import.meta.env.VITE_API_URL}/api/albums/${album._id}/comments`),
+        fetch(`${import.meta.env.VITE_API_URL}/api/albums/${album._id}/ratings`)
       ]);
       
       if (commentsRes.ok) {
@@ -65,7 +65,7 @@ function AlbumDetail() {
             const userData = JSON.parse(savedUser);
             const token = userData.token;
             
-            const userRatingRes = await fetch(`http://localhost:5000/api/albums/${album._id}/ratings/user/${user._id}`, {
+            const userRatingRes = await fetch(`${import.meta.env.VITE_API_URL}/api/albums/${album._id}/ratings/user/${user._id}`, {
               headers: {
                 'Authorization': `Bearer ${token}`
               }
@@ -105,7 +105,7 @@ function AlbumDetail() {
       }
       
 
-      const response = await fetch(`http://localhost:5000/api/albums/${album._id}/comments`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/albums/${album._id}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -150,7 +150,7 @@ function AlbumDetail() {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/albums/${album._id}/ratings`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/albums/${album._id}/ratings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -193,7 +193,7 @@ function AlbumDetail() {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/albums/${album._id}/comments/${commentId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/albums/${album._id}/comments/${commentId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -230,7 +230,7 @@ function AlbumDetail() {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/albums/${album._id}/comments/${commentId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/albums/${album._id}/comments/${commentId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -291,9 +291,9 @@ function AlbumDetail() {
     setAlbum(null); // Clear previous album data
     
     Promise.all([
-      fetch(`http://localhost:5000/api/albums/${albumId}`).then((r) => r.json()),
-      fetch("http://localhost:5000/api/songs").then((r) => r.json()),
-      fetch("http://localhost:5000/api/albums").then((r) => r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/albums/${albumId}`).then((r) => r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/songs`).then((r) => r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/albums`).then((r) => r.json()),
     ])
       .then(([albumData, songsData, albumsData]) => {
         if (!mounted) return;
@@ -523,7 +523,7 @@ function AlbumDetail() {
                       const cleanArtistName = album.artist.trim();
                       
                       // Find artist by name to get the ID
-                      const response = await fetch(`http://localhost:5000/api/artists/search?name=${encodeURIComponent(cleanArtistName)}`);
+                      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/search?name=${encodeURIComponent(cleanArtistName)}`);
                       if (response.ok) {
                         const artists = await response.json();
                         if (artists.length > 0) {

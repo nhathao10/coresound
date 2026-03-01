@@ -19,7 +19,7 @@ import { useAuth } from './AuthContext';
 import { useFavorites } from './FavoritesContext';
 import LyricsPanel from './LyricsPanel';
 
-const withMediaBase = (p) => (p && p.startsWith('/uploads') ? `http://localhost:5000${p}` : p);
+const withMediaBase = (p) => (p && p.startsWith('/uploads') ? `${import.meta.env.VITE_API_URL}${p}` : p);
 
 const MobilePlayer = () => {
   const {
@@ -76,7 +76,7 @@ const MobilePlayer = () => {
       
       if (!token) return;
 
-      await fetch('http://localhost:5000/api/history', {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/history`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

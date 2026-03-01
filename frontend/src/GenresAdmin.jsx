@@ -17,7 +17,7 @@ function GenresAdmin() {
   useEffect(() => {
     document.title = "CoreSound - Quản lý Thể loại";
     // load danh sách thể loại
-    fetch("http://localhost:5000/api/genres")
+    fetch(`${import.meta.env.VITE_API_URL}/api/genres`)
       .then((r) => r.json())
       .then((data) => setGenres(data))
       .catch(() => {})
@@ -40,7 +40,7 @@ function GenresAdmin() {
       if (form.description) fd.append("description", form.description);
       if (coverFile) fd.append("cover", coverFile);
 
-      const res = await fetch("http://localhost:5000/api/genres", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/genres`, {
         method: "POST",
         body: fd,
       });
@@ -188,7 +188,7 @@ function GenreRow({ genre, onChange, onDelete }) {
   const save = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/genres/${genre._id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/genres/${genre._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -203,7 +203,7 @@ function GenreRow({ genre, onChange, onDelete }) {
       if (newCover) {
         const fd = new FormData();
         fd.append("cover", newCover);
-        const res2 = await fetch(`http://localhost:5000/api/genres/${genre._id}/cover`, { method: "PATCH", body: fd });
+        const res2 = await fetch(`${import.meta.env.VITE_API_URL}/api/genres/${genre._id}/cover`, { method: "PATCH", body: fd });
         const data2 = await res2.json();
         if (!res2.ok) throw new Error(data2?.error || "Cập nhật ảnh bìa thất bại");
         updated = data2;
@@ -220,13 +220,13 @@ function GenreRow({ genre, onChange, onDelete }) {
 
   const removeGenre = async () => {
     if (!confirm("Xoá thể loại này? Tất cả bài hát và album liên quan sẽ bị ảnh hưởng.")) return;
-    const res = await fetch(`http://localhost:5000/api/genres/${genre._id}`, { method: "DELETE" });
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/genres/${genre._id}`, { method: "DELETE" });
     const data = await res.json();
     if (!res.ok) return alert(data?.error || "Xoá thất bại");
     onDelete(genre._id);
   };
 
-  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
+  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `${import.meta.env.VITE_API_URL}${p}` : p);
 
   return (
     <div style={{

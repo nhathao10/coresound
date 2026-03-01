@@ -25,7 +25,7 @@ const LyricsAdmin = () => {
   const fetchSongs = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/songs');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/songs`);
       if (response.ok) {
         const data = await response.json();
         setSongs(data);
@@ -79,7 +79,7 @@ const LyricsAdmin = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/songs/${song._id}/lyrics`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/songs/${song._id}/lyrics`, {
         method: 'DELETE'
       });
 
@@ -135,7 +135,7 @@ const LyricsAdmin = () => {
     return 'Có lyrics';
   };
 
-  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
+  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `${import.meta.env.VITE_API_URL}${p}` : p);
 
   if (loading) {
     return (

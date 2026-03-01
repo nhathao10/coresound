@@ -3,7 +3,7 @@ import AdminSidebar from "./AdminSidebar.jsx";
 import { useAuth } from "./AuthContext";
 
 // Helper function for media URLs
-const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
+const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `${import.meta.env.VITE_API_URL}${p}` : p);
 
 function PlaylistsAdmin() {
   const { user } = useAuth();
@@ -31,8 +31,8 @@ function PlaylistsAdmin() {
     };
     
     Promise.all([
-      fetch("http://localhost:5000/api/admin/curated-playlists", { headers }).then(r=>r.json()),
-      fetch("http://localhost:5000/api/songs").then(r=>r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/admin/curated-playlists`, { headers }).then(r=>r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/songs`).then(r=>r.json()),
     ]).then(([p, s]) => {
       console.log('PlaylistsAdmin: Loaded data', { playlists: p, songs: s });
       setPlaylists(Array.isArray(p) ? p : []);
@@ -79,7 +79,7 @@ function PlaylistsAdmin() {
       if (form.cover) fd.append("cover", form.cover);
       
       console.log('Sending request to API...');
-      const res = await fetch("http://localhost:5000/api/admin/curated-playlists", { 
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/curated-playlists`, { 
         method: "POST", 
         headers: {
           'Authorization': `Bearer ${user?.token}`
@@ -111,7 +111,7 @@ function PlaylistsAdmin() {
   };
 
   const savePlaylist = async (playlistId, patch) => {
-    const res = await fetch(`http://localhost:5000/api/admin/curated-playlists/${playlistId}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/curated-playlists/${playlistId}`, {
       method: "PUT",
       headers: { 
         "Content-Type": "application/json",
@@ -136,7 +136,7 @@ function PlaylistsAdmin() {
 
   const deletePlaylist = async (playlistId) => {
     if (!confirm("Xoá playlist này?")) return;
-    const res = await fetch(`http://localhost:5000/api/admin/curated-playlists/${playlistId}`, { 
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/curated-playlists/${playlistId}`, { 
       method: "DELETE",
       headers: {
         'Authorization': `Bearer ${user?.token}`
@@ -161,7 +161,7 @@ function PlaylistsAdmin() {
     
     console.log('Sending FormData with cover file:', file.name);
     
-    const res = await fetch(`http://localhost:5000/api/admin/curated-playlists/${playlistId}`, { 
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/curated-playlists/${playlistId}`, { 
       method: "PUT", 
       headers: {
         'Authorization': `Bearer ${user?.token}`
@@ -180,7 +180,7 @@ function PlaylistsAdmin() {
   const attachSongToPlaylist = async (playlistId, songId) => {
     console.log('attachSongToPlaylist called', { playlistId, songId });
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/curated-playlists/${playlistId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/curated-playlists/${playlistId}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
@@ -219,7 +219,7 @@ function PlaylistsAdmin() {
   const removeSongFromPlaylist = async (playlistId, songId) => {
     console.log('removeSongFromPlaylist called', { playlistId, songId });
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/curated-playlists/${playlistId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/curated-playlists/${playlistId}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",

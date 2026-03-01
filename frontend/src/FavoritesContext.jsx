@@ -34,7 +34,7 @@ export const FavoritesProvider = ({ children }) => {
       const token = user?.token;
       
       // Load regular favorites (songs, albums)
-      const favoritesResponse = await fetch('http://localhost:5000/api/favorites', {
+      const favoritesResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -47,7 +47,7 @@ export const FavoritesProvider = ({ children }) => {
       }
 
       // Load podcast favorites
-      const podcastsResponse = await fetch('http://localhost:5000/api/podcasts/favorites', {
+      const podcastsResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/podcasts/favorites`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -84,7 +84,7 @@ export const FavoritesProvider = ({ children }) => {
     try {
       const token = user?.token;
       
-      const response = await fetch('http://localhost:5000/api/favorites', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ export const FavoritesProvider = ({ children }) => {
     try {
       const token = user?.token;
       
-      const response = await fetch(`http://localhost:5000/api/favorites/item/${type}/${itemId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites/item/${type}/${itemId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -167,7 +167,7 @@ export const FavoritesProvider = ({ children }) => {
     try {
       const token = user?.token;
       
-      const response = await fetch(`http://localhost:5000/api/podcasts/${podcastId}/favorite`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/podcasts/${podcastId}/favorite`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

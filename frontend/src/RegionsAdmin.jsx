@@ -18,7 +18,7 @@ function RegionsAdmin() {
   useEffect(() => {
     document.title = "CoreSound - Quản lý Khu vực";
     // load danh sách khu vực
-    fetch("http://localhost:5000/api/regions")
+    fetch(`${import.meta.env.VITE_API_URL}/api/regions`)
       .then((r) => r.json())
       .then((data) => setRegions(data))
       .catch(() => {})
@@ -42,7 +42,7 @@ function RegionsAdmin() {
       if (coverFile) fd.append("cover", coverFile);
       if (flagFile) fd.append("flag", flagFile);
 
-      const res = await fetch("http://localhost:5000/api/regions", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/regions`, {
         method: "POST",
         body: fd,
       });
@@ -202,7 +202,7 @@ function RegionRow({ region, onChange, onDelete }) {
   const save = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/regions/${region._id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/regions/${region._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -218,7 +218,7 @@ function RegionRow({ region, onChange, onDelete }) {
       if (newCover) {
         const fd = new FormData();
         fd.append("cover", newCover);
-        const res2 = await fetch(`http://localhost:5000/api/regions/${region._id}/cover`, { method: "PATCH", body: fd });
+        const res2 = await fetch(`${import.meta.env.VITE_API_URL}/api/regions/${region._id}/cover`, { method: "PATCH", body: fd });
         const data2 = await res2.json();
         if (!res2.ok) throw new Error(data2?.error || "Cập nhật ảnh bìa thất bại");
         updated = data2;
@@ -227,7 +227,7 @@ function RegionRow({ region, onChange, onDelete }) {
       if (newFlag) {
         const fd = new FormData();
         fd.append("flag", newFlag);
-        const res3 = await fetch(`http://localhost:5000/api/regions/${region._id}/flag`, { method: "PATCH", body: fd });
+        const res3 = await fetch(`${import.meta.env.VITE_API_URL}/api/regions/${region._id}/flag`, { method: "PATCH", body: fd });
         const data3 = await res3.json();
         if (!res3.ok) throw new Error(data3?.error || "Cập nhật ảnh cờ thất bại");
         updated = data3;
@@ -246,13 +246,13 @@ function RegionRow({ region, onChange, onDelete }) {
 
   const removeRegion = async () => {
     if (!confirm("Xoá khu vực này? Tất cả bài hát liên quan sẽ bị ảnh hưởng.")) return;
-    const res = await fetch(`http://localhost:5000/api/regions/${region._id}`, { method: "DELETE" });
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/regions/${region._id}`, { method: "DELETE" });
     const data = await res.json();
     if (!res.ok) return alert(data?.error || "Xoá thất bại");
     onDelete(region._id);
   };
 
-  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
+  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `${import.meta.env.VITE_API_URL}${p}` : p);
 
   return (
     <div style={{

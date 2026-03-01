@@ -147,19 +147,19 @@ const Library = () => {
       const headers = { 'Authorization': `Bearer ${token}` };
 
       // Load user playlists
-      const playlistsRes = await fetch('http://localhost:5000/api/user-playlists', { headers });
+      const playlistsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/user-playlists`, { headers });
       const playlistsData = await playlistsRes.json();
       setPlaylists(playlistsData);
 
       // Load playlist stats
-      const statsRes = await fetch('http://localhost:5000/api/user-playlists/stats', { headers });
+      const statsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/user-playlists/stats`, { headers });
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setPlaylistStats(statsData);
       }
 
       // Load listening history
-      const historyRes = await fetch('http://localhost:5000/api/history', { headers });
+      const historyRes = await fetch(`${import.meta.env.VITE_API_URL}/api/history`, { headers });
       const historyData = await historyRes.json();
       setListeningHistory(historyData.history || []);
 
@@ -183,7 +183,7 @@ const Library = () => {
       const headers = { 'Authorization': `Bearer ${token}` };
       
       // Load all followed artists in one request
-      const response = await fetch('http://localhost:5000/api/artists/followed', { headers });
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/followed`, { headers });
       
       if (response.ok) {
         const artists = await response.json();
@@ -205,7 +205,7 @@ const Library = () => {
   const handlePlayPlaylist = async (playlist) => {
     try {
       const token = user?.token;
-      const response = await fetch(`http://localhost:5000/api/user-playlists/${playlist._id}/songs`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user-playlists/${playlist._id}/songs`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const playlistData = await response.json();
@@ -237,7 +237,7 @@ const Library = () => {
       }
       
       // Fallback: fetch all songs
-      const response = await fetch('http://localhost:5000/api/songs');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/songs`);
       const allSongs = await response.json();
       const songIndex = allSongs.findIndex(s => s._id === song._id);
       
@@ -254,7 +254,7 @@ const Library = () => {
 
   const handleDeletePlaylist = async (playlistId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/user-playlists/${playlistId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user-playlists/${playlistId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${user?.token}`
@@ -274,7 +274,7 @@ const Library = () => {
 
   const handleViewPlaylist = async (playlist) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/user-playlists/${playlist._id}/songs`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user-playlists/${playlist._id}/songs`, {
         headers: {
           'Authorization': `Bearer ${user?.token}`
         }
@@ -294,7 +294,7 @@ const Library = () => {
 
   const handleRemoveSongFromPlaylist = async (playlistId, songId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/user-playlists/${playlistId}/songs/${songId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/user-playlists/${playlistId}/songs/${songId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${user?.token}`
@@ -316,7 +316,7 @@ const Library = () => {
   const handleClearHistory = () => {
     setConfirmAction(() => async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/history', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/history`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${user?.token}`
@@ -357,7 +357,7 @@ const Library = () => {
     }
   };
 
-  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
+  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `${import.meta.env.VITE_API_URL}${p}` : p);
 
   if (!isAuthenticated) {
     return (

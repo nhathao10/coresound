@@ -15,7 +15,7 @@ function ArtistDetail() {
   const [error, setError] = useState("");
   const [followedArtists, setFollowedArtists] = useState(new Set());
 
-  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
+  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `${import.meta.env.VITE_API_URL}${p}` : p);
 
   // Read artist id from hash: #/artist/<id>
   const artistId = useMemo(() => {
@@ -45,12 +45,12 @@ function ArtistDetail() {
         // First try to fetch by ID
         let artistData;
         try {
-          const response = await fetch(`http://localhost:5000/api/artists/${artistId}`);
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/${artistId}`);
           artistData = await response.json();
           
           // If not found by ID, try to search by name
           if (artistData?.error && artistData.error.includes('Không tìm thấy')) {
-            const searchResponse = await fetch(`http://localhost:5000/api/artists/search?name=${encodeURIComponent(artistId)}`);
+            const searchResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/search?name=${encodeURIComponent(artistId)}`);
             if (searchResponse.ok) {
               const searchResults = await searchResponse.json();
               if (searchResults.length > 0) {
@@ -60,7 +60,7 @@ function ArtistDetail() {
           }
         } catch (idError) {
           // If ID fetch fails, try search by name
-          const searchResponse = await fetch(`http://localhost:5000/api/artists/search?name=${encodeURIComponent(artistId)}`);
+          const searchResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/search?name=${encodeURIComponent(artistId)}`);
           if (searchResponse.ok) {
             const searchResults = await searchResponse.json();
             if (searchResults.length > 0) {
@@ -74,8 +74,8 @@ function ArtistDetail() {
         
         // Load other data
         const [songsData, albumsData] = await Promise.all([
-          fetch("http://localhost:5000/api/songs").then((r) => r.json()),
-          fetch("http://localhost:5000/api/albums").then((r) => r.json()),
+          fetch(`${import.meta.env.VITE_API_URL}/api/songs`).then((r) => r.json()),
+          fetch(`${import.meta.env.VITE_API_URL}/api/albums`).then((r) => r.json()),
         ]);
         
         setArtist(artistData);
@@ -102,7 +102,7 @@ function ArtistDetail() {
     const loadFollowedArtists = async () => {
       if (isAuthenticated && user?.token) {
         try {
-          const response = await fetch('http://localhost:5000/api/artists/followed', {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/followed`, {
             headers: {
               'Authorization': `Bearer ${user.token}`
             }
@@ -200,8 +200,8 @@ function ArtistDetail() {
     
     try {
       const endpoint = isCurrentlyFollowed 
-        ? `http://localhost:5000/api/artists/${artistId}/unfollow`
-        : `http://localhost:5000/api/artists/${artistId}/follow`;
+        ? `${import.meta.env.VITE_API_URL}/api/artists/${artistId}/unfollow`
+        : `${import.meta.env.VITE_API_URL}/api/artists/${artistId}/follow`;
         
       const response = await fetch(endpoint, {
         method: 'POST',

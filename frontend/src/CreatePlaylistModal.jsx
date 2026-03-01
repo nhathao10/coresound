@@ -27,7 +27,7 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
         description: editingPlaylist.description || '',
         isPublic: editingPlaylist.isPublic !== undefined ? editingPlaylist.isPublic : true
       });
-      setCoverPreview(editingPlaylist.cover ? `http://localhost:5000${editingPlaylist.cover}` : null);
+      setCoverPreview(editingPlaylist.cover ? `${import.meta.env.VITE_API_URL}${editingPlaylist.cover}` : null);
     } else {
       setFormData({
         name: '',
@@ -92,8 +92,8 @@ const CreatePlaylistModal = ({ isOpen, onClose, onSuccess, editingPlaylist }) =>
       }
 
       const url = editingPlaylist 
-        ? `http://localhost:5000/api/user-playlists/${editingPlaylist._id}`
-        : 'http://localhost:5000/api/user-playlists';
+        ? `${import.meta.env.VITE_API_URL}/api/user-playlists/${editingPlaylist._id}`
+        : `${import.meta.env.VITE_API_URL}/api/user-playlists`;
       
       const method = editingPlaylist ? 'PUT' : 'POST';
       

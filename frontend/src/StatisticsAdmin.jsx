@@ -34,7 +34,7 @@ function StatisticsAdmin() {
   const fetchOverviewStats = useCallback(async () => {
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch('http://localhost:5000/api/statistics/overview', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/statistics/overview`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -56,7 +56,7 @@ function StatisticsAdmin() {
   const fetchGenreStats = useCallback(async () => {
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch('http://localhost:5000/api/statistics/by-genre', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/statistics/by-genre`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -77,7 +77,7 @@ function StatisticsAdmin() {
   const fetchArtistStats = useCallback(async () => {
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch('http://localhost:5000/api/statistics/by-artist', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/statistics/by-artist`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -96,7 +96,7 @@ function StatisticsAdmin() {
   const fetchUserActivity = useCallback(async () => {
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch('http://localhost:5000/api/statistics/user-activity', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/statistics/user-activity`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -115,7 +115,7 @@ function StatisticsAdmin() {
   const fetchTimeBasedStats = useCallback(async (period) => {
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch(`http://localhost:5000/api/statistics/time-based?period=${period}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/statistics/time-based?period=${period}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -136,7 +136,7 @@ function StatisticsAdmin() {
   const fetchAlbumStats = useCallback(async () => {
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch('http://localhost:5000/api/statistics/albums-stats', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/statistics/albums-stats`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -155,7 +155,7 @@ function StatisticsAdmin() {
   const fetchGrowthMetrics = useCallback(async () => {
     try {
       const token = user?.token || (localStorage.getItem('cs_user') ? JSON.parse(localStorage.getItem('cs_user')).token : null);
-      const response = await fetch('http://localhost:5000/api/statistics/growth-metrics', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/statistics/growth-metrics`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

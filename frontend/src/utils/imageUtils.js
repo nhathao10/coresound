@@ -6,7 +6,7 @@ export const getImageUrl = (imagePath) => {
   
   // Nếu là đường dẫn upload từ backend
   if (imagePath.startsWith('/uploads')) {
-    const fullUrl = `http://localhost:5000${imagePath}`;
+    const fullUrl = `${import.meta.env.VITE_API_URL}${imagePath}`;
     return fullUrl;
   }
   

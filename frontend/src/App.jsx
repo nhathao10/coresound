@@ -13,7 +13,7 @@ import FollowButton from "./FollowButton.jsx";
 function App() {
   const [songs, setSongs] = useState([]);
   const [albums, setAlbums] = useState([]);
-  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
+  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `${import.meta.env.VITE_API_URL}${p}` : p);
   const { setQueueAndPlay, currentIdx, isPlaying, setIsPlaying, queue, setCurrentIdx, current, setQueueContext, setQueue } = usePlayer();
   const { user, isAuthenticated } = useAuth();
   const { showSuccess, showError } = useToast();
@@ -61,12 +61,12 @@ function App() {
 
   useEffect(() => {
     Promise.all([
-      fetch("http://localhost:5000/api/songs").then((r) => r.json()),
-      fetch("http://localhost:5000/api/albums").then((r) => r.json()),
-      fetch("http://localhost:5000/api/genres").then((r) => r.json()),
-      fetch("http://localhost:5000/api/artists").then((r) => r.json()),
-      fetch("http://localhost:5000/api/curated-playlists").then((r) => r.json()),
-      fetch("http://localhost:5000/api/podcasts").then((r) => r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/songs`).then((r) => r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/albums`).then((r) => r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/genres`).then((r) => r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/artists`).then((r) => r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/curated-playlists`).then((r) => r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/podcasts`).then((r) => r.json()),
     ]).then(([songsData, albumsData, genresData, artistsData, playlistsData, podcastsData]) => {
       console.log('Fetched curated playlists:', playlistsData);
       setSongs(songsData);
@@ -101,9 +101,9 @@ function App() {
         if (trendingFilter === "region") {
           // Load by region (existing logic)
           const [vietnamResponse, usukResponse, koreaResponse] = await Promise.all([
-            fetch("http://localhost:5000/api/songs/trending/vietnam?limit=5").catch(() => null),
-            fetch("http://localhost:5000/api/songs/trending/us-uk?limit=5").catch(() => null),
-            fetch("http://localhost:5000/api/songs/trending/korea?limit=5").catch(() => null)
+            fetch(`${import.meta.env.VITE_API_URL}/api/songs/trending/vietnam?limit=5`).catch(() => null),
+            fetch(`${import.meta.env.VITE_API_URL}/api/songs/trending/us-uk?limit=5`).catch(() => null),
+            fetch(`${import.meta.env.VITE_API_URL}/api/songs/trending/korea?limit=5`).catch(() => null)
           ]);
 
           let vietnamData = [], usukData = [], koreaData = [];
@@ -172,7 +172,7 @@ function App() {
           // Load by genre - fixed genres: Pop, R/B, Rap
           const fixedGenres = ["Pop", "R/B", "Rap"];
           const genrePromises = fixedGenres.map(genre => 
-            fetch(`http://localhost:5000/api/songs/trending/genre/${encodeURIComponent(genre)}?limit=5`).catch(() => null)
+            fetch(`${import.meta.env.VITE_API_URL}/api/songs/trending/genre/${encodeURIComponent(genre)}?limit=5`).catch(() => null)
           );
 
           const genreResponses = await Promise.all(genrePromises);
@@ -426,7 +426,7 @@ function App() {
     const action = isCurrentlyFollowed ? 'unfollow' : 'follow';
     
     try {
-      const response = await fetch(`http://localhost:5000/api/artists/${artistId}/follow`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/${artistId}/follow`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -517,7 +517,7 @@ function App() {
     if (!current) return;
     const id = current._id;
     if (!id) return;
-    fetch(`http://localhost:5000/api/songs/${id}/play`, { method: "POST" })
+    fetch(`${import.meta.env.VITE_API_URL}/api/songs/${id}/play`, { method: "POST" })
       .then((res) => res.json())
       .then((updated) => {
         setSongs((prev) =>
@@ -560,7 +560,7 @@ function App() {
     const loadFollowedArtists = async () => {
       if (isAuthenticated && user?.token) {
         try {
-          const response = await fetch('http://localhost:5000/api/artists/followed', {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/followed`, {
             headers: {
               'Authorization': `Bearer ${user.token}`
             }
@@ -662,7 +662,7 @@ function App() {
                         playSong(realIdx);
                       } else {
                         // If not found in current songs array, try to reload and play
-                        fetch("http://localhost:5000/api/songs")
+                        fetch(`${import.meta.env.VITE_API_URL}/api/songs`)
                           .then((r) => r.json())
                           .then((data) => {
                             const newSongs = data || [];
@@ -727,7 +727,7 @@ function App() {
                             playSong(realIdx);
                           } else {
                             // If not found in current songs array, try to reload and play
-                            fetch("http://localhost:5000/api/songs")
+                            fetch(`${import.meta.env.VITE_API_URL}/api/songs`)
                               .then((r) => r.json())
                               .then((data) => {
                                 const newSongs = data || [];

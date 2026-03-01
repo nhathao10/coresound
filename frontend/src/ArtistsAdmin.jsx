@@ -32,14 +32,14 @@ function ArtistsAdmin() {
   const [editingArtist, setEditingArtist] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
+  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `${import.meta.env.VITE_API_URL}${p}` : p);
 
   useEffect(() => {
     document.title = "Quản lý nghệ sĩ - CoreSound";
     // Load danh sách nghệ sĩ và thể loại
     Promise.all([
-      fetch("http://localhost:5000/api/artists").then((r) => r.json()),
-      fetch("http://localhost:5000/api/genres").then((r) => r.json())
+      fetch(`${import.meta.env.VITE_API_URL}/api/artists`).then((r) => r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/genres`).then((r) => r.json())
     ]).then(([artistsData, genresData]) => {
       setArtists(artistsData);
       setGenres(genresData);
@@ -92,8 +92,8 @@ function ArtistsAdmin() {
       }
 
       const url = editingArtist 
-        ? `http://localhost:5000/api/artists/${editingArtist._id}`
-        : "http://localhost:5000/api/artists";
+        ? `${import.meta.env.VITE_API_URL}/api/artists/${editingArtist._id}`
+        : `${import.meta.env.VITE_API_URL}/api/artists`;
       
       const method = editingArtist ? "PUT" : "POST";
 
@@ -172,7 +172,7 @@ function ArtistsAdmin() {
     if (!confirm("Bạn có chắc chắn muốn xóa nghệ sĩ này?")) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/artists/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/artists/${id}`, {
         method: "DELETE",
       });
 
@@ -485,7 +485,7 @@ function ArtistsAdmin() {
 }
 
 function ArtistRow({ artist, onEdit, onDelete }) {
-  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `http://localhost:5000${p}` : p);
+  const withMediaBase = (p) => (p && p.startsWith("/uploads") ? `${import.meta.env.VITE_API_URL}${p}` : p);
 
   const formatNumber = (num) => {
     if (!num) return "0";

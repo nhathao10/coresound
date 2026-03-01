@@ -8,7 +8,7 @@ require('dotenv').config();
 const { scheduleWeeklyReset, checkAndResetIfNeeded } = require('./scheduler/weeklyReset');
 
 // Kết nối MongoDB
-const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/coresound';
+const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/coresound';
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
