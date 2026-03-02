@@ -145,20 +145,67 @@ export const FavoritesProvider = ({ children }) => {
   // Toggle favorite status
   const toggleFavorite = async (type, itemId) => {
     if (!isAuthenticated) {
-      throw new Error('Bạn cần đăng nhập để sử dụng tính năng yêu thích');
+      showError('Bạn cần đăng nhập để sử dụng tính năng yêu thích');
+      return { success: false, error: 'Auth required' };
     }
 
-    // Handle podcast separately
+    // Handle podcast separately (already has its own logic)
     if (type === 'podcast') {
       return await togglePodcastFavorite(itemId);
     }
 
     const isCurrentlyFavorited = isFavorited(type, itemId);
-    
+    const previousFavorites = [...favorites];
+
+    // --- OPTIMISTIC UPDATE ---
     if (isCurrentlyFavorited) {
-      return await removeFromFavorites(type, itemId);
+      setFavorites(prev => prev.filter(fav => !(fav.type === type && fav.item && fav.item._id === itemId)));
     } else {
-      return await addToFavorites(type, itemId);
+      // Find the item in local songs/albums if possible to make the UI look complete
+      // We'll add a temporary placeholder if we can't find it
+      setFavorites(prev => [...prev, { type, item: { _id: itemId }, createdAt: new Date() }]);
+    }
+
+    try {
+      const token = user?.token;
+      let response;
+      
+      if (isCurrentlyFavorited) {
+        response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites/item/${type}/${itemId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      } else {
+        response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ type, itemId })
+        });
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Lỗi server');
+      }
+
+      // Sync local state with actual server data (e.g., to get the real item object from backend)
+      if (!isCurrentlyFavorited && data.favorite) {
+        setFavorites(prev => prev.map(fav => 
+          (fav.type === type && fav.item && fav.item._id === itemId) ? data.favorite : fav
+        ));
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Favorite toggle error:', error);
+      // --- ROLLBACK ---
+      setFavorites(previousFavorites);
+      showError(error.message || 'Không thể cập nhật yêu thích');
+      return { success: false, error: error.message };
     }
   };
 

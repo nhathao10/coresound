@@ -25,6 +25,7 @@ function App() {
   const [displayedPodcasts, setDisplayedPodcasts] = useState([]); // 7 podcast hiển thị
  // Danh sách ID podcast yêu thích
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [recentSongs, setRecentSongs] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -376,9 +377,18 @@ function App() {
       .replace(/[\u0300-\u036f]/g, "");
   };
 
-  // Cập nhật kết quả tìm kiếm theo searchQuery
+  // Debounce search query
   useEffect(() => {
-    const q = normalize(searchQuery.trim());
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  // Update search results based on debounced query
+  useEffect(() => {
+    const q = normalize(debouncedSearchQuery.trim());
     if (!q) {
       setSearchResults([]);
       return;
@@ -389,7 +399,7 @@ function App() {
       return inTitle || inArtist;
     });
     setSearchResults(results);
-  }, [searchQuery, songs]);
+  }, [debouncedSearchQuery, songs]);
 
   // Định dạng số lượt nghe: 1K, 1M, 1B (giữ 1 số thập phân khi cần)
   const formatPlayCount = (num) => {
