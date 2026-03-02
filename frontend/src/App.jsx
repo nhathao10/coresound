@@ -128,12 +128,13 @@ function App() {
             usukData = await usukResponse.json();
           }
           if (koreaResponse && koreaResponse.ok) {
-            koreaData = await koreaResponse.json();
-          }
+        koreaData = await koreaResponse.json();
+      }
 
-          // Local filtering by region
-          const vietnamSongs = songs.filter(song => 
-            song.region && song.region.name && (
+      // Local filtering by region
+      const currentSongs = Array.isArray(songs) ? songs : [];
+      const vietnamSongs = currentSongs.filter(song => 
+        song.region && song.region.name && (
               song.region.name.toLowerCase().includes('vietnam') ||
               song.region.name.toLowerCase().includes('việt nam') ||
               song.region.name.toLowerCase().includes('viet nam')
@@ -144,7 +145,7 @@ function App() {
             return new Date(b.createdAt) - new Date(a.createdAt);
           });
           
-          const usukSongs = songs.filter(song => 
+          const usukSongs = currentSongs.filter(song => 
             song.region && song.region.name && (
               song.region.name.toLowerCase().includes('us') || 
               song.region.name.toLowerCase().includes('uk') ||
@@ -161,7 +162,7 @@ function App() {
             return new Date(b.createdAt) - new Date(a.createdAt);
           });
           
-          const koreaSongs = songs.filter(song => 
+          const koreaSongs = currentSongs.filter(song => 
             song.region && song.region.name && (
               song.region.name.toLowerCase().includes('korea') ||
               song.region.name.toLowerCase().includes('k-pop') ||
@@ -176,11 +177,10 @@ function App() {
           });
 
           setTrendingSongs({
-            vietnam: (vietnamData && vietnamData.length > 0) ? vietnamData : vietnamSongs.slice(0, 5),
-            usuk: (usukData && usukData.length > 0) ? usukData : usukSongs.slice(0, 5),
-            korea: (koreaData && koreaData.length > 0) ? koreaData : koreaSongs.slice(0, 5)
-          });
-
+        vietnam: (Array.isArray(vietnamData) && vietnamData.length > 0) ? vietnamData : (Array.isArray(vietnamSongs) ? vietnamSongs.slice(0, 5) : []),
+        usuk: (Array.isArray(usukData) && usukData.length > 0) ? usukData : (Array.isArray(usukSongs) ? usukSongs.slice(0, 5) : []),
+        korea: (Array.isArray(koreaData) && koreaData.length > 0) ? koreaData : (Array.isArray(koreaSongs) ? koreaSongs.slice(0, 5) : [])
+      });
         } else if (trendingFilter === "genre") {
           // Load by genre - fixed genres: Pop, R/B, Rap
           const fixedGenres = ["Pop", "R/B", "Rap"];
@@ -196,24 +196,25 @@ function App() {
           );
 
           // Local filtering by genre as fallback
-          const genreSongs = fixedGenres.map(genre => 
-            songs.filter(song => 
-              song.genres && song.genres.some(g => 
-                g.name && g.name.toLowerCase().includes(genre.toLowerCase())
-              )
-            ).sort((a, b) => {
-              if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-              if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-              return new Date(b.createdAt) - new Date(a.createdAt);
-            }).slice(0, 5)
-          );
+      const currentSongs = Array.isArray(songs) ? songs : [];
+      const genreSongs = fixedGenres.map(genre => 
+        currentSongs.filter(song => 
+          song.genres && song.genres.some(g => 
+            g.name && g.name.toLowerCase().includes(genre.toLowerCase())
+          )
+        ).sort((a, b) => {
+          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
+          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        }).slice(0, 5)
+      );
 
-          // Map to trendingSongs structure
-          setTrendingSongs({
-            vietnam: genreData[0] && genreData[0].length > 0 ? genreData[0] : genreSongs[0] || [],
-            usuk: genreData[1] && genreData[1].length > 0 ? genreData[1] : genreSongs[1] || [],
-            korea: genreData[2] && genreData[2].length > 0 ? genreData[2] : genreSongs[2] || []
-          });
+      // Map to trendingSongs structure
+      setTrendingSongs({
+        vietnam: (Array.isArray(genreData[0]) && genreData[0].length > 0) ? genreData[0] : (genreSongs[0] || []),
+        usuk: (Array.isArray(genreData[1]) && genreData[1].length > 0) ? genreData[1] : (genreSongs[1] || []),
+        korea: (Array.isArray(genreData[2]) && genreData[2].length > 0) ? genreData[2] : (genreSongs[2] || [])
+      });
         }
 
       } catch (error) {

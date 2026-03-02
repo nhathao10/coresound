@@ -10,6 +10,7 @@ const { scheduleWeeklyReset, checkAndResetIfNeeded } = require('./scheduler/week
 // Kết nối MongoDB
 const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/coresound';
 mongoose.connect(mongoURI, {
+  dbName: 'coresound',
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
