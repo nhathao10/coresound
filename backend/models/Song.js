@@ -27,4 +27,11 @@ const SongSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Add indexes for performance
+SongSchema.index({ weeklyPlays: -1, plays: -1, createdAt: -1 });
+SongSchema.index({ region: 1, weeklyPlays: -1 });
+SongSchema.index({ genres: 1, weeklyPlays: -1 });
+SongSchema.index({ createdAt: -1 });
+SongSchema.index({ plays: -1 });
+
 module.exports = mongoose.model("Song", SongSchema);

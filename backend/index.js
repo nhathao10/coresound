@@ -96,6 +96,7 @@ const ratingsRoute = require('./routes/ratings');
 const statisticsRoute = require('./routes/statistics');
 const podcastsRoute = require('./routes/podcasts');
 const dailyGameRoute = require('./routes/dailyGame');
+const bootstrapRoute = require('./routes/bootstrap');
 
 app.get('/', (req, res) => {
   res.send('CoreSound backend is running!');
@@ -161,6 +162,9 @@ app.use('/api/podcasts', podcastsRoute);
 
 // API daily game
 app.use('/api', dailyGameRoute);
+
+// API bootstrap (combined initial data)
+app.use('/api/bootstrap', bootstrapRoute);
 
 // API upload (cover & song)
 app.use('/api', uploadRoute);

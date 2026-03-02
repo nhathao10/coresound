@@ -60,205 +60,87 @@ function App() {
   };
 
   useEffect(() => {
-    const safeFetch = (url) => fetch(url)
-      .then((r) => r.ok ? r.json() : [])
-      .catch(() => []);
-
-    Promise.all([
-      safeFetch(`${import.meta.env.VITE_API_URL}/api/songs`),
-      safeFetch(`${import.meta.env.VITE_API_URL}/api/albums`),
-      safeFetch(`${import.meta.env.VITE_API_URL}/api/genres`),
-      safeFetch(`${import.meta.env.VITE_API_URL}/api/artists`),
-      safeFetch(`${import.meta.env.VITE_API_URL}/api/curated-playlists`),
-      safeFetch(`${import.meta.env.VITE_API_URL}/api/podcasts`),
-    ]).then(([songsData, albumsData, genresData, artistsData, playlistsData, podcastsData]) => {
-      const safeSongs = Array.isArray(songsData) ? songsData : [];
-      const safeAlbums = Array.isArray(albumsData) ? albumsData : [];
-      const safeGenres = Array.isArray(genresData) ? genresData : [];
-      const safeArtists = Array.isArray(artistsData) ? artistsData : [];
-      const safePlaylists = Array.isArray(playlistsData) ? playlistsData : [];
-      const podcastsList = Array.isArray(podcastsData?.podcasts) ? podcastsData.podcasts : (Array.isArray(podcastsData) ? podcastsData : []);
-
-      console.log('Fetched curated playlists:', safePlaylists);
-      setSongs(safeSongs);
-      setAlbums(safeAlbums);
-      setGenres(safeGenres);
-      setArtists(safeArtists);
-      
-      setCuratedPlaylists(safePlaylists);
-      setPodcasts(podcastsList);
-      setDisplayedSongs(getRandomSongs(safeSongs, 7));
-      setDisplayedAlbums(getRandomAlbums(safeAlbums, 7));
-      setDisplayedPlaylists(getRandomPlaylists(safePlaylists, 7));
-      setDisplayedPodcasts(getRandomPodcasts(podcastsList, 5));
-
-      // Check for search query in URL
-      const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
-      const searchParam = urlParams.get('search');
-      if (searchParam) {
-        setSearchQuery(searchParam);
-        // Clear the URL parameter after setting the search
-        window.location.hash = '#/';
-      }
-      
-    }).catch((err) => {
-      console.error('Error fetching initial data:', err);
-    });
-  }, []);
-
-
-  // Load trending songs by region or genre
-  useEffect(() => {
-    const loadTrendingSongs = async () => {
+    const fetchBootstrapData = async () => {
       try {
-        if (trendingFilter === "region") {
-          // Load by region (existing logic)
-          const [vietnamResponse, usukResponse, koreaResponse] = await Promise.all([
-            fetch(`${import.meta.env.VITE_API_URL}/api/songs/trending/vietnam?limit=5`).catch(() => null),
-            fetch(`${import.meta.env.VITE_API_URL}/api/songs/trending/us-uk?limit=5`).catch(() => null),
-            fetch(`${import.meta.env.VITE_API_URL}/api/songs/trending/korea?limit=5`).catch(() => null)
-          ]);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/bootstrap`);
+        if (!response.ok) throw new Error('Bootstrap failed');
+        const data = await response.json();
 
-          let vietnamData = [], usukData = [], koreaData = [];
+        setSongs(Array.isArray(data.songs) ? data.songs : []);
+        setAlbums(Array.isArray(data.albums) ? data.albums : []);
+        setGenres(Array.isArray(data.genres) ? data.genres : []);
+        setArtists(Array.isArray(data.artists) ? data.artists : []);
+        setCuratedPlaylists(Array.isArray(data.curatedPlaylists) ? data.curatedPlaylists : []);
+        setPodcasts(Array.isArray(data.podcasts) ? data.podcasts : []);
 
-          if (vietnamResponse && vietnamResponse.ok) {
-            vietnamData = await vietnamResponse.json();
-          }
-          if (usukResponse && usukResponse.ok) {
-            usukData = await usukResponse.json();
-          }
-          if (koreaResponse && koreaResponse.ok) {
-        koreaData = await koreaResponse.json();
-      }
-
-      // Local filtering by region
-      const currentSongs = Array.isArray(songs) ? songs : [];
-      const vietnamSongs = currentSongs.filter(song => 
-        song.region && song.region.name && (
-              song.region.name.toLowerCase().includes('vietnam') ||
-              song.region.name.toLowerCase().includes('việt nam') ||
-              song.region.name.toLowerCase().includes('viet nam')
-            )
-          ).sort((a, b) => {
-            if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-            if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-            return new Date(b.createdAt) - new Date(a.createdAt);
-          });
-          
-          const usukSongs = currentSongs.filter(song => 
-            song.region && song.region.name && (
-              song.region.name.toLowerCase().includes('us') || 
-              song.region.name.toLowerCase().includes('uk') ||
-              song.region.name.toLowerCase().includes('america') ||
-              song.region.name.toLowerCase().includes('britain') ||
-              song.region.name.toLowerCase().includes('âu mỹ') ||
-              song.region.name.toLowerCase().includes('au my') ||
-              song.region.name.toLowerCase().includes('mỹ') ||
-              song.region.name.toLowerCase().includes('anh')
-            )
-          ).sort((a, b) => {
-            if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-            if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-            return new Date(b.createdAt) - new Date(a.createdAt);
-          });
-          
-          const koreaSongs = currentSongs.filter(song => 
-            song.region && song.region.name && (
-              song.region.name.toLowerCase().includes('korea') ||
-              song.region.name.toLowerCase().includes('k-pop') ||
-              song.region.name.toLowerCase().includes('kpop') ||
-              song.region.name.toLowerCase().includes('hàn quốc') ||
-              song.region.name.toLowerCase().includes('han quoc')
-            )
-          ).sort((a, b) => {
-            if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-            if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-            return new Date(b.createdAt) - new Date(a.createdAt);
-          });
-
-          setTrendingSongs({
-        vietnam: (Array.isArray(vietnamData) && vietnamData.length > 0) ? vietnamData : (Array.isArray(vietnamSongs) ? vietnamSongs.slice(0, 5) : []),
-        usuk: (Array.isArray(usukData) && usukData.length > 0) ? usukData : (Array.isArray(usukSongs) ? usukSongs.slice(0, 5) : []),
-        korea: (Array.isArray(koreaData) && koreaData.length > 0) ? koreaData : (Array.isArray(koreaSongs) ? koreaSongs.slice(0, 5) : [])
-      });
-        } else if (trendingFilter === "genre") {
-          // Load by genre - fixed genres: Pop, R/B, Rap
-          const fixedGenres = ["Pop", "R/B", "Rap"];
-          const genrePromises = fixedGenres.map(genre => 
-            fetch(`${import.meta.env.VITE_API_URL}/api/songs/trending/genre/${encodeURIComponent(genre)}?limit=5`).catch(() => null)
-          );
-
-          const genreResponses = await Promise.all(genrePromises);
-          const genreData = await Promise.all(
-            genreResponses.map(response => 
-              response && response.ok ? response.json() : []
-            )
-          );
-
-          // Local filtering by genre as fallback
-      const currentSongs = Array.isArray(songs) ? songs : [];
-      const genreSongs = fixedGenres.map(genre => 
-        currentSongs.filter(song => 
-          song.genres && song.genres.some(g => 
-            g.name && g.name.toLowerCase().includes(genre.toLowerCase())
-          )
-        ).sort((a, b) => {
-          if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-          if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        }).slice(0, 5)
-      );
-
-      // Map to trendingSongs structure
-      setTrendingSongs({
-        vietnam: (Array.isArray(genreData[0]) && genreData[0].length > 0) ? genreData[0] : (genreSongs[0] || []),
-        usuk: (Array.isArray(genreData[1]) && genreData[1].length > 0) ? genreData[1] : (genreSongs[1] || []),
-        korea: (Array.isArray(genreData[2]) && genreData[2].length > 0) ? genreData[2] : (genreSongs[2] || [])
-      });
+        // Check for search query in URL
+        const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+        const searchParam = urlParams.get('search');
+        if (searchParam) {
+          setSearchQuery(searchParam);
+          window.location.hash = '#/';
         }
-
-      } catch (error) {
-        console.log('Error loading trending songs:', error);
-        // Fallback to local filtering
-        if (trendingFilter === "region") {
-          const vietnamSongs = songs.filter(song => 
-            song.region && song.region.name && song.region.name.toLowerCase().includes('vietnam')
-          ).sort((a, b) => {
-            if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-            if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-            return new Date(b.createdAt) - new Date(a.createdAt);
-          });
-          const usukSongs = songs.filter(song => 
-            song.region && song.region.name && (
-              song.region.name.toLowerCase().includes('us') || 
-              song.region.name.toLowerCase().includes('uk')
-            )
-          ).sort((a, b) => {
-            if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-            if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-            return new Date(b.createdAt) - new Date(a.createdAt);
-          });
-          const koreaSongs = songs.filter(song => 
-            song.region && song.region.name && song.region.name.toLowerCase().includes('korea')
-          ).sort((a, b) => {
-            if (b.weeklyPlays !== a.weeklyPlays) return (b.weeklyPlays || 0) - (a.weeklyPlays || 0);
-            if (b.plays !== a.plays) return (b.plays || 0) - (a.plays || 0);
-            return new Date(b.createdAt) - new Date(a.createdAt);
-          });
-
-          setTrendingSongs({
-            vietnam: vietnamSongs.slice(0, 5),
-            usuk: usukSongs.slice(0, 5),
-            korea: koreaSongs.slice(0, 5)
-          });
-        }
+      } catch (err) {
+        console.error('Error fetching bootstrap data:', err);
       }
     };
 
-    if (songs.length > 0) {
-      loadTrendingSongs();
+    fetchBootstrapData();
+  }, []);
+
+  // Use Memo for random displays to avoid flickering and improve speed
+  useEffect(() => {
+    if (songs.length > 0) setDisplayedSongs(getRandomSongs(songs, 7));
+  }, [songs]);
+
+  useEffect(() => {
+    if (albums.length > 0) setDisplayedAlbums(getRandomAlbums(albums, 7));
+  }, [albums]);
+
+  useEffect(() => {
+    if (curatedPlaylists.length > 0) setDisplayedPlaylists(getRandomPlaylists(curatedPlaylists, 7));
+  }, [curatedPlaylists]);
+
+  useEffect(() => {
+    if (podcasts.length > 0) setDisplayedPodcasts(getRandomPodcasts(podcasts, 5));
+  }, [podcasts]);
+
+
+  // Optimized trending songs calculation using local data
+  useEffect(() => {
+    if (songs.length === 0) return;
+
+    const currentSongs = Array.isArray(songs) ? songs : [];
+    
+    if (trendingFilter === "region") {
+      const generateTrending = (keywordArray) => {
+        return currentSongs
+          .filter(song => song.region?.name && keywordArray.some(kw => song.region.name.toLowerCase().includes(kw)))
+          .sort((a, b) => (b.weeklyPlays || 0) - (a.weeklyPlays || 0) || (b.plays || 0) - (a.plays || 0))
+          .slice(0, 5);
+      };
+
+      setTrendingSongs({
+        vietnam: generateTrending(['vietnam', 'việt nam', 'viet nam']),
+        usuk: generateTrending(['us', 'uk', 'america', 'britain', 'âu mỹ', 'au my', 'mỹ', 'anh']),
+        korea: generateTrending(['korea', 'k-pop', 'kpop', 'hàn quốc', 'han quoc'])
+      });
+    } else {
+      const fixedGenres = ["Pop", "R/B", "Rap"];
+      const genreLists = fixedGenres.map(genre => 
+        currentSongs
+          .filter(song => song.genres?.some(g => g.name?.toLowerCase().includes(genre.toLowerCase())))
+          .sort((a, b) => (b.weeklyPlays || 0) - (a.weeklyPlays || 0) || (b.plays || 0) - (a.plays || 0))
+          .slice(0, 5)
+      );
+
+      setTrendingSongs({
+        vietnam: genreLists[0] || [],
+        usuk: genreLists[1] || [],
+        korea: genreLists[2] || []
+      });
     }
-  }, [songs, trendingFilter]); // Removed displayedSongs dependency to avoid random data
+  }, [songs, trendingFilter]);
 
   // Load recent songs history
   useEffect(() => {
