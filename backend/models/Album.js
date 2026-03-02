@@ -9,7 +9,10 @@ const AlbumSchema = new mongoose.Schema(
     plays: { type: Number, default: 0 },
     genres: [{ type: mongoose.Schema.Types.ObjectId, ref: "Genre" }],
   },
-  // Add index for performance
+  { timestamps: true }
+);
+
+// Add index for performance
 AlbumSchema.index({ plays: -1 });
 AlbumSchema.index({ createdAt: -1 });
 
